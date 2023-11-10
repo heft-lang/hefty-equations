@@ -13,9 +13,11 @@ open import Effect.Theory.HigherOrder
 
 open import Effect.Instance.Abort.Syntax
 open import Effect.Instance.Abort.Theory
+open import Effect.Instance.Abort.Handler
 
 open import Effect.Instance.State.Syntax 
 open import Effect.Instance.State.Theory
+open import Effect.Instance.State.Handler 
 
 open import Effect.Instance.Catch.Syntax
 open import Effect.Instance.Catch.Theory 
