@@ -44,9 +44,21 @@ CatchElab .elab .α ⟪ `catch A , r , s ⟫ =
   maybe′ r (s (inj₂ tt) >>= r)
     (extract $ handleAbort (♯ ⦃ wt ⦄ (s (inj₁ tt))))
 
+record HandleSem (ε : Effect) (F : Set → Set) : Set where
+  field ℋ⟦_⟧ : ∀[ Free ε ⇒ F ]
 
-elabCatch : ∀[ Hefty Catch ⇒ Free Abort ]
-elabCatch = elaborate CatchElab 
+open HandleSem ⦃...⦄
+
+record ElabSem (η : Effectᴴ) (ε : Effect) : Set where
+  field ℰ⟦_⟧ : ∀[ Hefty η ⇒ Free ε ]
+
+open ElabSem ⦃...⦄
+
+instance catchESem : ElabSem Catch Abort
+catchESem = record { ℰ⟦_⟧ = elaborate CatchElab }
+
+instance abortHSem : HandleSem Abort Maybe
+abortHSem = record { ℋ⟦_⟧ = λ x → extract $ handleAbort (♯ ⦃ wt ⦄ x) }
 
 open ≈-Reasoning AbortTheory
 
@@ -54,68 +66,84 @@ CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
 
 CatchElabCorrect (here refl) {_ ∷ _ ∷ []} {k} = begin
 
-    elabCatch (throw >>= k) 
+    ℰ⟦ throw >>= k ⟧ 
   ≈⟪⟫ {- Definition of throw/bind for Hefty trees -}
-    elabCatch throw
+    ℰ⟦ throw ⟧
   ∎
-  
+
 CatchElabCorrect (there (here refl)) {_ ∷ []} {m , x}  = 
 
   begin
-    elabCatch (catch (return x) m) 
+    ℰ⟦ catch (pure x) m ⟧ 
   ≈⟪⟫ {- Definition of `elabCatch` -} 
-    elabCatch (maybe′ pure m (extract $ handleAbort (♯ (return x))))
+    ℰ⟦ maybe′ pure m ℋ⟦ pure x ⟧ ⟧
   ≈⟪⟫ {- Definitions of `extract` and `handleAbort` -} 
-    elabCatch (maybe′ pure m (just x)) 
+    ℰ⟦ maybe′ pure m (just x) ⟧ 
   ≈⟪⟫ {- Definition of `maybe` -} 
-    elabCatch (return x)
+    ℰ⟦ pure x ⟧
   ∎ 
+
 
 CatchElabCorrect (there (there (here refl))) {A ∷ []} {m} =
 
   begin
-    elabCatch (catch throw m)
+    ℰ⟦ catch throw m ⟧
   ≈⟪⟫ {-  definition of `elaborate` -} 
     fold-hefty pure (CatchElab .elab) (catch throw m)
   ≈⟪⟫ {- definition of `CatchElab` -} 
-    maybe′ pure (⦅ pure , impure′ ⦆ (elabCatch m)) (extract $ handleAbort (♯ ⦃ wt ⦄ abort)) 
+    maybe′ pure (ℰ⟦ m ⟧ >>= pure) ℋ⟦ abort ⟧
   ≈⟪⟫ {- definition of `extract` and `handleAbort` -} 
-    maybe′ pure (⦅ pure , impure′ ⦆ (elabCatch m)) nothing 
+    maybe′ pure (ℰ⟦ m ⟧ >>= pure) nothing 
   ≈⟪⟫ {- definition of `maybe` -} 
-    (⦅ pure , impure′ ⦆ (elabCatch m)) 
-  ≈⟪ ≡-to-≈ identity-fold-lemma ⟫ 
-    elabCatch m
+    ℰ⟦ m ⟧ >>= pure  
+  ≈⟪ ≡-to-≈ identity-fold-lemma ⟫ -- TODO: monad laws should be syntactic proofs 
+    ℰ⟦ m ⟧
   ∎
   
 CatchElabCorrect (there (there (there (here refl)))) {δ = A ∷ []} {m} =
 
   begin
-    elabCatch (catch m throw)
+    ℰ⟦ catch m throw ⟧
   ≈⟪⟫ {- Definition of `elabCatch` -} 
-    maybe′ pure (abort >>= pure) (extract $ handleAbort (♯ ⦃ wt ⦄ (elabCatch m)))
+    maybe′ pure (abort >>= pure) ℋ⟦ ℰ⟦ m ⟧ ⟧
   ≈⟪ maybe-lemma just-case (nothing-case m) ⟫
-    elabCatch m
+    ℰ⟦ m ⟧
   ∎
 
   where 
-    nothing-case : ∀ m → extract (handleAbort (♯ ⦃ wt ⦄ (elabCatch m))) ≡ nothing → (abort >>= pure) ≈ elabCatch m
+    nothing-case : ∀ m → ℋ⟦ ℰ⟦ m ⟧ ⟧ ≡ nothing → (abort >>= pure) ≈ ℰ⟦ m ⟧
     nothing-case m eq =
       begin
-        (abort >>= pure)
+        abort >>= pure
       ≈⟪ ≈-eq′ bind-abort (here refl)  ⟫
         abort
       ≈⟪ adequacy (sym $ extract-lemma _ eq) ⟫
-        elabCatch m 
+        ℰ⟦ m ⟧
       ∎
       where open Adequacy
 
-    just-case : (x′ : A) → extract (handleAbort (♯ ⦃ wt ⦄ (elabCatch m))) ≡ just x′ → pure x′ ≈ elabCatch m
+    just-case : (x′ : A) → ℋ⟦ ℰ⟦ m ⟧ ⟧ ≡ just x′ → pure x′ ≈ ℰ⟦ m ⟧
     just-case x′ eq =
       begin
         pure x′
       ≈⟪ adequacy (sym $ extract-lemma _ eq) ⟫
-        elabCatch m
+        ℰ⟦ m ⟧
       ∎
       where open Adequacy
   
-CatchElabCorrect (there (there (there (there (here refl))))) {_ ∷ _ ∷ []} {m₁ , m₂ , k , m₃} = {!!}
+CatchElabCorrect (there (there (there (there (here refl))))) {_ ∷ _ ∷ []} {m₁ , m₂ , k , m₃} =
+
+  begin
+    ℰ⟦ catch (catch m₁ m₂ >>= k) m₃ ⟧
+  ≈⟪⟫ {- definition of `ℰ⟦_⟧` -} 
+    maybe′ pure (ℰ⟦ m₃ ⟧ >>= pure) ℋ⟦ ℰ⟦ catch m₁ m₂ >>= k ⟧ ⟧
+  ≈⟪⟫ {- Definition of `ℰ⟦_⟧` -} 
+    maybe′ pure (ℰ⟦ m₃ ⟧ >>= pure) ℋ⟦ maybe′ (ℰ⟦_⟧ ∘ k) (ℰ⟦ m₂ >>= pure ⟧ >>= (ℰ⟦_⟧ ∘ k)) ℋ⟦ ℰ⟦ m₁ >>= pure ⟧ ⟧ ⟧
+  ≈⟪ {!!}  ⟫ 
+    maybe′ pure (maybe′ pure (ℰ⟦ m₃ ⟧ >>= pure) ℋ⟦ ℰ⟦ m₂ >>= k ⟧ ⟧ >>= pure) ℋ⟦ ℰ⟦ m₁ >>= k ⟧ ⟧
+  ≈⟪⟫ {- Definition of `ℰ⟦_⟧` -} 
+    maybe′ pure (ℰ⟦ catch (m₂ >>= k) m₃ ⟧ >>= pure) ℋ⟦ ℰ⟦ m₁ >>= k ⟧ ⟧
+  ≈⟪⟫ {- Definition of `ℰ⟦_⟧` -} 
+    ℰ⟦ catch (m₁ >>= k) (catch (m₂ >>= k) m₃) ⟧
+  ∎
+
