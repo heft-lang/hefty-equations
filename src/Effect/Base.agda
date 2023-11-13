@@ -55,8 +55,8 @@ inject .αᶜ = impure ∘ inj
 --
 -- Viewing containers as a category (with injections as morphisms), this defines
 -- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
-♯_ : ⦃ ε₁ ⊑ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
-♯_ = ⦅ pure , inject ⦆
+♯ : ⦃ ε₁ ⊑ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
+♯ = ⦅ pure , inject ⦆
 
 -- Container morphisms are reflexive and transitive (i.e., they compose & have identities)
 --
@@ -162,7 +162,6 @@ postulate TODO : ∀ {a} {A : Set a} → A
   }
 
 
-
 {- Semantics for higher-order effects -}
 
 record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
@@ -170,6 +169,15 @@ record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
     elab : Algebra η (Free ε) 
 
   elaborate : ∀[ Hefty η ⇒ Free ε ]
-  elaborate = fold-hefty pure elab 
+  elaborate = fold-hefty pure elab
 
-open Elaboration public 
+  -- extend : ∀[ Elaboration η′ ─✴ Elaboration (η + η′) ] 
+
+open Elaboration public
+
+_⟪⊕⟫_ : Elaboration η₁ ε → Elaboration η₂ ε → Elaboration (η₁ ⊕ η₂) ε
+(e₁ ⟪⊕⟫ e₂) .elab = e₁ .elab ⟨⊕⟩ e₂ .elab
+
+
+
+

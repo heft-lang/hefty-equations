@@ -12,9 +12,11 @@ open import Data.List
 open import Data.List.Membership.Propositional
 open import Data.Nat
 open import Data.Vec hiding (map ; _++_)
+open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
 open import Relation.Unary hiding (_∈_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
+open import Data.Empty
 
 open import Function 
 
@@ -39,7 +41,7 @@ open Equation public
 -- Weakening of equations, or, in other words, equations are functors over the
 -- category of containers and container morphisms 
 wk-equation : ⦃ ε₁ ⊑ ε₂ ⦄ → ∀[ Equation ε₁ Δ Γ ⇒ Equation ε₂ Δ Γ ]
-wk-equation eq = (♯_ ∘₂ eq .lhs) ≗ (♯_ ∘₂ eq .rhs) 
+wk-equation eq = (♯ ∘₂ eq .lhs) ≗ (♯ ∘₂ eq .rhs) 
 
 
 -- We say that an algebra "respects" an equation if folding with that algebra
@@ -121,15 +123,12 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
           → (γ : Γ δ)
           → (k : R δ → Free ε B)
             ------------------------------------------
-          → eq .rhs δ γ >>= k ≈⟨ T ⟩ eq .lhs δ γ >>= k
-
+          → eq .lhs δ γ >>= k ≈⟨ T ⟩ eq .rhs δ γ >>= k
 
 -- Propositional equality of effect trees can (clearly) be reflected as a
 -- syntactic equivalence
 ≡-to-≈ : {c₁ c₂ : Free ε A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
 ≡-to-≈ refl = ≈-refl
-
-
 
 -- Below we define the key correctness property of handlers 
 -- 
@@ -183,3 +182,22 @@ module ≈-Reasoning (T : Theory ε) where
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix 3 _∎
 
+
+  maybe-lemma : ∀ {f : A → Free ε B} {z y : Free ε B} {x : Maybe A} → (∀ x′ → x ≡ just x′ → f x′ ≈ y) → (x ≡ nothing → z ≈ y) →  maybe′ f z x ≈ y 
+  maybe-lemma {x = just _}  j n = j _ refl
+  maybe-lemma {x = nothing} j n = n refl
+
+  -- Equivalence following from equations of the theory, specialized to empty continuations
+  --
+  -- TODO: find membership proof using instance search? 
+  ≈-eq′ : (eq : Equation ε Δ Γ R) → eq ◃ T → {δ : Vec Set Δ} → {γ : Γ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
+  ≈-eq′ eq px {δ} {γ} =
+    begin
+      eq .lhs δ γ
+    ≈⟪ ≈-sym (≡-to-≈ identity-fold-lemma) ⟫
+      (eq .lhs δ γ >>= pure)
+    ≈⟪ ≈-eq eq px δ γ pure ⟫
+      (eq .rhs δ γ >>= pure) 
+    ≈⟪ ≡-to-≈ identity-fold-lemma ⟫
+      eq .rhs δ γ
+    ∎ 

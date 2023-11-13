@@ -3,6 +3,7 @@ open import Core.Functor
 open import Effect.Base
 open import Hefty.Base
 
+open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
 open import Effect.Instance.Catch.Syntax
 
@@ -40,3 +41,11 @@ catch-catch =
      (λ where (_ ∷ _ ∷ []) (m₁ , m₂ , k , m₃) → catch (catch m₁ m₂ >>= k) m₃)
   ≗ᴴ (λ where (_ ∷ _ ∷ []) (m₁ , m₂ , k , m₃) → catch (m₁ >>= k) (catch (m₂ >>= k) m₃))
 
+CatchTheory : Theoryᴴ Catch
+CatchTheory =
+  ∥ ◇ bind-throw
+  ∷ ◇ catch-return
+  ∷ ◇ catch-throw₁
+  ∷ ◇ catch-throw₂
+  ∷ ◇ catch-catch
+  ∷ []  ∥ᴴ 

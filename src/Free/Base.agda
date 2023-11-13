@@ -30,8 +30,8 @@ instance
   free-monad : Monad (Free C)
   free-monad .return = pure
   
-  free-monad ._∗ k = ⦅ k , impure′ ⦆ 
-
+  free-monad ._∗ k = ⦅ k , impure′ ⦆
+  
 identity-fold-lemma : ∀ {c : Free C A} → ⦅ pure , impure′ ⦆ c ≡ c  
 identity-fold-lemma {C} {A} {pure _} = refl
 identity-fold-lemma {C} {A} {impure ⟨ s , p ⟩} =

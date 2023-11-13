@@ -21,3 +21,4 @@ open import Effect.Instance.State.Handler
 
 open import Effect.Instance.Catch.Syntax
 open import Effect.Instance.Catch.Theory 
+open import Effect.Instance.Catch.Elaboration 
