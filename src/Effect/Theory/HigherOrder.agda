@@ -3,18 +3,23 @@ open import Hefty.Base
 
 open import Core.Functor
 open import Core.Signature
+open import Core.Extensionality
 
 open import Effect.Base
 open import Effect.Theory.FirstOrder
 
-open import Data.Product hiding (map)
-open import Data.Nat 
-open import Data.List
+
+open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
-open import Data.Vec hiding (map ; _++_)
+open import Data.List.Relation.Unary.Any hiding (map)
+
+open import Data.Vec hiding (map ; _++_ ; [_])
+open import Data.Sum hiding (map)
+open import Data.Product hiding (map)
+open import Data.Nat
 
 open import Relation.Unary hiding (_∈_)
-open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; sym ; trans ; cong ; cong₂)
 
 open import Function 
 
@@ -44,9 +49,9 @@ wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ)
 -- 
 -- We opt for this generalization (rather than using propositional equality)
 -- here, because later we define correctness of elaborations as
-Respectsᴴ : (_~_ : ∀ {A} → F A → F A → Set₁) → Algebra η F → Equationᴴ η Δ Γ R → Set₁
+Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra η (Free ε) → Equationᴴ η Δ Γ R → Set₁
 Respectsᴴ _~_ alg (lhs ≗ᴴ rhs) =
-  ∀ {δ γ} {k : ∀[ id ⇒ _ ]} → fold-hefty k alg (lhs δ γ) ~ fold-hefty k alg (rhs δ γ)
+  ∀ {δ γ} → fold-hefty pure alg (lhs δ γ) ~ fold-hefty pure alg (rhs δ γ)
 
 
 -- Theories of higher-order effects are collections of equations
@@ -119,7 +124,123 @@ data _≋⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty 
           → eq .rhsᴴ δ γ >>= k ≋⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
 
 
+
+
+{- Correctness of elaborations -} 
+
+
+-- We say that an elaboration is correct with respect to some higher-order
+-- effect theory of its higher-order effect, and some first-order effect theory
+-- of the algebraic effects it elaborates into iff the elaboration algebra
+-- respects all equations of the higher-order theory modulo syntactic
+-- equivalence of the resulting effect trees with respect to the first-order
+-- effect theory. 
 Correctᴴ : Theoryᴴ η → Theory ε → Elaboration η ε → Set₁ 
 Correctᴴ Th T e =
   ∀ {Δ Γ A} {eq : Equationᴴ _ Δ Γ A} → eq ◃ᴴ Th → Respectsᴴ (_≈⟨ T ⟩_) (e .elab) eq 
 
+
+-- Equations that occur in a composed theory can be found in either of the
+-- argument theories
+[+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (η₁ ⊕ η₂) Δ Γ R}
+         → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
+         →   (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-left  ⦄ Th₁ )
+           ⊎ (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-right ⦄ Th₂ )
+[+]ᴴ-injective Th₁ Th₂ {eq} px with Th₁ .equationsᴴ
+... | []      = inj₂ px
+... | x ∷ eqs =
+  case px of
+    λ where (here refl) → inj₁ (here refl)
+            (there px′) →
+              [ inj₁ ∘ there
+              , inj₂
+              ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
+
+-- Equations of a weakened theory are themselves weakened equations 
+◃ᴴ-weaken-lemma : ∀ Th (w : η₁ ⊑ᴴ η₂)
+       → (eq : Equationᴴ η₂ Δ Γ R)
+       → eq ◃ᴴ wk-theoryᴴ ⦃ w ⦄ Th
+       → ∃ λ (eq′ : Equationᴴ η₁ Δ Γ R) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ w ⦄ eq′ 
+◃ᴴ-weaken-lemma Th w eq px with Th .equationsᴴ
+... | eq′ ∷ eqs =
+  case px of
+    λ where (here refl) → _ , here refl , refl
+            (there px′) →
+              case ◃ᴴ-weaken-lemma (λ where .equationsᴴ → eqs) w eq px′ of
+                λ where (a , px′′ , refl) → a , there px′′ , refl 
+
+map-id : (m : Hefty η A) → map-hefty id m ≡ m
+map-id (pure x)               = refl
+map-id (impure ⟪ c , r , s ⟫) =
+  cong₂
+    (λ □₁ □₂ → impure ⟪ c , □₁ , □₂ ⟫)
+    (extensionality (map-id ∘ r))
+    refl
+
+⟨⊕⟩-fold-left : ∀ (m : Hefty η A)
+                  {f : Algebra η F} {g : Algebra η′ F}
+                  {k : ∀[ id ⇒ F ]}
+                →   fold-hefty k f m
+                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑ᴴ-⊕-left ⦄ m)
+⟨⊕⟩-fold-left (pure _)                           = refl
+⟨⊕⟩-fold-left (impure ⟪ c , r , s ⟫) {f} {g} {k} =
+  cong₂
+    (λ □₁ □₂ → f .α ⟪ c , □₁ , □₂ ⟫)
+    ( extensionality λ x → ⟨⊕⟩-fold-left $ r x )
+    ( extensionality λ x →
+        trans
+          ( ⟨⊕⟩-fold-left $ s x )
+          ( cong
+              (λ □ → fold-hefty k (f ⟨⊕⟩ g) □)
+              (sym (map-id (♯ᴴ ⦃ ⊑ᴴ-⊕-left ⦄ (s x)))
+              ))
+    )
+
+⟨⊕⟩-fold-right : ∀ (m : Hefty η A)
+                  {f : Algebra η′ F} {g : Algebra η F}
+                  {k : ∀[ id ⇒ F ]}
+                →   fold-hefty k g m
+                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑ᴴ-⊕-right ⦄ m)
+⟨⊕⟩-fold-right (pure _)                           = refl
+⟨⊕⟩-fold-right (impure ⟪ c , r , s ⟫) {f} {g} {k} =
+  cong₂
+    (λ □₁ □₂ → g .α ⟪ c , □₁ , □₂ ⟫)
+    ( extensionality λ x → ⟨⊕⟩-fold-right $ r x )
+    ( extensionality λ x →
+        trans
+          ( ⟨⊕⟩-fold-right $ s x )
+          ( cong
+              (λ □ → fold-hefty k (f ⟨⊕⟩ g) □)
+              (sym (map-id (♯ᴴ ⦃ ⊑ᴴ-⊕-right ⦄ (s x)))
+              ))
+    )
+
+
+module _ {T : Theory ε} where
+
+  open ≈-Reasoning T 
+
+  ⟪⊕⟫-correct  : ∀ {e₁ e₂}
+                 → Correctᴴ Th₁ T e₁
+                 → Correctᴴ Th₂ T e₂
+                 → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
+  ⟪⊕⟫-correct  {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
+    with [+]ᴴ-injective Th₁ Th₂ px 
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
+    | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑ᴴ-⊕-left _ px′
+  ⟪⊕⟫-correct cr₁ cr₂ px | inj₁ px′ | eq′ , px′′ , refl =
+    ≈-trans
+      ( ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) )
+      ( ≈-trans
+          (cr₁ px′′)
+          ( ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) )
+      )
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
+    | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑ᴴ-⊕-right _ px′
+  ⟪⊕⟫-correct cr₁ cr₂ px | inj₂ px′ | eq′ , px′′ , refl =
+    ≈-trans
+      ( ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) )
+      ( ≈-trans
+          (cr₂ px′′)
+          (≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) )
+      ) 

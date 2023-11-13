@@ -14,7 +14,7 @@ open import Data.Nat
 open import Data.Vec hiding (map ; _++_)
 
 open import Relation.Unary hiding (_∈_)
-open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
 
 open import Function 
 
@@ -123,6 +123,26 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
             ------------------------------------------
           → eq .rhs δ γ >>= k ≈⟨ T ⟩ eq .lhs δ γ >>= k
 
+
+-- Propositional equality of effect trees can (clearly) be reflected as a
+-- syntactic equivalence
+≡-to-≈ : {c₁ c₂ : Free ε A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
+≡-to-≈ refl = ≈-refl
+
+
+
+-- Below we define the key correctness property of handlers 
+-- 
+-- In the IFCP paper they sketch a proof that Correctness of a handler `h`
+-- implies correctness of the transformation `handle h`. But this relies on
+-- parametricty, so I'm sceptical we can recreate the same proof here.
+
+-- Correctness of handlers: we say that a handler is correct with respect to a
+-- given theory `T` of the effect it handlers iff it's algebra respects all
+-- equations of `T`.
+Correct : {P : Set} → Theory ε → Handler ε P F A → Set₁
+Correct T h = ∀ {Δ Γ R C′}{eq : Equation _ Δ Γ R} → eq ◃ T → Respects (h .hdl {C′ = C′}) eq 
+
 -- Correctness of transformations: we say that a handler `h` is a correct
 -- transformation iff it is the case that equality of computations under a summed
 -- effect theory `T₁ [+] T₂` implies equality under theory `T₂` after handling
@@ -133,36 +153,33 @@ CorrectT {ε = ε} h =
     {T₁ : Theory ε} {T₂ : Theory ε′} {v}
   → c₁ ≈⟨ T₁ [+] T₂ ⟩ c₂ → handle h c₁ v ≈⟨ T₂ ⟩ handle h c₂ v 
 
--- Correctness of handlers: we say that a handler is correct with respect to a
--- given theory `T` of the effect it handlers iff it's algebra respects all
--- equations of `T`.
-Correct : {P : Set} → Theory ε → Handler ε P F A → Set₁
-Correct T h = ∀ {Δ Γ R C′}{eq : Equation _ Δ Γ R} → eq ◃ T → Respects (h .hdl {C′ = C′}) eq 
+--
+-- TODO: define the first-order effect setup in terms of modular carriers
+-- etc... to be able to make a more clear argument that we can borrow the
+-- correctness proof from the paper?
+--
+-- perhaps even replicate a proof using postulated parametricity
+-- 
 
 
+module ≈-Reasoning (T : Theory ε) where
 
--- In the paper they sketch a proof that Correctness of a handler `h` implies
--- correctness of the transformation `handle h`. But this relies on
--- parametricty, so I'm sceptical we can recreate the same proof here.
+  _≈_ : Free ε A → Free ε A → Set₁
+  c₁ ≈ c₂ = c₁ ≈⟨ T ⟩ c₂
 
-module ≈-Reasoning (T : Theory ε) {ε′ : Effect} ⦃ _ : ε ⊑ ε′ ⦄ where
-
-  _≈_ : Free ε′ A → Free ε′ A → Set₁
-  c₁ ≈ c₂ = c₁ ≈⟨ wk-theory T ⟩ c₂
-
-  begin_ : {c₁ c₂ : Free ε′ A} → c₁ ≈ c₂ → c₁ ≈ c₂ 
+  begin_ : {c₁ c₂ : Free ε A} → c₁ ≈ c₂ → c₁ ≈ c₂ 
   begin eq = eq 
 
-  _∎ : (c : Free ε′ A) → c ≈ c
+  _∎ : (c : Free ε A) → c ≈ c
   c ∎ = ≈-refl
 
-  _≈⟪⟫_ : (c₁ : Free ε′ A) {c₂ : Free ε′ A} → c₁ ≈ c₂ → c₁ ≈ c₂  
+  _≈⟪⟫_ : (c₁ : Free ε A) {c₂ : Free ε A} → c₁ ≈ c₂ → c₁ ≈ c₂  
   c₁ ≈⟪⟫ eq = eq
 
-  _≈⟪_⟫_  : (c₁ {c₂ c₃} : Free ε′ A) → c₁ ≈ c₂ → c₂ ≈ c₃ → c₁ ≈ c₃
+  _≈⟪_⟫_  : (c₁ {c₂ c₃} : Free ε A) → c₁ ≈ c₂ → c₂ ≈ c₃ → c₁ ≈ c₃
   c₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
 
   infix 1 begin_
-  infix 2 _≈⟪_⟫_ _≈⟪⟫_
+  infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix 3 _∎
-  
+
