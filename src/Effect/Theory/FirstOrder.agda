@@ -121,9 +121,14 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
           → eq ◃ T
           → (δ : Vec Set Δ)
           → (γ : Γ δ)
-          → (k : R δ → Free ε B)
-            ------------------------------------------
-          → eq .lhs δ γ >>= k ≈⟨ T ⟩ eq .rhs δ γ >>= k
+            ------------------------------
+          → eq .lhs δ γ ≈⟨ T ⟩ eq .rhs δ γ
+
+  ≈-bind  : {A B : Set} {c₁ c₂ : Free ε A}
+          → c₁ ≈⟨ T ⟩ c₂
+          → (k : A → Free ε B)
+            -------------------------
+          → c₁ >>= k ≈⟨ T ⟩ c₂ >>= k 
 
 -- Propositional equality of effect trees can (clearly) be reflected as a
 -- syntactic equivalence
@@ -163,6 +168,7 @@ CorrectT {ε = ε} h =
 
 module ≈-Reasoning (T : Theory ε) where
 
+  infix 3 _≈_
   _≈_ : Free ε A → Free ε A → Set₁
   c₁ ≈ c₂ = c₁ ≈⟨ T ⟩ c₂
 
@@ -191,13 +197,15 @@ module ≈-Reasoning (T : Theory ε) where
   --
   -- TODO: find membership proof using instance search? 
   ≈-eq′ : (eq : Equation ε Δ Γ R) → eq ◃ T → {δ : Vec Set Δ} → {γ : Γ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
-  ≈-eq′ eq px {δ} {γ} =
-    begin
-      eq .lhs δ γ
-    ≈⟪ ≈-sym (≡-to-≈ identity-fold-lemma) ⟫
-      (eq .lhs δ γ >>= pure)
-    ≈⟪ ≈-eq eq px δ γ pure ⟫
-      (eq .rhs δ γ >>= pure) 
-    ≈⟪ ≡-to-≈ identity-fold-lemma ⟫
-      eq .rhs δ γ
-    ∎ 
+  ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ
+
+
+    -- begin
+    --   eq .lhs δ γ
+    -- ≈⟪ ≈-sym (≡-to-≈ identity-fold-lemma) ⟫
+    --   (eq .lhs δ γ >>= pure)
+    -- ≈⟪ ≈-eq eq px δ γ pure ⟫
+    --   (eq .rhs δ γ >>= pure) 
+    -- ≈⟪ ≡-to-≈ identity-fold-lemma ⟫
+    --   eq .rhs δ γ
+    -- ∎ 

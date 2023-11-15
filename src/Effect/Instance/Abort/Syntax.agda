@@ -18,4 +18,4 @@ Abort = record
   }
 
 abort : ⦃ Abort ⊑ ε ⦄ → Free ε A
-abort = ♯ impure ⟨ `abort , (λ()) ⟩
+abort = ♯ (impure ⟨ `abort , (λ()) ⟩)

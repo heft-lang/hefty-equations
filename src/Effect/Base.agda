@@ -11,7 +11,7 @@ open import Data.Empty
 open import Data.Product
 open import Data.Sum
 
-open import Function
+open import Function hiding (_⇔_)
 
 open import Relation.Binary using (Preorder)
 open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; sym ; trans)
@@ -43,8 +43,6 @@ embed-free = ⦅ pure , (λ where .αᶜ x → impure (embed x)) ⦆
 
 record _⊑_ (ε₁ ε₂ : Effect) : Set₁ where
   field inj : ∀[ ⟦ ε₁ ⟧ᶜ ⇒ ⟦ ε₂ ⟧ᶜ ]
-
-
 
 open _⊑_ ⦃...⦄ public
 
@@ -88,7 +86,6 @@ fwd .αᶜ ⟨ c , p ⟩ v = impure ⟨ c , flip p v ⟩
 
 handle : {P : Set} → ∀[ Handler C₁ P F ⇒  Free (C₁ ⊕ᶜ C₂) ⇒ const P ⇒ F ⊢ Free C₂ ]
 handle h = ⦅ (λ x v → return (h .gen x v)) , (h .hdl ⟨⊕⟩ᶜ fwd) ⦆
-
 
 
 -- Signature/highe-order effect morphisms

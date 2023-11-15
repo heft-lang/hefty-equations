@@ -36,8 +36,12 @@ record Monad (F : Set → Set) : Set₁ where
     return : A → F A
     _∗     : (A → F B) → (F A → F B)
 
+  infixr 5 _>>=_ 
   _>>=_ : F A → (A → F B) → F B 
   _>>=_ = flip _∗
+
+  _>=>_ : {C : Set} → (A → F B) → (B → F C) → A → F C
+  (f >=> g) x = f x >>= g 
 
   _>>_ : F A → F B → F B
   x >> y = x >>= λ _ → y  

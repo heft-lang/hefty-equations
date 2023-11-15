@@ -4,7 +4,8 @@ open import Function
 open import Data.Product 
 
 open import Core.Functor
-open import Core.Signature 
+open import Core.Signature
+open import Core.Extensionality
 
 module Hefty.Base where
 
@@ -25,7 +26,7 @@ fold-hefty η y (impure ⟪ c , r , s ⟫ ) = y .α ⟪ c , fold-hefty η y ∘ 
 
 rec-hefty : ⦃ Pointed F ⦄ → (A → F B) → Algebra σ F → Hefty σ A → F B
 rec-hefty k _ (pure x)               = (k x)
-rec-hefty k y (impure ⟪ c , r , s ⟫) = y . α ⟪ c , rec-hefty k y ∘ r , rec-hefty point y ∘ s ⟫
+rec-hefty k y (impure ⟪ c , r , s ⟫) = y .α ⟪ c , rec-hefty k y ∘ r , rec-hefty point y ∘ s ⟫
 
 map-hefty : (A → B) → Hefty σ A → Hefty σ B
 map-hefty f (pure x) = pure (f x)
@@ -46,3 +47,11 @@ instance
     ; _∗     = flip bind-hefty
     } 
 
+open import Relation.Binary.PropositionalEquality
+
+>>=-unitᵣ : (m : Hefty σ A) → m >>= pure ≡ m
+>>=-unitᵣ {σ} {A} (pure x)               = refl
+>>=-unitᵣ {σ} {A} (impure ⟪ c , r , s ⟫) =
+  cong₂ (λ □₁ □₂ → impure ⟪ c , □₁ , □₂ ⟫)
+    (extensionality $ >>=-unitᵣ ∘ r)
+    (extensionality $ >>=-unitᵣ ∘ s)
