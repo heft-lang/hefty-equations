@@ -2,6 +2,8 @@ open import Data.Product
 
 open import Relation.Unary
 open import Relation.Binary hiding (_⇔_)
+open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality.Properties renaming (isEquivalence to ≡-isEquivalence)
 open import Function hiding (_⇔_)
 
 open import Level
@@ -71,6 +73,20 @@ module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) 
   Ext-transitive : RightAssociative → Transitive Ext
   Ext-transitive rassoc (i′ , σ₁) (j′ , σ₂) with rassoc σ₁ σ₂
   ... | ij′ , σ₃ , σ₄ = ij′ , σ₃
+
+  module _ (∙-unitʳ : ∃⟨ RightIdentity ⟩) (∙-assocʳ : RightAssociative) where  
+
+    Ext-preorder : Preorder _ _ _
+    Ext-preorder = record
+      { Carrier    = Carrier
+      ; _≈_        = _≡_
+      ; _∼_        = Ext
+      ; isPreorder = record
+        { isEquivalence = ≡-isEquivalence
+        ; reflexive     = λ where refl → Ext-reflexive ∙-unitʳ
+        ; trans         = Ext-transitive ∙-assocʳ 
+        }
+      } 
 
   Pointwise : ∀ {a} → (A : Set a) → Rel₃ (c ⊔ a) (ℓ ⊔ a) (A → Carrier)
   Pointwise _ = λ c₁ c₂ c → ∀ x → c₁ x ∙ c₂ x ≈ c x
