@@ -6,6 +6,8 @@ open import Relation.Unary
 
 open import Core.Functor
 
+import Relation.Binary.PropositionalEquality as ≡
+
 module Core.Container where
 
 record Container : Set₁ where
@@ -39,6 +41,11 @@ _⟨⊕⟩ᶜ_ : ∀[ Algebraᶜ C₁ ⇒ Algebraᶜ C₂ ⇒ Algebraᶜ (C₁ �
 (x ⟨⊕⟩ᶜ y) .αᶜ ⟨ inj₁ s , p ⟩ = x .αᶜ ⟨ s , p ⟩
 (x ⟨⊕⟩ᶜ y) .αᶜ ⟨ inj₂ s , p ⟩ = y .αᶜ ⟨ s , p ⟩
 
+con-map : (A → B) → ⟦ C ⟧ᶜ A → ⟦ C ⟧ᶜ B 
+con-map f ⟨ s , p ⟩ = ⟨ s , f ∘ p ⟩ 
+
 instance
   con-functor : Functor ⟦ C ⟧ᶜ
-  con-functor .fmap f ⟨ s , p ⟩ = ⟨ s , f ∘ p ⟩
+  con-functor .fmap                 = con-map
+  con-functor .fmap-id ⟨ s , p ⟩    = ≡.refl
+  con-functor .fmap-∘ f g ⟨ s , p ⟩ = ≡.refl 

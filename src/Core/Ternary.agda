@@ -90,3 +90,5 @@ module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) 
 
   Pointwise : ∀ {a} → (A : Set a) → Rel₃ (c ⊔ a) (ℓ ⊔ a) (A → Carrier)
   Pointwise _ = λ c₁ c₂ c → ∀ x → c₁ x ∙ c₂ x ≈ c x
+
+  

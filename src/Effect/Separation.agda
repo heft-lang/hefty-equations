@@ -2,24 +2,26 @@ open import Core.Functor
 open import Core.Container
 
 open import Effect.Base
-open import Effect.Instance.Empty.Syntax
+open import Free.Base
 
 open import Relation.Unary hiding (Empty)
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
-
 open import Relation.Binary.PropositionalEquality.Properties renaming (isEquivalence to ≡-isEquivalence)
 open import Relation.Binary.Bundles
 open import Relation.Binary.Definitions
 
 open import Function hiding (_⇔_)
 
-open import Data.Product
+open import Data.Product hiding (swap)
 open import Data.Sum
 open import Data.Maybe
 open import Data.Empty.Polymorphic
+open import Data.Sum.Properties using (swap-involutive)
 
 import Core.Ternary as Ternary
 open import Core.DisjointUnion
+
+open import Function.Construct.Composition
 
 open import Level
 
@@ -38,7 +40,7 @@ record _∙_≈_ (ε₁ ε₂ ε : Effect) : Set₁ where
   field
     sep : PointwiseDisjointUnion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ ⟦ ε ⟧ᶜ 
 
-open _∙_≈_
+open _∙_≈_ public 
 
 {- transfer some properties of disjoint union to the pointwise version -} 
 
@@ -67,6 +69,8 @@ pinc-transitive i₁ i₂ =
     punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₁
   , punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₂ .proj₁ 
 
+∙-comm : Ternary.Relation.Commutative Effect _∙_≈_
+∙-comm σ .sep = punion-comm (σ .sep)
 
 {- A preorder on effects, that stores the difference between the bigger and
    smaller set of effects -}
@@ -75,9 +79,9 @@ record _≲_ (ε₁ ε₂ : Effect) : Set₁ where
   field
     inc : PointwiseInclusion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ 
 
-open _≲_
+open _≲_ ⦃...⦄
 
-≲-refl : Reflexive _≲_
+instance ≲-refl : Reflexive _≲_
 ≲-refl .inc = pinc-refl 
 
 ≲-trans : Transitive _≲_
@@ -94,3 +98,50 @@ open _≲_
     ; trans         = ≲-trans
     }
   } 
+
+
+inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
+inject .αᶜ = impure ∘ inc .proj₂ _ .DisjointUnion.union .Inverse.to ∘ inj₁  
+
+
+-- Effect weakening / masking for the free monad
+--
+-- Viewing containers as a category (with injections as morphisms), this defines
+-- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
+♯ : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
+♯ = fold-free pure inject
+
+open Ternary
+
+coproduct-lemma : ∀[ (⟦ ε₁ ⟧ᶜ ∪ ⟦ ε₂ ⟧ᶜ) ⇔ ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ ]
+coproduct-lemma = record
+  { to        =
+    [ (λ where ⟨ s , p ⟩ → ⟨ inj₁ s , p ⟩)
+    , (λ where ⟨ s , p ⟩ → ⟨ inj₂ s , p ⟩)
+    ]
+  ; from      = λ where
+    ⟨ inj₁ s , p ⟩ → inj₁ ⟨ s , p ⟩
+    ⟨ inj₂ s , p ⟩ → inj₂ ⟨ s , p ⟩
+  ; to-cong   = λ where refl → refl
+  ; from-cong = λ where refl → refl
+  ; inverse   = ( λ where
+                    ⟨ inj₁ s , p ⟩ → refl
+                    ⟨ inj₂ s , p ⟩ → refl
+                ) , [ (λ _ → refl) , (λ _ → refl) ]
+  }
+
+⊎-sym : (A ⊎ B) ↔ (B ⊎ A)
+⊎-sym = record
+  { to        = swap
+  ; from      = swap
+  ; to-cong   = λ where refl → refl
+  ; from-cong = λ where refl → refl
+  ; inverse   = swap-involutive , swap-involutive
+  }
+
+≲-⊕ᶜ-left : ∀ ε′ → ε ≲ (ε ⊕ᶜ ε′)
+≲-⊕ᶜ-left ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → coproduct-lemma
+
+≲-⊕ᶜ-right : ∀ ε′ → ε ≲ (ε′ ⊕ᶜ ε)
+≲-⊕ᶜ-right ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → ⊎-sym ↔-∘ coproduct-lemma 
+

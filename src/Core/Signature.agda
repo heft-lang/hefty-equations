@@ -1,11 +1,16 @@
-module Core.Signature where
-
 open import Relation.Unary
 open import Function 
 open import Data.Product 
 open import Data.Sum
 
 open import Core.Functor
+open import Core.Extensionality
+
+import Relation.Binary.PropositionalEquality as ≡
+
+module Core.Signature where
+
+open ≡.≡-Reasoning
 
 record Signature : Set₁ where
   no-eta-equality
@@ -45,10 +50,25 @@ _⟨⊕⟩_ : ∀[ Algebra σ₁ ⇒ Algebra σ₂ ⇒ Algebra (σ₁ ⊕ σ₂)
 (x ⟨⊕⟩ y) .α ⟪ inj₁ c , r , s ⟫ = x .α ⟪ c , r , s ⟫
 (x ⟨⊕⟩ y) .α ⟪ inj₂ c , r , s ⟫ = y .α ⟪ c , r , s ⟫
 
+sig-hmap : ∀[ F ⇒ G ] → ∀[ ⟦ σ ⟧ F ⇒ ⟦ σ ⟧ G ]
+sig-hmap θ ⟪ c , r , s ⟫ = ⟪ c , θ ∘ r , θ ∘ s  ⟫
+
+
 -- The semantics of signatures maps functors to functors 
 instance
   sig-functor : ⦃ Functor F ⦄ → Functor (⟦ σ ⟧ F)
-  sig-functor .fmap f ⟪ c , r , s ⟫ = ⟪ c , fmap f ∘ r , s ⟫
-
+  sig-functor .fmap f  ⟪ c , r , s ⟫ = ⟪ c , fmap f ∘ r , s ⟫
+  sig-functor .fmap-id ⟪ c , r , s ⟫
+    = ≡.cong (λ ○ → ⟪ c , ○ , s ⟫) $ extensionality (fmap-id ∘ r)
+  sig-functor .fmap-∘  f g ⟪ c , r , s ⟫ =
+    ≡.cong (λ ○ → ⟪ c , ○ , s ⟫) $ extensionality (fmap-∘ f g ∘ r) 
+instance 
   sig-hfunctor : HFunctor ⟦ σ ⟧
-  sig-hfunctor .hmap θ ⟪ c , r , s ⟫ = ⟪ (c , θ ∘ r , θ ∘ s) ⟫ 
+  sig-hfunctor .HF-functor = sig-functor 
+  sig-hfunctor .hmap θ ⟪ c , r , s ⟫ = ⟪ c , θ ∘ r , θ ∘ s ⟫
+  sig-hfunctor .hmap-natural θ nt .commute {f = f} ⟪ c , r , s ⟫ =
+    begin
+      ⟪ c , θ ∘ fmap f ∘ r , θ ∘ s ⟫
+    ≡⟨ ≡.cong₂ (λ ○₁ ○₂ → ⟪ c , ○₁ , ○₂ ⟫) (extensionality $ nt .commute ∘ r) ≡.refl ⟩
+      ⟪ c , fmap f ∘ θ ∘ r , θ ∘ s ⟫
+    ∎

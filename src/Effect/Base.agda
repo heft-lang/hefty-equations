@@ -36,57 +36,7 @@ embed : ∀[ F ⊢ ⟦ ε ⟧ᶜ ⇒ ⟦ ↑ ε ⟧ F ]
 embed ⟨ s , p ⟩ .reflect = s , p , λ()
 
 embed-free : ∀[ Free ε ⇒ Hefty (↑ ε) ]
-embed-free = ⦅ pure , (λ where .αᶜ x → impure (embed x)) ⦆
-
-
--- Container/effect morphisms
-
-record _⊑_ (ε₁ ε₂ : Effect) : Set₁ where
-  field inj : ∀[ ⟦ ε₁ ⟧ᶜ ⇒ ⟦ ε₂ ⟧ᶜ ]
-
-open _⊑_ ⦃...⦄ public
-
-inject : ⦃ ε₁ ⊑ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
-inject .αᶜ = impure ∘ inj 
-
--- Effect weakening / masking for the free monad
---
--- Viewing containers as a category (with injections as morphisms), this defines
--- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
-♯ : ⦃ ε₁ ⊑ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
-♯ = ⦅ pure , inject ⦆
-
--- Container morphisms are reflexive and transitive (i.e., they compose & have identities)
---
--- For `Free` to be a proper functor, weakening should respect these 
-
-instance ⊑-refl : ε ⊑ ε
-⊑-refl .inj = id
-
-⊑-trans : ε₁ ⊑ ε₂ → ε₂ ⊑ ε₃ → ε₁ ⊑ ε₃
-⊑-trans sub₁ sub₂ .inj = sub₂ .inj ∘ sub₁ .inj
-
-⊑-⊕ᶜ-left : ∀ ε′ → ε ⊑ (ε ⊕ᶜ ε′)
-⊑-⊕ᶜ-left _ .inj ⟨ s , p ⟩ = ⟨ inj₁ s , p ⟩ 
-
-⊑-⊕ᶜ-right : ∀ ε′ → ε ⊑ (ε′ ⊕ᶜ ε)
-⊑-⊕ᶜ-right _ .inj ⟨ s , p ⟩ = ⟨ inj₂ s , p ⟩
-
-{- Semantics for 1st order effects -}
-
-record Handler (C : Container) (P : Set) (F : Set → Set) (A : Set) : Set₁ where
-  field
-    gen   : A → P → (F A) 
-    hdl   : ∀ {C′} → Algebraᶜ C (P → Free C′ (F A))      
-
-open Handler public 
-
-fwd : {P : Set} → Algebraᶜ C (P → Free C A)
-fwd .αᶜ ⟨ c , p ⟩ v = impure ⟨ c , flip p v ⟩ 
-
-handle : {P : Set} → ∀[ Handler C₁ P F ⇒  Free (C₁ ⊕ᶜ C₂) ⇒ const P ⇒ F ⊢ Free C₂ ]
-handle h = ⦅ (λ x v → return (h .gen x v)) , (h .hdl ⟨⊕⟩ᶜ fwd) ⦆
-
+embed-free = fold-free pure λ where .αᶜ x → impure (embed x)
 
 -- Signature/highe-order effect morphisms
 
@@ -159,21 +109,7 @@ postulate TODO : ∀ {a} {A : Set a} → A
   }
 
 
-{- Semantics for higher-order effects -}
 
-record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
-  field
-    elab : Algebra η (Free ε) 
-
-  elaborate : ∀[ Hefty η ⇒ Free ε ]
-  elaborate = fold-hefty pure elab
-
-  -- extend : ∀[ Elaboration η′ ─✴ Elaboration (η + η′) ] 
-
-open Elaboration public
-
-_⟪⊕⟫_ : Elaboration η₁ ε → Elaboration η₂ ε → Elaboration (η₁ ⊕ η₂) ε
-(e₁ ⟪⊕⟫ e₂) .elab = e₁ .elab ⟨⊕⟩ e₂ .elab
 
 
 

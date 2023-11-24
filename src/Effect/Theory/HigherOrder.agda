@@ -7,7 +7,7 @@ open import Core.Extensionality
 
 open import Effect.Base
 open import Effect.Theory.FirstOrder
-
+open import Effect.Elaborate
 
 open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional

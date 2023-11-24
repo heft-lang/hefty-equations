@@ -1,4 +1,7 @@
 open import Effect.Base
+open import Effect.Separation
+open import Effect.Handle
+
 open import Free.Base
 
 open import Core.Functor
@@ -40,7 +43,7 @@ open Equation public
 
 -- Weakening of equations, or, in other words, equations are functors over the
 -- category of containers and container morphisms 
-wk-equation : ⦃ ε₁ ⊑ ε₂ ⦄ → ∀[ Equation ε₁ Δ Γ ⇒ Equation ε₂ Δ Γ ]
+wk-equation : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Equation ε₁ Δ Γ ⇒ Equation ε₂ Δ Γ ]
 wk-equation eq = (♯ ∘₂ eq .lhs) ≗ (♯ ∘₂ eq .rhs) 
 
 
@@ -48,7 +51,7 @@ wk-equation eq = (♯ ∘₂ eq .lhs) ≗ (♯ ∘₂ eq .rhs)
 -- over both the left- and right-hand-side of the equation produces equal results
 Respects : Algebraᶜ ε A → Equation ε Δ Γ R → Set₁
 Respects alg (lhs ≗ rhs) =
-  ∀ {δ γ k} → ⦅ k , alg ⦆ (lhs δ γ) ≡ ⦅ k , alg ⦆ (rhs δ γ)
+  ∀ {δ γ k} → fold-free k alg (lhs δ γ) ≡ fold-free k alg (rhs δ γ)
 
 -- A theory of an effect `ε` is simply a collection of equations
 record Theory (ε : Effect) : Set₁ where
@@ -69,7 +72,7 @@ eq ◃ T = (-, -, -, eq) ∈ T .equations
 
 -- Weakening for effect theories. Or, in other words, effect theories are
 -- functors over the category of containers and container morphisms.
-wk-theory : ⦃ ε₁ ⊑ ε₂ ⦄ → Theory ε₁ → Theory ε₂
+wk-theory : ⦃ ε₁ ≲ ε₂ ⦄ → Theory ε₁ → Theory ε₂
 wk-theory T = ∥ map (λ where (_ , _ , _ ,  eq) → -, -, -, (wk-equation eq)) (T .equations) ∥ 
 
 -- Coproduct of effect theories
@@ -78,7 +81,7 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 
 -- Sum of effect theories
 _[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
-_[+]_ {ε₁} {ε₂} T₁ T₂ = wk-theory ⦃ ⊑-⊕ᶜ-left ε₂ ⦄ T₁ ⟨+⟩ wk-theory ⦃ ⊑-⊕ᶜ-right ε₁ ⦄ T₂
+_[+]_ {ε₁} {ε₂} T₁ T₂ = wk-theory ⦃ ≲-⊕ᶜ-left ε₂ ⦄ T₁ ⟨+⟩ wk-theory ⦃ ≲-⊕ᶜ-right ε₁ ⦄ T₂
 
 
 -- -- 
@@ -144,18 +147,20 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 -- Correctness of handlers: we say that a handler is correct with respect to a
 -- given theory `T` of the effect it handlers iff it's algebra respects all
 -- equations of `T`.
-Correct : {P : Set} → Theory ε → Handler ε P F A → Set₁
-Correct T h = ∀ {Δ Γ R C′}{eq : Equation _ Δ Γ R} → eq ◃ T → Respects (h .hdl {C′ = C′}) eq 
+Correct : {P : Set} → Theory ε → Handler ε P F → Set₁
+Correct T h = ∀ {Δ Γ R A ε′}{eq : Equation _ Δ Γ R} → eq ◃ T → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
 
--- Correctness of transformations: we say that a handler `h` is a correct
--- transformation iff it is the case that equality of computations under a summed
--- effect theory `T₁ [+] T₂` implies equality under theory `T₂` after handling
--- `c₁` and `c₂` with `h`.
-CorrectT : {P : Set} → Handler ε P F A → Set₁
-CorrectT {ε = ε} h =
-  ∀ {ε′}{c₁ c₂ : Free (ε ⊕ᶜ ε′) _}
-    {T₁ : Theory ε} {T₂ : Theory ε′} {v}
-  → c₁ ≈⟨ T₁ [+] T₂ ⟩ c₂ → handle h c₁ v ≈⟨ T₂ ⟩ handle h c₂ v 
+-- 
+-- -- Correctness of transformations: we say that a handler `h` is a correct
+-- -- transformation iff it is the case that equality of computations under a summed
+-- -- effect theory `T₁ [+] T₂` implies equality under theory `T₂` after handling
+-- -- `c₁` and `c₂` with `h`.
+-- CorrectT : {P : Set} → Handler ε P F → Set₁
+-- CorrectT {ε = ε} h =
+--   ∀ {ε′}{c₁ c₂ : Free (ε ⊕ᶜ ε′) _}
+--     {T₁ : Theory ε} {T₂ : Theory ε′} {v}
+--   → c₁ ≈⟨ T₁ [+] T₂ ⟩ c₂ → handle h c₁ v ≈⟨ T₂ ⟩ handle h c₂ v 
+--
 
 --
 -- TODO: define the first-order effect setup in terms of modular carriers
@@ -198,14 +203,3 @@ module ≈-Reasoning (T : Theory ε) where
   -- TODO: find membership proof using instance search? 
   ≈-eq′ : (eq : Equation ε Δ Γ R) → eq ◃ T → {δ : Vec Set Δ} → {γ : Γ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
   ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ
-
-
-    -- begin
-    --   eq .lhs δ γ
-    -- ≈⟪ ≈-sym (≡-to-≈ identity-fold-lemma) ⟫
-    --   (eq .lhs δ γ >>= pure)
-    -- ≈⟪ ≈-eq eq px δ γ pure ⟫
-    --   (eq .rhs δ γ >>= pure) 
-    -- ≈⟪ ≡-to-≈ identity-fold-lemma ⟫
-    --   eq .rhs δ γ
-    -- ∎ 

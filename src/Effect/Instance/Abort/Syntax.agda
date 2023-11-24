@@ -3,6 +3,7 @@ open import Core.Container
 
 open import Free.Base
 open import Effect.Base
+open import Effect.Separation
 
 open import Data.Empty
 open import Data.Product
@@ -17,5 +18,7 @@ Abort = record
   ; position = λ where `abort → ⊥
   }
 
-abort : ⦃ Abort ⊑ ε ⦄ → Free ε A
+
+
+abort : ⦃ Abort ≲ ε ⦄ → Free ε A
 abort = ♯ (impure ⟨ `abort , (λ()) ⟩)
