@@ -7,6 +7,8 @@ open import Core.Functor
 open import Core.Signature
 open import Core.Extensionality
 
+open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; sym ; trans ; cong)
+
 module Hefty.Base where
 
 data Hefty (σ : Signature) : Set → Set where
@@ -32,14 +34,31 @@ map-hefty : (A → B) → Hefty σ A → Hefty σ B
 map-hefty f (pure x) = pure (f x)
 map-hefty f (impure ⟪ c , r , s ⟫) = impure ⟪ c , map-hefty f ∘ r , s ⟫
 
+map-hefty-id : (t : Hefty σ A) → map-hefty id t ≡ t 
+map-hefty-id (pure _)               = refl
+map-hefty-id (impure ⟪ c , r , s ⟫) =
+  cong (λ ○ → impure ⟪ c , ○ , s ⟫)
+    (extensionality (map-hefty-id ∘ r ))
+
+map-hefty-∘ :
+  ∀ {C : Set} → (f : A → B) (g : B → C) (t : Hefty σ A)
+  → map-hefty g (map-hefty f t) ≡ map-hefty (g ∘ f) t
+map-hefty-∘ f g (pure _)              = refl
+map-hefty-∘ f g (impure ⟪ c , r , s ⟫) =
+  cong (λ ○ → impure ⟪ c , ○ , s ⟫)
+    (extensionality (map-hefty-∘ f g ∘ r))
+
 bind-hefty : Hefty σ A → (A → Hefty σ B) → Hefty σ B
 bind-hefty t k = rec-hefty k (λ where .α → impure) t
 
 instance
   hefty-functor : Functor (Hefty σ)
   hefty-functor = record
-    { fmap = map-hefty 
-    } 
+    { fmap    = map-hefty
+    ; fmap-id = map-hefty-id
+    ; fmap-∘  = map-hefty-∘
+    }
+
 
   hefty-monad : Monad (Hefty σ)
   hefty-monad = record
@@ -52,6 +71,7 @@ open import Relation.Binary.PropositionalEquality
 >>=-unitᵣ : (m : Hefty σ A) → m >>= pure ≡ m
 >>=-unitᵣ {σ} {A} (pure x)               = refl
 >>=-unitᵣ {σ} {A} (impure ⟪ c , r , s ⟫) =
-  cong₂ (λ □₁ □₂ → impure ⟪ c , □₁ , □₂ ⟫)
+  cong₂ (λ ○₁ ○₂ → impure ⟪ c , ○₁ , ○₂ ⟫)
     (extensionality $ >>=-unitᵣ ∘ r)
     (extensionality $ >>=-unitᵣ ∘ s)
+

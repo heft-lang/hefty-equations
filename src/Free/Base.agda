@@ -17,22 +17,45 @@ data Free (C : Container) : (A : Set) → Set where
   pure   : A → Free C A 
   impure : ∀[ ⟦ C ⟧ᶜ ∘ Free C ⇒ Free C ]
 
-⦅_,_⦆ : (A → B) → Algebraᶜ C B → Free C A → B
-⦅_,_⦆ f y (pure x)           = f x
-⦅_,_⦆ f y (impure ⟨ s , p ⟩) = y .αᶜ ⟨ s , ⦅ f , y ⦆ ∘ p ⟩
+fold-free : (A → B) → Algebraᶜ C B → Free C A → B
+fold-free f y (pure x)           = f x
+fold-free f y (impure ⟨ s , p ⟩) = y .αᶜ ⟨ s , fold-free f y ∘ p ⟩
+
+map-free : (A → B) → Free C A → Free C B
+map-free f (pure x)           = pure (f x)
+map-free f (impure ⟨ s , p ⟩) = impure ⟨ s , map-free f ∘ p ⟩
+
+map-free-id : (t : Free C A) → map-free id t ≡ t
+map-free-id (pure _)           = refl
+map-free-id (impure ⟨ s , p ⟩) =
+  cong (λ ○ → impure ⟨ s , ○ ⟩)
+    (extensionality (map-free-id ∘ p))
+
+map-free-∘ :
+  ∀ {D : Set} → (f : A → B) (g : B → D) (t : Free C A)
+  → map-free g (map-free f t) ≡ map-free (g ∘ f) t
+map-free-∘ f g (pure _)           = refl
+map-free-∘ f g (impure ⟨ s , p ⟩) =
+  cong (λ ○ → impure ⟨ s , ○ ⟩)
+    (extensionality (map-free-∘ f g ∘ p))
 
 impure′ : Algebraᶜ C (Free C A) 
 impure′ = λ where .αᶜ → impure
 
-
-
 instance
+  free-functor : Functor (Free C)
+  free-functor = record
+    { fmap    = map-free
+    ; fmap-id = map-free-id
+    ; fmap-∘  = map-free-∘
+    } 
+
   free-monad : Monad (Free C)
   free-monad .return = pure
   
-  free-monad ._∗ k = ⦅ k , impure′ ⦆
+  free-monad ._∗ k = fold-free k impure′
   
-identity-fold-lemma : ∀ {c : Free C A} → ⦅ pure , impure′ ⦆ c ≡ c  
+identity-fold-lemma : ∀ {c : Free C A} → fold-free pure impure′ c ≡ c  
 identity-fold-lemma {C} {A} {pure _} = refl
 identity-fold-lemma {C} {A} {impure ⟨ s , p ⟩} =
-  cong (λ □ → impure ⟨ s , □ ⟩) (extensionality λ x → identity-fold-lemma)
+  cong (λ ○ → impure ⟨ s , ○ ⟩) (extensionality λ x → identity-fold-lemma)
