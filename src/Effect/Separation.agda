@@ -25,6 +25,19 @@ open import Function.Construct.Composition
 
 open import Level
 
+
+-- Defines a separation algebra of effects (defined as containers) based on (the
+-- pointwise version of) a ternary predicate characterizing disjoint unions of
+-- sets. That is, effect separation is defined on top of a chosen ternary
+-- separation predicate over its extension.
+--
+-- TODO: the development here is specialized to ternary disjoint separation, but
+-- could we generalize to any arbitrary unital, commutative and associative
+-- ternary relation on sets? This would permit, for example, the kind
+-- overlapping unions we also use in the OOPSLA paper, which would in theory
+-- also be useful for combining elaborations that share some effects, but not
+-- all. Critical question would be how (if at all) this affects reasoning about
+-- higher-order effects. 
 module Effect.Separation where
 
 module U = Ternary.Relation Set DisjointUnion 
@@ -145,3 +158,8 @@ coproduct-lemma = record
 ≲-⊕ᶜ-right : ∀ ε′ → ε ≲ (ε′ ⊕ᶜ ε)
 ≲-⊕ᶜ-right ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → ⊎-sym ↔-∘ coproduct-lemma 
 
+≲-∙-left : ε₁ ∙ ε₂ ≈ ε → ε₁ ≲ ε
+≲-∙-left σ .inc = -, σ .sep
+
+≲-∙-right : ε₁ ∙ ε₂ ≈ ε → ε₂ ≲ ε
+≲-∙-right σ .inc = -, ∙-comm σ .sep 

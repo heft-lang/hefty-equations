@@ -6,6 +6,8 @@ open import Free.Base
 
 open import Core.Functor
 open import Core.Container
+open import Core.MonotonePredicate Effect _≲_
+
 
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
@@ -22,34 +24,44 @@ open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
 open import Data.Empty
 
 open import Function 
-
+open import Level
 
 {- Most stuff in this module is adapted from "Reasoning about Effect Interaction
    by Fusion, Zhixuan Yang and Nicholas Wu" -}
 module Effect.Theory.FirstOrder where
 
 variable c c₁ c₂ c₃ : Free ε A
-         Δ Δ₁ Δ₂ : ℕ 
-     
-variable Γ Γ₁ Γ₂ R : Vec Set Δ → Set 
 
--- Type of equations of the effect ε, defined as pairs of syntax
-record Equation (ε : Effect) (Δ : ℕ) (Γ R : Vec Set Δ → Set)  : Set₁ where
-  constructor _≗_
+-- We define type contexts as a product by induction over the length rather than
+-- a vector, because this gives us some η-equalities that come in handy when
+-- defining effect theories since they save us from having to pattern match on
+-- the type context in order to make the goal type of the lhs and rhs of
+-- equations compute.
+TypeContext : ℕ → Set₁
+TypeContext zero    = Lift _ ⊤
+TypeContext (suc n) = Set × TypeContext n
+
+-- Equations, packaged together with their context 
+record Equation (ε : Effect) : Set₁ where
+  constructor _≗_ 
   field
-    lhs rhs    : (δ : Vec Set Δ) → Γ δ → Free ε (R δ) 
+    {Δ′}    : ℕ
+    {Γ′ R′} : TypeContext Δ′ → Set
+    lhs rhs : Π[ Γ′ ⇒ R′ ⊢ Free ε ] 
 
-open Equation public
+  
+open Equation public 
 
--- Weakening of equations, or, in other words, equations are functors over the
--- category of containers and container morphisms 
-wk-equation : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Equation ε₁ Δ Γ ⇒ Equation ε₂ Δ Γ ]
-wk-equation eq = (♯ ∘₂ eq .lhs) ≗ (♯ ∘₂ eq .rhs) 
+variable Δ Δ₁ Δ₂ : ℕ 
+         Γ Γ₁ Γ₂ R : Vec Set Δ → Set 
+
+instance eq-monotone : Monotone Equation
+eq-monotone .weaken i eq = (♯ ⦃ i ⦄ ∘₂ eq .lhs) ≗ (♯ ⦃ i ⦄ ∘₂ eq .rhs) 
 
 
 -- We say that an algebra "respects" an equation if folding with that algebra
 -- over both the left- and right-hand-side of the equation produces equal results
-Respects : Algebraᶜ ε A → Equation ε Δ Γ R → Set₁
+Respects : Algebraᶜ ε A → Equation ε → Set₁
 Respects alg (lhs ≗ rhs) =
   ∀ {δ γ k} → fold-free k alg (lhs δ γ) ≡ fold-free k alg (rhs δ γ)
 
@@ -58,22 +70,18 @@ record Theory (ε : Effect) : Set₁ where
   no-eta-equality
   constructor ∥_∥
   field
-    equations : List $ ∃ λ Δ → ∃₂ $ Equation ε Δ
-
---infix 10 ◆_
-◆_ : Equation ε Δ Γ R → ∃ λ Δ → ∃₂ $ Equation ε Δ 
-◆_ eq = -, -, -, eq 
+    equations : List (Equation ε)
 
 open Theory public
 
 -- A predicate asserting that a given equation is part of a theory
-_◃_ : Equation ε Δ Γ R → Theory ε → Set₁
-eq ◃ T = (-, -, -, eq) ∈ T .equations 
+_◃_ : Equation ε → Theory ε → Set₁
+eq ◃ T = eq ∈ T .equations 
 
--- Weakening for effect theories. Or, in other words, effect theories are
--- functors over the category of containers and container morphisms.
-wk-theory : ⦃ ε₁ ≲ ε₂ ⦄ → Theory ε₁ → Theory ε₂
-wk-theory T = ∥ map (λ where (_ , _ , _ ,  eq) → -, -, -, (wk-equation eq)) (T .equations) ∥ 
+
+instance theory-monotone : Monotone Theory
+theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
+
 
 -- Coproduct of effect theories
 _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
@@ -81,7 +89,7 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 
 -- Sum of effect theories
 _[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
-_[+]_ {ε₁} {ε₂} T₁ T₂ = wk-theory ⦃ ≲-⊕ᶜ-left ε₂ ⦄ T₁ ⟨+⟩ wk-theory ⦃ ≲-⊕ᶜ-right ε₁ ⦄ T₂
+_[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ weaken (≲-⊕ᶜ-right ε₁) T₂
 
 
 -- -- 
@@ -120,10 +128,10 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
             ------------------------------------------
           → impure ⟨ s , p₁ ⟩ ≈⟨ T ⟩ impure ⟨ s , p₂ ⟩   
 
-  ≈-eq    : (eq : Equation ε Δ Γ R)
+  ≈-eq    : (eq : Equation ε)
           → eq ◃ T
-          → (δ : Vec Set Δ)
-          → (γ : Γ δ)
+          → (δ : TypeContext (eq .Δ′))
+          → (γ : eq .Γ′ δ)
             ------------------------------
           → eq .lhs δ γ ≈⟨ T ⟩ eq .rhs δ γ
 
@@ -132,6 +140,7 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
           → (k : A → Free ε B)
             -------------------------
           → c₁ >>= k ≈⟨ T ⟩ c₂ >>= k 
+
 
 -- Propositional equality of effect trees can (clearly) be reflected as a
 -- syntactic equivalence
@@ -148,7 +157,7 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 -- given theory `T` of the effect it handlers iff it's algebra respects all
 -- equations of `T`.
 Correct : {P : Set} → Theory ε → Handler ε P F → Set₁
-Correct T h = ∀ {Δ Γ R A ε′}{eq : Equation _ Δ Γ R} → eq ◃ T → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
+Correct T h = ∀ {A ε′} → {eq : Equation _} → eq ◃ T → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
 
 -- 
 -- -- Correctness of transformations: we say that a handler `h` is a correct
@@ -201,5 +210,5 @@ module ≈-Reasoning (T : Theory ε) where
   -- Equivalence following from equations of the theory, specialized to empty continuations
   --
   -- TODO: find membership proof using instance search? 
-  ≈-eq′ : (eq : Equation ε Δ Γ R) → eq ◃ T → {δ : Vec Set Δ} → {γ : Γ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
+  ≈-eq′ : (eq : Equation ε) → eq ◃ T → {δ : TypeContext (eq .Δ′)} → {γ : eq .Γ′ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
   ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ

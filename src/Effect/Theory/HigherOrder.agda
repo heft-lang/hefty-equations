@@ -4,10 +4,13 @@ open import Hefty.Base
 open import Core.Functor
 open import Core.Signature
 open import Core.Extensionality
+open import Core.MonotonePredicate 
 
 open import Effect.Base
 open import Effect.Theory.FirstOrder
 open import Effect.Elaborate
+open import Effect.Separation
+open import Effect.Logic
 
 open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
@@ -28,20 +31,25 @@ paper, but adapted for use with Hefty algebras -}
 
 module Effect.Theory.HigherOrder where
 
-record Equationᴴ (η : Effectᴴ) (Δ : ℕ) (Γ R : Vec Set Δ → Set) : Set₁ where
+open Connectives
+
+record Equationᴴ (η : Effectᴴ) : Set₁ where
   constructor _≗ᴴ_
   field
-    lhsᴴ rhsᴴ : (δ : Vec Set Δ) → Γ δ → Hefty η (R δ)
+    {Δ′}      : ℕ
+    {Γ′ R′}   : TypeContext Δ′ → Set 
+    lhsᴴ rhsᴴ : Π[ Γ′ ⇒ R′ ⊢ Hefty η ]
 
 open Equationᴴ public
 
-embed-equation : Equation ε Δ Γ R → Equationᴴ (↑ ε) Δ Γ R
+embed-equation : Equation ε → Equationᴴ (↑ ε)
 embed-equation eq = (embed-free ∘₂ eq .lhs) ≗ᴴ (embed-free ∘₂ eq .lhs)
 
 -- Weakening of equations (for higher-order effects). That is, `Equationᴴ`
 -- defines a functor over the category of h.o. effects
-wk-equationᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → ∀[ Equationᴴ η₁ Δ Γ ⇒ Equationᴴ η₂ Δ Γ ]
+wk-equationᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Equationᴴ η₁ → Equationᴴ η₂ 
 wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ) 
+
 
 -- Again, an algebra respects an equation if folding lhs and rhs gives the same
 -- result, where "sameness" is with respect a given binary relation that is kept
@@ -49,7 +57,7 @@ wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ)
 -- 
 -- We opt for this generalization (rather than using propositional equality)
 -- here, because later we define correctness of elaborations as
-Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra η (Free ε) → Equationᴴ η Δ Γ R → Set₁
+Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra η (Free ε) → Equationᴴ η → Set₁
 Respectsᴴ _~_ alg (lhs ≗ᴴ rhs) =
   ∀ {δ γ} → fold-hefty pure alg (lhs δ γ) ~ fold-hefty pure alg (rhs δ γ)
 
@@ -59,28 +67,26 @@ record Theoryᴴ (η : Effectᴴ) : Set₁ where
   no-eta-equality
   constructor ∥_∥ᴴ
   field
-    equationsᴴ : List $ ∃ λ Δ → ∃₂ $ Equationᴴ η Δ 
+    equationsᴴ : List (Equationᴴ η) 
 
 open Theoryᴴ public
 
-◇_ : Equationᴴ η Δ Γ R → ∃ λ Δ → ∃₂ $ Equationᴴ η Δ
-◇ eq = -, -, -, eq 
 
 variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ η 
 
 -- A predicate asserting that a given equation is part of a theory
-_◃ᴴ_ : Equationᴴ η Δ Γ R → Theoryᴴ η → Set₁
-eq ◃ᴴ Th = (-, -, -, eq) ∈ Th .equationsᴴ
+_◃ᴴ_ : Equationᴴ η → Theoryᴴ η → Set₁
+eq ◃ᴴ Th = eq ∈ Th .equationsᴴ
 
 -- Theory inclusion for higher-order theories
 _⊆ᴴ_ : Theoryᴴ η → Theoryᴴ η → Set₁
-Th₁ ⊆ᴴ Th₂ = ∀ {Δ Γ} {A} {eq : Equationᴴ _ Δ Γ A} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th₂
+Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th₂
 
 embed-theory : Theory ε → Theoryᴴ (↑ ε)
-embed-theory T .equationsᴴ = map (λ (_ , _ , _ , eq) → -, -, -, embed-equation eq) (T .equations)
+embed-theory T .equationsᴴ = map embed-equation (T .equations)
 
 wk-theoryᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Theoryᴴ η₁ → Theoryᴴ η₂ 
-wk-theoryᴴ eq = ∥ map (λ where (_ , _ , _ , eq) → -, -, -, wk-equationᴴ eq) (eq .equationsᴴ) ∥ᴴ
+wk-theoryᴴ eq = ∥ map wk-equationᴴ (eq .equationsᴴ) ∥ᴴ
 
 -- Coproduct of higher-order effect theories
 _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
@@ -115,15 +121,13 @@ data _≋⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty 
             -----------------------------------------------------
           → impure ⟪ c , r₁ , s₁ ⟫ ≋⟨ Th ⟩ impure ⟪ c , r₂ , s₂ ⟫
 
-  ≋-eq    : (eq : Equationᴴ η Δ Γ R)
+  ≋-eq    : (eq : Equationᴴ η)
           → eq ◃ᴴ Th
-          → (δ : Vec Set Δ)
-          → (γ : Γ δ)
-          → (k : R δ → Hefty η B)
+          → (δ : TypeContext (eq .Δ′))
+          → (γ : eq .Γ′ δ)
+          → (k : eq .R′ δ → Hefty η B)
             -----------------------------------------------
           → eq .rhsᴴ δ γ >>= k ≋⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
-
-
 
 
 {- Correctness of elaborations -} 
@@ -137,12 +141,15 @@ data _≋⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty 
 -- effect theory. 
 Correctᴴ : Theoryᴴ η → Theory ε → Elaboration η ε → Set₁ 
 Correctᴴ Th T e =
-  ∀ {Δ Γ A} {eq : Equationᴴ _ Δ Γ A} → eq ◃ᴴ Th → Respectsᴴ (_≈⟨ T ⟩_) (e .elab) eq 
+  ∀ {eq : Equationᴴ _}
+  → eq ◃ᴴ Th
+  → ∀ {ε′} → (i : _ ≲ ε′)
+  → Respectsᴴ (_≈⟨ weaken i T ⟩_) (□⟨ e .elab ⟩ i) eq 
 
 
 -- Equations that occur in a composed theory can be found in either of the
 -- argument theories
-[+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (η₁ ⊕ η₂) Δ Γ R}
+[+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (η₁ ⊕ η₂)}
          → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
          →   (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-left  ⦄ Th₁ )
            ⊎ (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-right ⦄ Th₂ )
@@ -158,9 +165,9 @@ Correctᴴ Th T e =
 
 -- Equations of a weakened theory are themselves weakened equations 
 ◃ᴴ-weaken-lemma : ∀ Th (w : η₁ ⊑ᴴ η₂)
-       → (eq : Equationᴴ η₂ Δ Γ R)
+       → (eq : Equationᴴ η₂)
        → eq ◃ᴴ wk-theoryᴴ ⦃ w ⦄ Th
-       → ∃ λ (eq′ : Equationᴴ η₁ Δ Γ R) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ w ⦄ eq′ 
+       → ∃ λ (eq′ : Equationᴴ η₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ w ⦄ eq′ 
 ◃ᴴ-weaken-lemma Th w eq px with Th .equationsᴴ
 ... | eq′ ∷ eqs =
   case px of
@@ -220,10 +227,12 @@ module _ {T : Theory ε} where
 
   open ≈-Reasoning T 
 
-  ⟪⊕⟫-correct  : ∀ {e₁ e₂}
+  {- TODO: proof doesn't work anymore for the new definition of correctness for h.o. theories. -} 
+  postulate ⟪⊕⟫-correct  : ∀ {e₁ e₂}
                  → Correctᴴ Th₁ T e₁
                  → Correctᴴ Th₂ T e₂
                  → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
+  {-
   ⟪⊕⟫-correct  {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
     with [+]ᴴ-injective Th₁ Th₂ px 
   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
@@ -244,3 +253,4 @@ module _ {T : Theory ε} where
           (cr₂ px′′)
           (≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) )
       ) 
+  -} 

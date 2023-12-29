@@ -8,6 +8,7 @@ open import Function hiding (_⟨_⟩_)
 open import Level
 open import Data.Product
 
+open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.Bundles
 import Relation.Binary.PropositionalEquality as ≡
 
@@ -19,7 +20,7 @@ import Relation.Binary.PropositionalEquality as ≡
 -- induces a natural notion of weakening, which naturally extends to a notion of
 -- "monotonicity respecting" predicate transformers, analogous to the functor
 -- instances defined in Core.Functor.
-module Core.MonotonePredicate {ℓ} (Carrier : Set ℓ) (_∙_≈_ : Rel₃ ℓ ℓ Carrier ) where
+module Core.MonotonePredicate {ℓ} (Carrier : Set ℓ) (_~_ : Rel Carrier ℓ) where
 
 -- Crucialy, we define monotone predicates w.r.t. the extension order (or, free
 -- preorder) generated from a unital and transitive ternary relation. This
@@ -27,12 +28,11 @@ module Core.MonotonePredicate {ℓ} (Carrier : Set ℓ) (_∙_≈_ : Rel₃ ℓ 
 -- connectives defined in Core.Logic,
 
 open Relation.Unary    
-open Ternary.Relation Carrier _∙_≈_
 
 variable P Q P₁ P₂ Q₁ Q₂ P′ Q′ : Pred Carrier ℓ
 
 record Monotone (P : Pred Carrier ℓ) : Set (suc ℓ) where
-  field weaken : ∀ {x y} → Ext x y → P x → P y 
+  field weaken : ∀ {x y} → x ~ y → P x → P y 
 
 open Monotone ⦃...⦄ public
 
@@ -44,7 +44,7 @@ record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ) whe
 open HMonotone ⦃...⦄ public 
 
 record Antitone (P : Pred Carrier ℓ) : Set (suc ℓ) where 
-  field strengthen : ∀ {x y} → Ext x y → P y → P x
+  field strengthen : ∀ {x y} → x ~ y → P y → P x
 
 open Antitone ⦃...⦄ public 
 
