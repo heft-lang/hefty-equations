@@ -8,7 +8,6 @@ open import Core.Functor
 open import Core.Container
 open import Core.MonotonePredicate Effect _≲_
 
-
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
 open import Data.Unit
@@ -19,7 +18,7 @@ open import Data.Nat
 open import Data.Vec hiding (map ; _++_)
 open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
-open import Relation.Unary hiding (_∈_)
+open import Relation.Unary hiding (_∈_ ; _⊆_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
 open import Data.Empty
 
@@ -76,9 +75,13 @@ open Theory public
 
 -- A predicate asserting that a given equation is part of a theory
 _◃_ : Equation ε → Theory ε → Set₁
-eq ◃ T = eq ∈ T .equations 
+eq ◃ T = eq ∈ T .equations
 
+-- Theory inclusion
+_⊆_ : Theory ε → Theory ε → Set₁
+T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂ 
 
+-- Effect theories are monotone predicates over effects 
 instance theory-monotone : Monotone Theory
 theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
 

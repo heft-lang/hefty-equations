@@ -21,7 +21,7 @@ open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Nat
 
-open import Relation.Unary hiding (_∈_)
+open import Relation.Unary hiding (_∈_ ; _⊆_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; sym ; trans ; cong ; cong₂)
 
 open import Function 
@@ -137,14 +137,24 @@ data _≋⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty 
 -- effect theory of its higher-order effect, and some first-order effect theory
 -- of the algebraic effects it elaborates into iff the elaboration algebra
 -- respects all equations of the higher-order theory modulo syntactic
--- equivalence of the resulting effect trees with respect to the first-order
--- effect theory. 
+-- equivalence of the resulting effect trees modulo the given first-order effect
+-- theory.
+--
+-- Since the "target" effects of an elaboration are merely a lower bound, the
+-- definition of correctness closes over all extensions of this lower bound,
+-- weakening the given first-order effect theory T to the universally quantified
+-- extension ε′
+--
+-- TODO: this looks remarkably similar to how we close over "value extensions"
+-- when defining extensible langauge fragments in the OOPSLA paper. Can we
+-- factor those, and the "theory extensions" used here into a common pattern?
 Correctᴴ : Theoryᴴ η → Theory ε → Elaboration η ε → Set₁ 
 Correctᴴ Th T e =
   ∀ {eq : Equationᴴ _}
   → eq ◃ᴴ Th
   → ∀ {ε′} → (i : _ ≲ ε′)
-  → Respectsᴴ (_≈⟨ weaken i T ⟩_) (□⟨ e .elab ⟩ i) eq 
+  → (T′ : Theory ε′) → weaken i T ⊆ T′ 
+  → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ i) eq 
 
 
 -- Equations that occur in a composed theory can be found in either of the
@@ -225,32 +235,39 @@ map-id (impure ⟪ c , r , s ⟫) =
 
 module _ {T : Theory ε} where
 
-  open ≈-Reasoning T 
-
-  {- TODO: proof doesn't work anymore for the new definition of correctness for h.o. theories. -} 
-  postulate ⟪⊕⟫-correct  : ∀ {e₁ e₂}
+  ⟪⊕⟫-correct  : ∀ {e₁ e₂} 
                  → Correctᴴ Th₁ T e₁
                  → Correctᴴ Th₂ T e₂
                  → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
-  {-
-  ⟪⊕⟫-correct  {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
-    with [+]ᴴ-injective Th₁ Th₂ px 
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
+
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
+    with [+]ᴴ-injective Th₁ Th₂ px
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
     | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑ᴴ-⊕-left _ px′
-  ⟪⊕⟫-correct cr₁ cr₂ px | inj₁ px′ | eq′ , px′′ , refl =
-    ≈-trans
-      ( ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) )
-      ( ≈-trans
-          (cr₁ px′′)
-          ( ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) )
-      )
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} cr₁ cr₂ px
+  ... | eq′ , px′′ , refl = begin
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .lhsᴴ _ _))
+    ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
+      fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .lhsᴴ _ _)
+    ≈⟪ c₁ px′′ i T′ it ⟫
+      fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
+    ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .rhsᴴ _ _))
+    ∎
+    where open ≈-Reasoning T′
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
     | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑ᴴ-⊕-right _ px′
-  ⟪⊕⟫-correct cr₁ cr₂ px | inj₂ px′ | eq′ , px′′ , refl =
-    ≈-trans
-      ( ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) )
-      ( ≈-trans
-          (cr₂ px′′)
-          (≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) )
-      ) 
-  -} 
+  ... | eq′ , px′′ , refl = begin
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .lhsᴴ _ _))
+    ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
+      fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .lhsᴴ _ _)
+    ≈⟪ c₂ px′′ i T′ it ⟫ 
+      fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
+    ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .rhsᴴ _ _))
+    ∎
+    where open ≈-Reasoning T′ 
+
