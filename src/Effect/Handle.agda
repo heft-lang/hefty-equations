@@ -47,3 +47,13 @@ sift σ (impure ⟨ s , p ⟩) = impure (coproduct-lemma .to (σ .sep _ .union .
 
 handle : Handler ε₁ A F → ε₁ ∙ ε₂ ≈ ε → A → ∀[ Free ε ⇒ Free ε₂ ∘ F ] 
 handle H σ x t = fold-free (pure ∘₂ H .gen) (H .hdl ⟨⊕⟩ᶜ fwd) (sift σ t) x
+
+-- Defines "modular handlers", that asserts that a handler leaves alone nodes in
+-- the tree containing commands of other effects than the effect it handles. 
+Modular : ⦃ Pointed F ⦄ → (H : Handler ε₁ A F) → Set₁
+Modular {ε₁ = ε₁} H =
+  ∀ {B ε₂ ε} (m : Free ε₂ B)
+  → (σ : ε₁ ∙ ε₂ ≈ ε)
+  → (x : _)
+    -------------------------------------------------
+  → handle H σ x (♯ ⦃ ≲-∙-right σ ⦄ m) ≡ fmap point m
