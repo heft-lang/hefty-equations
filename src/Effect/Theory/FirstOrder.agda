@@ -85,6 +85,9 @@ T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂
 instance theory-monotone : Monotone Theory
 theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
 
+-- Heterogeneous theory inclusion
+_∣⊆∣_ : Theory ε₁ → Theory ε₂ → Set₁
+T₁ ∣⊆∣ T₂ = ∀ i → weaken i T₁ ⊆ T₂
 
 -- Coproduct of effect theories
 _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
@@ -160,7 +163,24 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 -- given theory `T` of the effect it handlers iff it's algebra respects all
 -- equations of `T`.
 Correct : {P : Set} → Theory ε → Handler ε P F → Set₁
-Correct T h = ∀ {A ε′} → {eq : Equation _} → eq ◃ T → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
+Correct T h =
+  ∀ {A ε′}
+  → {eq : Equation _}
+  → eq ◃ T
+    --------------------------------------
+  → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
+
+-- Adequacy of a Handler w.r.t. a given theory of the effect it handles 
+Adequate : Handler ε₁ A F → Theory ε₁ → Set₁
+Adequate {ε₁} {A} H T =
+  ∀ {B ε₂ ε} (x : A)
+  → (m₁ m₂ : Free ε B)
+  → (σ : ε₁ ∙ ε₂ ≈ ε)
+  → ∀ {T′}
+  → weaken (≲-∙-left σ) T ⊆ T′ 
+  → handle H σ x m₁ ≡ handle H σ x m₂
+    ---------------------------------
+  → m₁ ≈⟨ T′ ⟩ m₂
 
 -- 
 -- -- Correctness of transformations: we say that a handler `h` is a correct
