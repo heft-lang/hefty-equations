@@ -8,6 +8,8 @@ open import Data.Sum
 open import Data.Product 
 
 open import Function
+open import Function.Construct.Identity
+open import Function.Construct.Symmetry
 open import Function.Construct.Composition
 
 -- Lawful functors on Set, at any level 
@@ -25,7 +27,7 @@ record Functor {a b} (F : Set a → Set b) : Set (sℓ a ⊔ b) where
 
 open Functor ⦃...⦄ public
 
-instance 
+instance
   sum-functor : ∀ {a b} {F G : Set a → Set b} → ⦃ Functor F ⦄ → ⦃ Functor G ⦄ →  Functor (F ∪ G)
   Functor.fmap sum-functor f (inj₁ x) = inj₁ (fmap f x)
   Functor.fmap sum-functor f (inj₂ y) = inj₂ (fmap f y)
@@ -33,6 +35,13 @@ instance
   Functor.fmap-id sum-functor (inj₂ y) = cong inj₂ (fmap-id y)
   Functor.fmap-∘ sum-functor f g (inj₁ x) = cong inj₁ (fmap-∘ f g x)
   Functor.fmap-∘ sum-functor f g (inj₂ y) = cong inj₂ (fmap-∘ f g y)
+
+  id-functor : ∀ {a} → Functor {a} {a} λ x → x
+  id-functor = record
+    { fmap    = id
+    ; fmap-id = λ x → refl
+    ; fmap-∘  = λ f g x → refl
+    } 
 
 -- 
 --   product-functor : ∀ {a b} {F G : Set a → Set b} → ⦃ Functor F ⦄ → ⦃ Functor G ⦄ →  Functor (F ∩ G)
@@ -58,12 +67,29 @@ record NaturalIsomorphism {a b} {F G : Set a → Set b}
 
 open NaturalIsomorphism public 
 
-∘-natiso : ∀ {a b} {F G H : Set a → Set b}
+
+natiso-id : ∀ {a} → NaturalIsomorphism {a} ↔-id
+natiso-id = record
+  { to-natural   = λ where .commute _ → refl
+  ; from-natural = λ where .commute _ → refl
+  } 
+
+natiso-sym : ∀ {a b} {F G : Set a → Set b}
+               {F↔G : ∀ x → F x ↔ G x}
+             → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄
+             → NaturalIsomorphism F↔G
+             → NaturalIsomorphism (↔-sym ∘ F↔G) 
+natiso-sym {F = F} {G} {F↔G} natiso = record
+  { to-natural   = natiso .from-natural
+  ; from-natural = natiso .to-natural
+  }
+
+natiso-∘ : ∀ {a b} {F G H : Set a → Set b}
           {F↔G : ∀ x → F x ↔ G x} {G↔H : ∀ x → G x ↔ H x}
         → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄ → ⦃ _ : Functor H ⦄ 
         → NaturalIsomorphism F↔G → NaturalIsomorphism G↔H
         → NaturalIsomorphism λ x → F↔G x ↔-∘ G↔H x 
-∘-natiso {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
+natiso-∘ {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
   { to-natural   = λ where .commute → to-nat
   ; from-natural = λ where .commute → from-nat
   }

@@ -41,8 +41,12 @@ _⟨⊕⟩ᶜ_ : ∀[ Algebraᶜ C₁ ⇒ Algebraᶜ C₂ ⇒ Algebraᶜ (C₁ �
 (x ⟨⊕⟩ᶜ y) .αᶜ ⟨ inj₁ s , p ⟩ = x .αᶜ ⟨ s , p ⟩
 (x ⟨⊕⟩ᶜ y) .αᶜ ⟨ inj₂ s , p ⟩ = y .αᶜ ⟨ s , p ⟩
 
+-- Container morphisms are natural transformations between the extension functors 
+_↦_ : Container → Container → Set₁
+C₁ ↦ C₂ = ∀[ ⟦ C₁ ⟧ᶜ ⇒ ⟦ C₂ ⟧ᶜ ]
+
 con-map : (A → B) → ⟦ C ⟧ᶜ A → ⟦ C ⟧ᶜ B 
-con-map f ⟨ s , p ⟩ = ⟨ s , f ∘ p ⟩ 
+con-map f ⟨ s , p ⟩ = ⟨ s , f ∘ p ⟩
 
 instance
   con-functor : Functor ⟦ C ⟧ᶜ

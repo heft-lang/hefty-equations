@@ -21,6 +21,7 @@ open import Data.Sum.Properties using (swap-involutive ; swap-↔)
 import Core.Ternary as Ternary
 open import Core.DisjointUnion
 
+open import Function.Construct.Symmetry
 open import Function.Construct.Composition
 
 open import Level
@@ -101,7 +102,7 @@ swap-↔-natiso = record
 ∙-comm : Ternary.Relation.Commutative Effect _∙_≈_
 ∙-comm σ .sep         = punion-comm (σ .sep)
 ∙-comm {c₁} {c₂} {c} σ .natural-iso =
-  ∘-natiso {F = ⟦ c₂ ⟧ᶜ ∪ ⟦ c₁ ⟧ᶜ} {G = ⟦ c₁ ⟧ᶜ ∪ ⟦ c₂ ⟧ᶜ} {H = ⟦ c ⟧ᶜ}
+  natiso-∘ {F = ⟦ c₂ ⟧ᶜ ∪ ⟦ c₁ ⟧ᶜ} {G = ⟦ c₁ ⟧ᶜ ∪ ⟦ c₂ ⟧ᶜ} {H = ⟦ c ⟧ᶜ}
     {F↔G = λ x → swap-↔}
     {G↔H = λ x → σ .sep x .DisjointUnion.union}
     swap-↔-natiso (σ .natural-iso)
@@ -146,8 +147,8 @@ inject .αᶜ = impure ∘ inc .proj₂ _ .DisjointUnion.union .Inverse.to ∘ i
 
 open Ternary
 
-coproduct-lemma : ∀[ (⟦ ε₁ ⟧ᶜ ∪ ⟦ ε₂ ⟧ᶜ) ⇔ ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ ]
-coproduct-lemma = record
+coproduct-lemma : Π[ (⟦ ε₁ ⟧ᶜ ∪ ⟦ ε₂ ⟧ᶜ) ⇔ ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ ]
+coproduct-lemma _ = record
   { to        =
     [ (λ where ⟨ s , p ⟩ → ⟨ inj₁ s , p ⟩)
     , (λ where ⟨ s , p ⟩ → ⟨ inj₂ s , p ⟩)
@@ -163,6 +164,13 @@ coproduct-lemma = record
                 ) , [ (λ _ → refl) , (λ _ → refl) ]
   }
 
+coproduct-lemma-natiso : ∀ {ε₁ ε₂} → NaturalIsomorphism $ coproduct-lemma {ε₁ = ε₁} {ε₂}
+coproduct-lemma-natiso = record
+  { to-natural   = λ where .commute → [ (λ _ → refl) , (λ _ → refl) ]
+  ; from-natural = λ where .commute ⟨ inj₁ _ , _ ⟩ → refl
+                           .commute ⟨ inj₂ _ , _ ⟩ → refl 
+  } 
+
 ⊎-sym : (A ⊎ B) ↔ (B ⊎ A)
 ⊎-sym = record
   { to        = swap
@@ -172,11 +180,20 @@ coproduct-lemma = record
   ; inverse   = swap-involutive , swap-involutive
   }
 
+∙-to-≋ : ε₁ ∙ ε₂ ≈ ε → (ε₁ ⊕ᶜ ε₂) ≋ ε
+∙-to-≋ σ = record
+  { iso         = λ x → ↔-sym (coproduct-lemma x) ↔-∘ σ .sep x .DisjointUnion.union
+  ; iso-natural = natiso-∘ (natiso-sym coproduct-lemma-natiso) (σ .natural-iso)
+  }
+
+{- TODO: effect separation also respects effect equivalence in all positions. Do
+we need this? -}
+
 ≲-⊕ᶜ-left : ∀ ε′ → ε ≲ (ε ⊕ᶜ ε′)
-≲-⊕ᶜ-left ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → coproduct-lemma
+≲-⊕ᶜ-left ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → coproduct-lemma _
 
 ≲-⊕ᶜ-right : ∀ ε′ → ε ≲ (ε′ ⊕ᶜ ε)
-≲-⊕ᶜ-right ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → ⊎-sym ↔-∘ coproduct-lemma 
+≲-⊕ᶜ-right ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → ⊎-sym ↔-∘ (coproduct-lemma _)
 
 ≲-∙-left : ε₁ ∙ ε₂ ≈ ε → ε₁ ≲ ε
 ≲-∙-left σ .inc = -, σ .sep

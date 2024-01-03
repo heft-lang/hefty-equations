@@ -42,7 +42,7 @@ map-free-∘ f g (impure ⟨ s , p ⟩) =
   cong (λ ○ → impure ⟨ s , ○ ⟩)
     (extensionality (map-free-∘ f g ∘ p))
 
-hmap-free : ∀[ ⟦ C₁ ⟧ᶜ ⇒ ⟦ C₂ ⟧ᶜ ] → ∀[ Free C₁ ⇒ Free C₂ ]
+hmap-free : C₁ ↦ C₂ → ∀[ Free C₁ ⇒ Free C₂ ]
 hmap-free θ = fold-free pure λ where .αᶜ → impure ∘ θ  
 
 instance

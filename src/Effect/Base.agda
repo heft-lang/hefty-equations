@@ -12,8 +12,13 @@ open import Data.Product
 open import Data.Sum
 
 open import Function hiding (_⇔_)
+open import Function.Construct.Identity
+open import Function.Construct.Symmetry
+open import Function.Construct.Composition
 
 open import Relation.Binary using (Preorder)
+open import Relation.Binary.Definitions
+open import Relation.Binary.Structures
 open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; sym ; trans)
 
 module Effect.Base where
@@ -64,6 +69,37 @@ record _⊑ᴴ_ (η₁ η₂ : Effectᴴ) : Set₁ where
 postulate injᴴ-command : ⦃ η₁ ⊑ᴴ η₂ ⦄ → η₁ .command → η₂ .command
 
 open _⊑ᴴ_ ⦃...⦄ public 
+
+-- Equivalence of effect signatures, witnessed by a natural isomorphism between
+-- their extension functors
+record _≋_ (ε₁ ε₂ : Effect) : Set₁ where
+  field
+    iso : ∀ x → ⟦ ε₁ ⟧ᶜ x ↔ ⟦ ε₂ ⟧ᶜ x
+    iso-natural : NaturalIsomorphism iso 
+
+open _≋_ public
+
+≋-refl : Reflexive _≋_
+≋-refl = record
+  { iso         = λ _ → id-↔ _
+  ; iso-natural = {!!}
+  }
+
+≋-sym : Symmetric _≋_
+≋-sym = {!!} 
+
+≋-trans : Transitive _≋_
+≋-trans = {!!} 
+
+≋-isEquivalence : IsEquivalence _≋_
+≋-isEquivalence = record
+  { refl  = ≋-refl
+  ; sym   = ≋-sym
+  ; trans = ≋-trans
+  } 
+
+free-resp-≋ : ε₁ ≋ ε₂ → ∀[ Free ε₁ ⇒ Free ε₂ ]
+free-resp-≋ eq = hmap-free (eq .iso _ .Inverse.to) 
 
 injectᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Algebra η₁ (Hefty η₂)
 injectᴴ .α v = impure (injᴴ v)  

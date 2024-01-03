@@ -7,6 +7,7 @@ open import Free.Base
 open import Core.Functor
 open import Core.Container
 open import Core.MonotonePredicate Effect _≲_
+open import Core.DisjointUnion
 
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
@@ -22,7 +23,9 @@ open import Relation.Unary hiding (_∈_ ; _⊆_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
 open import Data.Empty
 
-open import Function 
+open import Function
+open import Function.Construct.Symmetry
+open import Function.Construct.Composition
 open import Level
 
 {- Most stuff in this module is adapted from "Reasoning about Effect Interaction
@@ -57,6 +60,14 @@ variable Δ Δ₁ Δ₂ : ℕ
 instance eq-monotone : Monotone Equation
 eq-monotone .weaken i eq = (♯ ⦃ i ⦄ ∘₂ eq .lhs) ≗ (♯ ⦃ i ⦄ ∘₂ eq .rhs) 
 
+-- Equations are functors over the category of containers and container morphisms 
+hmap-eq : ε₁ ↦ ε₂ → Equation ε₁ → Equation ε₂
+hmap-eq θ eq = (hmap-free θ ∘₂ eq .lhs) ≗ (hmap-free θ ∘₂ eq .rhs)
+
+-- We can re-brand equations over a given effect to equations for a different
+-- but equivalent effect
+eq-resp-≋ : ε₁ ≋ ε₂ → Equation ε₁ → Equation ε₂
+eq-resp-≋ eqv = hmap-eq (eqv .iso _ .Inverse.to) 
 
 -- We say that an algebra "respects" an equation if folding with that algebra
 -- over both the left- and right-hand-side of the equation produces equal results
@@ -85,6 +96,12 @@ T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂
 instance theory-monotone : Monotone Theory
 theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
 
+hmap-theory : ε₁ ↦ ε₂ → Theory ε₁ → Theory ε₂
+hmap-theory θ T = ∥ map (hmap-eq θ) (T .equations) ∥
+
+theory-resp-≋ : ε₁ ≋ ε₂ → Theory ε₁ → Theory ε₂ 
+theory-resp-≋ eq = hmap-theory (eq .iso _ .Inverse.to) 
+
 -- Heterogeneous theory inclusion
 _∣⊆∣_ : Theory ε₁ → Theory ε₂ → Set₁
 T₁ ∣⊆∣ T₂ = ∀ i → weaken i T₁ ⊆ T₂
@@ -97,7 +114,6 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 _[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
 _[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ weaken (≲-⊕ᶜ-right ε₁) T₂
 
-
 -- -- 
 -- -- -- Tensor of effect theories
 -- -- record _⊗_ (T₁ : Theory ε₁) (T₂ : Theory ε₂) : Set₁ where
@@ -107,7 +123,6 @@ _[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ we
 -- --   theory : Theory (ε₁ ⊕ᶜ ε₂)
 -- --   theory = T₁ [+] T₂ 
 -- -- 
-
 
 variable T T₁ T₂ T₃ T′ : Theory ε
 
@@ -170,6 +185,19 @@ Correct T h =
     --------------------------------------
   → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
 
+
+-- Restricted version of adequacy that presupposes that the effect to be handled
+-- is at the front of the tree's signature
+Adequate′ : Handler ε₁ A F → Theory ε₁ → Set₁
+Adequate′ {ε₁} {A} H T =
+  ∀ {B ε₂} (x : A)
+  → (m₁ m₂ : Free (ε₁ ⊕ᶜ ε₂) B)
+  → ∀ {T′} 
+  → weaken (≲-⊕ᶜ-left ε₂) T ⊆ T′ 
+  → handle′ {ε₂ = ε₂} H x m₁ ≡ handle′ H x m₂
+    -----------------------------------------
+  → m₁ ≈⟨ T′ ⟩ m₂
+
 -- Adequacy of a Handler w.r.t. a given theory of the effect it handles 
 Adequate : Handler ε₁ A F → Theory ε₁ → Set₁
 Adequate {ε₁} {A} H T =
@@ -181,6 +209,15 @@ Adequate {ε₁} {A} H T =
   → handle H σ x m₁ ≡ handle H σ x m₂
     ---------------------------------
   → m₁ ≈⟨ T′ ⟩ m₂
+
+open DisjointUnion
+
+sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequate H ]
+sep-adequate H T adq a m₁ m₂ σ {T′} T⊆T′ eq
+  with adq a (separate σ m₁) (separate σ m₂)
+         {T′ = theory-resp-≋ {!∙-to-≋ ?!} T′}
+         {!T⊆T′!} eq
+... | r = {!r!}
 
 -- 
 -- -- Correctness of transformations: we say that a handler `h` is a correct

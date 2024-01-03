@@ -43,7 +43,7 @@ open DisjointUnion
 open _∙_≈_
 
 separate : ε₁ ∙ ε₂ ≈ ε → ∀[ Free ε ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-separate σ = hmap-free (coproduct-lemma .to ∘ σ .sep _ .union .from)
+separate σ = hmap-free (coproduct-lemma _ .to ∘ σ .sep _ .union .from)
 
 handle′ : Handler ε₁ A F → A → ∀[ Free (ε₁ ⊕ᶜ ε₂) ⇒ F ⊢ Free ε₂ ]
 handle′ H x m = fold-free (pure ∘₂ H .gen) (H .hdl ⟨⊕⟩ᶜ fwd) m x 
@@ -82,24 +82,24 @@ weaken-lemma {ε₁} {ε₂} σ (impure ⟨ c , r ⟩) = begin
     separate σ (impure (σ .sep _ .union .to (inj₂ ⟨ c , ♯ʳ′ σ ∘ r ⟩)))
   ≡⟨⟩ {- Definition of separate -} 
     hmap-free
-      (coproduct-lemma .to ∘ σ .sep _ .union .from)
+      (coproduct-lemma _ .to ∘ σ .sep _ .union .from)
       (impure (σ .sep _ .union .to (inj₂ ⟨ c , ♯ʳ′ σ ∘ r ⟩)))
   ≡⟨⟩ {- Definition of hmap -} 
     fold-free pure
-      (λ where .αᶜ → impure ∘ (coproduct-lemma .to ∘ σ .sep _ .union .from))
+      (λ where .αᶜ → impure ∘ (coproduct-lemma _ .to ∘ σ .sep _ .union .from))
       (impure (σ .sep _ .union .to (inj₂ ⟨ c , ♯ʳ′ σ ∘ r ⟩)))
   ≡⟨⟩ {- Definition of fold-free -} 
-    impure (coproduct-lemma .to
+    impure (coproduct-lemma _ .to
       ( σ .sep _ .union .from (fmap (separate σ)
         ( (σ .sep _ .union .to (inj₂ ⟨ c , ♯ʳ′ σ ∘ r ⟩))
         )))) 
-  ≡⟨ cong (λ ○ → impure (coproduct-lemma .to (σ .sep _ .union .from ○))) (comm (separate σ) ⟨ c , ♯ʳ′ σ ∘ r ⟩ ) ⟩
-    impure (coproduct-lemma .to
+  ≡⟨ cong (λ ○ → impure (coproduct-lemma _ .to (σ .sep _ .union .from ○))) (comm (separate σ) ⟨ c , ♯ʳ′ σ ∘ r ⟩ ) ⟩
+    impure (coproduct-lemma _ .to
       ( σ .sep _ .union .from (σ .sep _ .union .to
         ( inj₂ ⟨ c , separate σ ∘ ♯ʳ′ σ ∘ r ⟩)
         ))) 
-  ≡⟨ cong (λ ○ → impure (coproduct-lemma .to ○)) (σ .sep _ .union .inverse .proj₂ _) ⟩
-    impure (coproduct-lemma {ε₁} {ε₂} .to (inj₂ ⟨ c , separate σ ∘ ♯ʳ′ σ ∘ r ⟩))  
+  ≡⟨ cong (λ ○ → impure (coproduct-lemma _ .to ○)) (σ .sep _ .union .inverse .proj₂ _) ⟩
+    impure (coproduct-lemma {ε₁} {ε₂} _ .to (inj₂ ⟨ c , separate σ ∘ ♯ʳ′ σ ∘ r ⟩))  
   ≡⟨⟩ 
     impure ⟨ inj₂ c , (separate σ ∘ ♯ʳ′ σ) ∘ r ⟩ 
   ≡⟨ cong (λ ○ → impure ⟨ inj₂ c , ○ ⟩) (extensionality $ weaken-lemma σ ∘ r) ⟩
