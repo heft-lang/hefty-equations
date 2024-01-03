@@ -16,7 +16,7 @@ open import Data.Product hiding (swap)
 open import Data.Sum
 open import Data.Maybe
 open import Data.Empty.Polymorphic
-open import Data.Sum.Properties using (swap-involutive)
+open import Data.Sum.Properties using (swap-involutive ; swap-↔)
 
 import Core.Ternary as Ternary
 open import Core.DisjointUnion
@@ -43,7 +43,8 @@ module Effect.Separation where
 module U = Ternary.Relation Set DisjointUnion 
 
 PointwiseDisjointUnion : (F G H : Set → Set) → Set _
-PointwiseDisjointUnion F G H = U.Pointwise _ F G H
+PointwiseDisjointUnion F G H = U.Pointwise _ F G H 
+
 
 PointwiseInclusion : (F G : Set → Set) → Set _
 PointwiseInclusion F G = Ternary.Relation.Ext _ PointwiseDisjointUnion F G
@@ -51,7 +52,8 @@ PointwiseInclusion F G = Ternary.Relation.Ext _ PointwiseDisjointUnion F G
 -- Container/effect separation
 record _∙_≈_ (ε₁ ε₂ ε : Effect) : Set₁ where
   field
-    sep : PointwiseDisjointUnion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ ⟦ ε ⟧ᶜ 
+    sep         : PointwiseDisjointUnion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ ⟦ ε ⟧ᶜ 
+    natural-iso : NaturalIsomorphism (DisjointUnion.union ∘ sep)  
 
 open _∙_≈_ public 
 
@@ -68,6 +70,8 @@ punion-unitʳ _ = disjoint-union-unitʳ
 punion-comm : Commutative PointwiseDisjointUnion
 punion-comm σ _ = disjoint-union-comm (σ _)
 
+
+
 punion-assocʳ : RightAssociative PointwiseDisjointUnion
 punion-assocʳ σ₁ σ₂ =
     (λ A → disjoint-union-assocʳ (σ₁ A) (σ₂ A) .proj₁)
@@ -82,8 +86,26 @@ pinc-transitive i₁ i₂ =
     punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₁
   , punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₂ .proj₁ 
 
+swap-↔-natiso : ∀ {F G : Set → Set}
+                → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄
+                → NaturalIsomorphism {F = F ∪ G} {G = G ∪ F} λ _ → swap-↔
+swap-↔-natiso = record
+  { to-natural   = record
+    { commute = [ (λ _ → refl) , (λ _ → refl) ]
+    }
+  ; from-natural = record
+    { commute = [ (λ _ → refl) , (λ _ → refl) ]
+    }
+  } 
+
 ∙-comm : Ternary.Relation.Commutative Effect _∙_≈_
-∙-comm σ .sep = punion-comm (σ .sep)
+∙-comm σ .sep         = punion-comm (σ .sep)
+∙-comm {c₁} {c₂} {c} σ .natural-iso =
+  ∘-natiso {F = ⟦ c₂ ⟧ᶜ ∪ ⟦ c₁ ⟧ᶜ} {G = ⟦ c₁ ⟧ᶜ ∪ ⟦ c₂ ⟧ᶜ} {H = ⟦ c ⟧ᶜ}
+    {F↔G = λ x → swap-↔}
+    {G↔H = λ x → σ .sep x .DisjointUnion.union}
+    swap-↔-natiso (σ .natural-iso)
+
 
 {- A preorder on effects, that stores the difference between the bigger and
    smaller set of effects -}
@@ -112,10 +134,8 @@ instance ≲-refl : Reflexive _≲_
     }
   } 
 
-
 inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
 inject .αᶜ = impure ∘ inc .proj₂ _ .DisjointUnion.union .Inverse.to ∘ inj₁  
-
 
 -- Effect weakening / masking for the free monad
 --
@@ -163,3 +183,15 @@ coproduct-lemma = record
 
 ≲-∙-right : ε₁ ∙ ε₂ ≈ ε → ε₂ ≲ ε
 ≲-∙-right σ .inc = -, ∙-comm σ .sep 
+
+♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
+♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
+
+♯ʳ : ∀ ε₁ → ∀[ Free ε₂ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
+♯ʳ ε₁ = ♯ ⦃ ≲-⊕ᶜ-right ε₁ ⦄
+
+♯ˡ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₁ ⇒ Free ε ]
+♯ˡ′ σ = ♯ ⦃ ≲-∙-left σ ⦄
+
+♯ʳ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₂ ⇒ Free ε ]
+♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄
