@@ -4,7 +4,11 @@ open import Relation.Unary
 open import Level renaming (suc to sℓ) 
 open import Relation.Binary.PropositionalEquality
 
+open import Data.Sum
+open import Data.Product 
+
 open import Function
+open import Function.Construct.Composition
 
 -- Lawful functors on Set, at any level 
 record Functor {a b} (F : Set a → Set b) : Set (sℓ a ⊔ b) where  
@@ -21,6 +25,21 @@ record Functor {a b} (F : Set a → Set b) : Set (sℓ a ⊔ b) where
 
 open Functor ⦃...⦄ public
 
+instance 
+  sum-functor : ∀ {a b} {F G : Set a → Set b} → ⦃ Functor F ⦄ → ⦃ Functor G ⦄ →  Functor (F ∪ G)
+  Functor.fmap sum-functor f (inj₁ x) = inj₁ (fmap f x)
+  Functor.fmap sum-functor f (inj₂ y) = inj₂ (fmap f y)
+  Functor.fmap-id sum-functor (inj₁ x) = cong inj₁ (fmap-id x)
+  Functor.fmap-id sum-functor (inj₂ y) = cong inj₂ (fmap-id y)
+  Functor.fmap-∘ sum-functor f g (inj₁ x) = cong inj₁ (fmap-∘ f g x)
+  Functor.fmap-∘ sum-functor f g (inj₂ y) = cong inj₂ (fmap-∘ f g y)
+
+-- 
+--   product-functor : ∀ {a b} {F G : Set a → Set b} → ⦃ Functor F ⦄ → ⦃ Functor G ⦄ →  Functor (F ∩ G)
+--   product-functor = {!!}
+--
+
+
 -- Natural transformations between functors on Set 
 record Natural {a b} {F G : Set a → Set b}
                ⦃ _ : Functor F ⦄ ⦃ _ : Functor G ⦄
@@ -28,7 +47,55 @@ record Natural {a b} {F G : Set a → Set b}
   field
     commute : ∀ {X Y} {f : X → Y} → (x : F X) → θ (fmap f x) ≡ fmap f (θ x) 
 
-open Natural public 
+open Natural public
+
+record NaturalIsomorphism {a b} {F G : Set a → Set b}
+                          ⦃ _ : Functor F ⦄ ⦃ _ : Functor G ⦄
+                          (iso : ∀ x → F x ↔ G x) : Set (sℓ a ⊔ b) where
+  field
+    to-natural    : Natural (iso _ .Inverse.to)
+    from-natural  : Natural (iso _ .Inverse.from) 
+
+open NaturalIsomorphism public 
+
+∘-iso : ∀ {a b} {F G H : Set a → Set b}
+          {F↔G : ∀ x → F x ↔ G x} {G↔H : ∀ x → G x ↔ H x}
+        → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄ → ⦃ _ : Functor H ⦄ 
+        → NaturalIsomorphism F↔G → NaturalIsomorphism G↔H
+        → NaturalIsomorphism λ x → F↔G x ↔-∘ G↔H x 
+∘-iso {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
+  { to-natural   = λ where .commute → to-nat
+  ; from-natural = λ where .commute → from-nat
+  }
+  where
+    open Inverse
+    open ≡-Reasoning 
+
+    to-nat   : ∀ {X Y f} (x : F X) → (F↔G Y ↔-∘ G↔H Y) .to (fmap f x) ≡ fmap f ((F↔G X ↔-∘ G↔H X) .to x)
+    to-nat {X}{Y}{f} x = begin
+        (F↔G Y ↔-∘ G↔H Y) .to (fmap f x)
+      ≡⟨⟩ {- Definition of ↔-∘ -} 
+        G↔H Y .to (F↔G Y .to (fmap f x)) 
+      ≡⟨ cong (G↔H Y .to) (natiso₁ .to-natural .commute x) ⟩
+        G↔H Y .to (fmap f (F↔G X .to x))
+      ≡⟨ natiso₂ .to-natural .commute _ ⟩ 
+        fmap f (G↔H X .to (F↔G X .to x))
+      ≡⟨⟩ {- Defintion of ↔-∘ -} 
+        fmap f ((F↔G X ↔-∘ G↔H X) .to x) 
+      ∎
+    
+    from-nat : ∀ {X Y f} (x : H X) → (F↔G Y ↔-∘ G↔H Y) .from (fmap f x) ≡ fmap f ((F↔G X ↔-∘ G↔H X) .from x)
+    from-nat {X}{Y}{f} x = begin
+        (F↔G Y ↔-∘ G↔H Y) .from (fmap f x)
+      ≡⟨⟩ {- Definition of ↔-∘ -}
+        F↔G Y .from (G↔H Y .from (fmap f x)) 
+      ≡⟨ cong (F↔G Y .from) (natiso₂ .from-natural .commute x) ⟩
+        F↔G Y .from (fmap f (G↔H X .from x))
+      ≡⟨ natiso₁ .from-natural .commute _ ⟩
+        fmap f (F↔G X .from (G↔H X .from x))
+      ≡⟨⟩ {- Definition of ↔-∘ -} 
+        fmap f ((F↔G X ↔-∘ G↔H X) .from x)
+      ∎ 
 
 -- Higher-order functors on Set. That is, functors over the category of functors
 -- on Set
