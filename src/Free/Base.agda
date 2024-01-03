@@ -9,6 +9,7 @@ open import Relation.Unary
 open import Data.Product 
 open import Data.Sum
 
+open import Relation.Unary
 open import Relation.Binary.PropositionalEquality
 
 open Container 
@@ -21,9 +22,11 @@ fold-free : (A → B) → Algebraᶜ C B → Free C A → B
 fold-free f y (pure x)           = f x
 fold-free f y (impure ⟨ s , p ⟩) = y .αᶜ ⟨ s , fold-free f y ∘ p ⟩
 
+impure′ : Algebraᶜ C (Free C A) 
+impure′ = λ where .αᶜ → impure
+
 map-free : (A → B) → Free C A → Free C B
-map-free f (pure x)           = pure (f x)
-map-free f (impure ⟨ s , p ⟩) = impure ⟨ s , map-free f ∘ p ⟩
+map-free f = fold-free (pure ∘ f) impure′
 
 map-free-id : (t : Free C A) → map-free id t ≡ t
 map-free-id (pure _)           = refl
@@ -39,8 +42,8 @@ map-free-∘ f g (impure ⟨ s , p ⟩) =
   cong (λ ○ → impure ⟨ s , ○ ⟩)
     (extensionality (map-free-∘ f g ∘ p))
 
-impure′ : Algebraᶜ C (Free C A) 
-impure′ = λ where .αᶜ → impure
+hmap-free : ∀[ ⟦ C₁ ⟧ᶜ ⇒ ⟦ C₂ ⟧ᶜ ] → ∀[ Free C₁ ⇒ Free C₂ ]
+hmap-free θ = fold-free pure λ where .αᶜ → impure ∘ θ  
 
 instance
   free-functor : Functor (Free C)

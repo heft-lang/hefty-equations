@@ -15,16 +15,16 @@ open import Data.List
 module Effect.Instance.Abort.Theory where
 
 bind-abort : Equation Abort 
-bind-abort = exˡ ≗ exʳ
+bind-abort = left ≗ right
   
   where
     ctx ret : TypeContext 2 → Set
     ctx (A , B , _) = A → Free Abort B
     ret (A , B , _) = B 
-    exˡ exʳ : Π[ ctx ⇒ ret ⊢ Free Abort ] 
+    left right : Π[ ctx ⇒ ret ⊢ Free Abort ] 
 
-    exˡ _ k = abort >>= k
-    exʳ _ _ = abort 
+    left  _ k = abort >>= k
+    right _ _ = abort 
 
 AbortTheory : Theory Abort
 AbortTheory =

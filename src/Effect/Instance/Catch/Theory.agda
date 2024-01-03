@@ -83,7 +83,7 @@ catch-catch = left ≗ᴴ right
 
     left  _ (m₁ , m₂ , k , m₃) = catch (catch m₁ m₂ >>= k) m₃
     right _ (m₁ , m₂ , k , m₃) = catch (m₁ >>= k) (catch (m₂ >>= k) m₃) 
-   
+
 
 CatchTheory : Theoryᴴ Catch
 CatchTheory =
