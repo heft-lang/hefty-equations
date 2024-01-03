@@ -66,7 +66,7 @@ Modular {ε₁ = ε₁} H =
   ∀ {B ε₂ ε} (m : Free ε₂ B)
   → (σ : ε₁ ∙ ε₂ ≈ ε)
   → (x : _)
-    -------------------------------------------------
+    -------------------------------------------------------------
   → handle′ H x (separate σ (♯ʳ′ σ m)) ≡ fmap (flip (H .gen) x) m
  
 
@@ -132,3 +132,6 @@ handle-modular′ {ε} H (impure ⟨ c , r ⟩) a = begin
   ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ p → handle-modular′ H (r p) a) ⟩
     impure ⟨ c , fmap (flip (H .gen) a) ∘ r ⟩
   ∎
+
+handle-modular : (H : Handler ε A F) → Modular H
+handle-modular H = sep-modular H (handle-modular′ H)
