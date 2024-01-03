@@ -58,12 +58,12 @@ record NaturalIsomorphism {a b} {F G : Set a → Set b}
 
 open NaturalIsomorphism public 
 
-∘-iso : ∀ {a b} {F G H : Set a → Set b}
+∘-natiso : ∀ {a b} {F G H : Set a → Set b}
           {F↔G : ∀ x → F x ↔ G x} {G↔H : ∀ x → G x ↔ H x}
         → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄ → ⦃ _ : Functor H ⦄ 
         → NaturalIsomorphism F↔G → NaturalIsomorphism G↔H
         → NaturalIsomorphism λ x → F↔G x ↔-∘ G↔H x 
-∘-iso {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
+∘-natiso {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
   { to-natural   = λ where .commute → to-nat
   ; from-natural = λ where .commute → from-nat
   }
