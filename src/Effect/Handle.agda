@@ -19,7 +19,7 @@ open import Effect.Separation
 open import Function hiding (_⇔_)
 
 open import Relation.Binary using (Preorder)
-open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
+open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_]) hiding (naturality)
 
 module Effect.Handle where
 
@@ -93,7 +93,7 @@ weaken-lemma {ε₁} {ε₂} σ (impure ⟨ c , r ⟩) = begin
       ( σ .sep _ .union .from (fmap (separate σ)
         ( (σ .sep _ .union .to (inj₂ ⟨ c , ♯ʳ′ σ ∘ r ⟩))
         )))) 
-  ≡⟨ cong (λ ○ → impure (coproduct-lemma .to (σ .sep _ .union .from ○))) (lemma (separate σ) ⟨ c , ♯ʳ′ σ ∘ r ⟩ ) ⟩
+  ≡⟨ cong (λ ○ → impure (coproduct-lemma .to (σ .sep _ .union .from ○))) (comm (separate σ) ⟨ c , ♯ʳ′ σ ∘ r ⟩ ) ⟩
     impure (coproduct-lemma .to
       ( σ .sep _ .union .from (σ .sep _ .union .to
         ( inj₂ ⟨ c , separate σ ∘ ♯ʳ′ σ ∘ r ⟩)
@@ -108,11 +108,14 @@ weaken-lemma {ε₁} {ε₂} σ (impure ⟨ c , r ⟩) = begin
     ♯ʳ ε₁ (impure ⟨ c , r ⟩) 
   ∎
   where
-    -- TODO: this looks like a naturality square. Most likely we should amend
-    -- the definition of effect separation to require that the isomorphism that
-    -- witnesses it is in fact a natural iso. Same for effect inclusion. 
-    postulate lemma : ∀ f v → fmap f ((σ .sep _ .union .to (inj₂ v))) ≡ σ .sep _ .union .to (inj₂ (fmap f v))
-
+    comm : ∀ f v → fmap f ((σ .sep _ .union .to (inj₂ v))) ≡ σ .sep _ .union .to (inj₂ (fmap f v))
+    comm f v = begin
+        fmap f ((σ .sep _ .union .to (inj₂ v)))
+      ≡⟨ (sym $ σ .natural-iso .to-natural .commute {f = f} (inj₂ v)) ⟩
+        σ .sep _ .union .to (fmap f (inj₂ v))
+      ≡⟨⟩ {- Definition of fmap for sums -}  
+        σ .sep _ .union .to (inj₂ (fmap f v))
+      ∎ 
 
 sep-modular : (H : Handler ε₁ A F) → Modular′ H → Modular H
 sep-modular {ε₁} H mod m σ a = begin
