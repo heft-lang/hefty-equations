@@ -201,6 +201,10 @@ we need this? -}
 ≲-∙-right : ε₁ ∙ ε₂ ≈ ε → ε₂ ≲ ε
 ≲-∙-right σ .inc = -, ∙-comm σ .sep
 
+-- TODO: we can't show this with the current definition of effect inclusion and
+-- separation, I think, but should be provable if we set things up in the right
+-- way.
+postulate ≲-to-∙ : ε₁ ≲ ε → ∃ λ ε₂ → ε₁ ∙ ε₂ ≈ ε
 
 -- Effect inclusion respects (natural) effect equivalence
 
