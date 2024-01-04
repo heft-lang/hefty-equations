@@ -83,7 +83,7 @@ _⊆ᴴ_ : Theoryᴴ η → Theoryᴴ η → Set₁
 Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th₂
 
 embed-theory : Theory ε → Theoryᴴ (↑ ε)
-embed-theory T .equationsᴴ = map embed-equation (T .equations)
+embed-theory T .equationsᴴ = map embed-equation (map □-extract $ T .equations)
 
 wk-theoryᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Theoryᴴ η₁ → Theoryᴴ η₂ 
 wk-theoryᴴ eq = ∥ map wk-equationᴴ (eq .equationsᴴ) ∥ᴴ
