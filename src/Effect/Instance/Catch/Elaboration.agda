@@ -4,10 +4,16 @@ open import Core.Functor
 open import Core.Signature
 open import Core.Container
 open import Core.Extensionality
+open import Core.MonotonePredicate 
 
 open import Effect.Base
 open import Free.Base
-open import Hefty.Base 
+open import Hefty.Base
+
+open import Effect.Handle
+open import Effect.Elaborate
+open import Effect.Separation
+open import Effect.Logic 
 
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
@@ -30,68 +36,111 @@ open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
 open import Function
 open import Data.Vec hiding ([_])
-open import Relation.Unary hiding (Empty)
+open import Relation.Unary hiding (Empty ; _⊆_)
 
 module Effect.Instance.Catch.Elaboration where
 
+open Connectives
+open _≲_ 
 
-wt : ε ⊑ (ε ⊕ᶜ Empty)
-wt = ⊑-⊕ᶜ-left Empty 
+CatchElab : Elaboration Catch Abort
+CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
+  where
+    CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra Catch (Free ε)
+    CatchElabAlg     ⦃ i ⦄ .α ⟪ `throw   , k , s ⟫ = abort
+    CatchElabAlg {ε} ⦃ i ⦄ .α ⟪ `catch A , k , s ⟫ = do
+      v ← ♯ (handleAbort σ' (s (inj₁ tt)))
+      maybe′ k (s (inj₂ tt) >>= k) v
 
-CatchElab : Elaboration Catch Abort  
-CatchElab .elab .α ⟪ `throw   , r , s ⟫ = abort
-CatchElab .elab .α ⟪ `catch A , r , s ⟫ =
-  maybe′ r (s (inj₂ tt) >>= r)
-    (extract $ handleAbort (♯ ⦃ wt ⦄ (s (inj₁ tt))))
+      where
+        ε' = proj₁ (≲-to-∙ i)
+        σ' = proj₂ (≲-to-∙ i)
+        instance inst : ε' ≲ ε
+        inst = ≲-∙-right σ'
+        
+-- 
+-- elab-respects-bind : ∀ c r s (k : A → Free Abort B) → CatchElab .elab .α ⟪ c , r , s ⟫ >>= k ≡ CatchElab .elab .α ⟪ c , (_>>= k) ∘ r , s ⟫
+-- elab-respects-bind `throw r s k = {!!}
+-- elab-respects-bind (`catch t) r s k = {!!}
+--
 
-elab-respects-bind : ∀ c r s (k : A → Free Abort B) → CatchElab .elab .α ⟪ c , r , s ⟫ >>= k ≡ CatchElab .elab .α ⟪ c , (_>>= k) ∘ r , s ⟫
-elab-respects-bind `throw r s k = {!!}
-elab-respects-bind (`catch t) r s k = {!!}
 
+-- 
 -- record HandleSem (ε : Effect) (F : Set → Set) : Set where
 --   field ℋ⟦_⟧ : ∀[ Free ε ⇒ F ]
-
+-- 
 -- open HandleSem ⦃...⦄
-
+-- 
 -- record ElabSem (η : Effectᴴ) (ε : Effect) : Set where
 --   field ℰ⟦_⟧ : ∀[ Hefty η ⇒ Free ε ]
-
+-- 
 --   ℰ : ∀[ Hefty η ⇒ Free ε ]
 --   ℰ = ℰ⟦_⟧
-    
-
+--     
+-- 
 -- open ElabSem ⦃...⦄
-
+-- 
 -- instance catchESem : ElabSem Catch Abort
 -- catchESem = record { ℰ⟦_⟧ = elaborate CatchElab }
-
+-- 
 -- instance abortHSem : HandleSem Abort Maybe
--- abortHSem = record { ℋ⟦_⟧ = λ x → extract $ handleAbort (♯ ⦃ wt ⦄ x) }
+-- abortHSem = record { ℋ⟦_⟧ = λ x → {!!}  }
+--
 
--- open ≈-Reasoning AbortTheory
-
--- CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
-
--- CatchElabCorrect (here refl) {_ ∷ _ ∷ []} {k} = begin
-
---     ℰ⟦ throw >>= k ⟧ 
---   ≈⟪⟫ {- Definition of throw/bind for Hefty trees -}
---     ℰ⟦ throw ⟧
---   ∎
-
--- CatchElabCorrect (there (here refl)) {_ ∷ []} {m , x}  = 
-
---   begin
---     ℰ⟦ catch (pure x) m ⟧ 
---   ≈⟪⟫ {- Definition of `elabCatch` -} 
---     ℰ⟦ maybe′ pure m ℋ⟦ pure x ⟧ ⟧
---   ≈⟪⟫ {- Definitions of `extract` and `handleAbort` -} 
---     ℰ⟦ maybe′ pure m (just x) ⟧ 
---   ≈⟪⟫ {- Definition of `maybe` -} 
---     ℰ⟦ pure x ⟧
---   ∎ 
+ℰ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Hefty Catch ⇒ Free ε ]  
+ℰ⟦_⟧ ⦃ i ⦄ = fold-hefty pure (□⟨ CatchElab .elab ⟩ i) 
 
 
+CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
+CatchElabCorrect px {ε′ = ε′} i T′ sub {γ = k} = go px ⦃ i ⦄ sub 
+  where
+    open ≈-Reasoning T′
+    ε' = proj₁ (≲-to-∙ i)
+    σ' = proj₂ (≲-to-∙ i)
+    instance inst : ε' ≲ ε′
+    inst = ≲-∙-right σ'
+
+    ℋ⟦_⟧ : ∀[ Free ε′ ⇒ Maybe ⊢ Free ε′ ]
+    ℋ⟦_⟧ = ♯ ∘ handleAbort σ' 
+
+    go : ∀ {eq : Equationᴴ _}
+         → eq ◃ᴴ CatchTheory
+         → ⦃ i : Abort ≲ ε′ ⦄
+         → weaken i AbortTheory ⊆ T′
+           -------------------------------------------------
+         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ CatchElab .elab ⟩ i) eq
+
+
+    -- bind-throw 
+    go (here refl) _ {γ = k} =
+      begin
+        ℰ⟦ throw >>= k ⟧
+      ≈⟪⟫ {- Definition of >>= and throw -}
+        abort 
+      ≈⟪⟫ {- Definition of throw -} 
+        ℰ⟦ throw ⟧
+      ∎
+
+    -- catch-return 
+    go (there (here refl)) sub {γ = m , x} =
+      begin
+        ℰ⟦ catch (return x) m ⟧
+      ≈⟪⟫ {- Definition of catch -} 
+         ℋ⟦ return x ⟧ >>= (λ v → ℰ⟦ maybe′ return m v ⟧)
+      ≈⟪⟫ {- Definition of abort handler -} 
+        pure x >>= (λ v → ℰ⟦ maybe′ return m (just v) ⟧)
+      ≈⟪⟫ {- Definition of >>= -} 
+        ℰ⟦ maybe′ return m (just x) ⟧
+      ≈⟪⟫ {- Definition of maybe′ -} 
+        ℰ⟦ return x ⟧
+      ∎
+
+    -- catch-throw 
+    go (there (there (here refl))) sub = {!!}
+
+
+    go (there (there (there x))) sub = {!!}
+    
 -- CatchElabCorrect (there (there (here refl))) {A ∷ []} {m} =
 
 --   begin
@@ -108,8 +157,9 @@ elab-respects-bind (`catch t) r s k = {!!}
 --     ℰ⟦ m ⟧
 --   ∎
   
--- CatchElabCorrect (there (there (there (here refl)))) {δ = A ∷ []} {m} =
+-- CatchElabCorrect (there (there (there (here refl)))) {δ = A ∷ []} {m} = ? 
 
+  
 --   begin
 --     ℰ⟦ catch m throw ⟧
 --   ≈⟪⟫ {- Definition of `elabCatch` -} 
@@ -120,16 +170,19 @@ elab-respects-bind (`catch t) r s k = {!!}
 
 --   where 
 --     nothing-case : ∀ m → ℋ⟦ ℰ⟦ m ⟧ ⟧ ≡ nothing → (abort >>= pure) ≈ ℰ⟦ m ⟧
---     nothing-case m eq =
+--     nothing-case m eq = ?
+--     {-
 --       begin
 --         abort >>= pure
 --       ≈⟪ ≈-eq′ bind-abort (here refl)  ⟫
 --         abort
---       ≈⟪ adequacy (sym $ extract-lemma _ eq) ⟫
+--       ≈⟪ ?  ⟫
 --         ℰ⟦ m ⟧
 --       ∎
---       where open Adequacy
+--       wher
+--     -} 
 
+--     {- 
 --     just-case : (x′ : A) → ℋ⟦ ℰ⟦ m ⟧ ⟧ ≡ just x′ → pure x′ ≈ ℰ⟦ m ⟧
 --     just-case x′ eq =
 --       begin
@@ -138,7 +191,8 @@ elab-respects-bind (`catch t) r s k = {!!}
 --         ℰ⟦ m ⟧
 --       ∎
 --       where open Adequacy
-  
+--     -} 
+
 -- CatchElabCorrect (there (there (there (there (here refl))))) {_ ∷ _ ∷ []} {m₁ , m₂ , k , m₃} =
 
 --   begin
