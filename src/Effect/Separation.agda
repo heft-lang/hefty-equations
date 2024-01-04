@@ -199,7 +199,18 @@ we need this? -}
 ≲-∙-left σ .inc = -, σ .sep
 
 ≲-∙-right : ε₁ ∙ ε₂ ≈ ε → ε₂ ≲ ε
-≲-∙-right σ .inc = -, ∙-comm σ .sep 
+≲-∙-right σ .inc = -, ∙-comm σ .sep
+
+
+-- Effect inclusion respects (natural) effect equivalence
+
+≲-resp-≋ˡ : ε₁ ≋ ε₂ → ε₁ ≲ ε → ε₂ ≲ ε
+≲-resp-≋ˡ eq i = record {
+    inc = inc ⦃ i ⦄ .proj₁ , λ x → record
+            { union = ⊎-congˡ {s = 0ℓ} (↔-sym (eq .iso x)) ↔-∘ inc ⦃ i ⦄ .proj₂ _ .DisjointUnion.union
+            }
+  }
+
 
 ♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
 ♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
