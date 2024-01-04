@@ -81,15 +81,24 @@ open _≋_ public
 
 ≋-refl : Reflexive _≋_
 ≋-refl = record
-  { iso         = λ _ → id-↔ _
-  ; iso-natural = {!!}
+  { iso         = λ _ → ↔-id _
+  ; iso-natural = record
+    { to-natural   = λ where .commute _ → refl
+    ; from-natural = λ where .commute _ → refl
+    }
   }
 
 ≋-sym : Symmetric _≋_
-≋-sym = {!!} 
+≋-sym eq = record
+  { iso         = ↔-sym ∘ eq .iso
+  ; iso-natural = natiso-sym (eq .iso-natural)
+  } 
 
 ≋-trans : Transitive _≋_
-≋-trans = {!!} 
+≋-trans eq₁ eq₂ = record
+  { iso         = λ x → eq₁ .iso x ↔-∘ eq₂ .iso x 
+  ; iso-natural = natiso-∘ (eq₁ .iso-natural) (eq₂ .iso-natural)
+  } 
 
 ≋-isEquivalence : IsEquivalence _≋_
 ≋-isEquivalence = record
@@ -103,7 +112,6 @@ free-resp-≋ eq = hmap-free (eq .iso _ .Inverse.to)
 
 injectᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Algebra η₁ (Hefty η₂)
 injectᴴ .α v = impure (injᴴ v)  
-
 
 ♯ᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → ∀[ Hefty η₁ ⇒ Hefty η₂ ]
 ♯ᴴ = fold-hefty {F = Hefty _} pure injectᴴ
