@@ -5,6 +5,7 @@ open import Relation.Unary
 open import Effect.Base
 open import Free.Base
 open import Effect.Separation
+open import Effect.Logic
 
 open import Effect.Theory.FirstOrder
 open import Effect.Instance.Abort.Syntax
@@ -14,17 +15,21 @@ open import Data.List
 
 module Effect.Instance.Abort.Theory where
 
-bind-abort : Equation Abort 
-bind-abort = left ≗ right
+open Connectives
+
+bind-abort : □ Equation Abort 
+bind-abort = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄  
   
   where
-    ctx ret : TypeContext 2 → Set
-    ctx (A , B , _) = A → Free Abort B
-    ret (A , B , _) = B 
-    left right : Π[ ctx ⇒ ret ⊢ Free Abort ] 
+    module _ {ε} ⦃ _ : Abort ≲ ε ⦄ where 
 
-    left  _ k = abort >>= k
-    right _ _ = abort 
+      ctx ret : TypeContext 2 → Set
+      ctx (A , B , _) = A → Free ε B
+      ret (A , B , _) = B 
+      left right : Π[ ctx ⇒ ret ⊢ Free ε ] 
+
+      left  _ k = abort >>= k
+      right _ _ = abort 
 
 AbortTheory : Theory Abort
 AbortTheory =

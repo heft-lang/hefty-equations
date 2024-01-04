@@ -98,36 +98,36 @@ Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⦃ ⊑ᴴ-⊕-left ⦄ Th₁ ⟨+⟩ᴴ wk-th
 -- Syntactic equivalence of programs with higher order effects, with respect to
 -- a given theory `Th`. Analagous to how we defined syntactic equivalence for
 -- first-order effect trees
-infix 2 _≋⟨_⟩_
-data _≋⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty η A) → Set₁ where
+infix 2 _≅⟨_⟩_
+data _≅⟨_⟩_ {η} : (m₁ : Hefty η A) → Theoryᴴ η → (m₂ : Hefty η A) → Set₁ where
 
-  ≋-refl  : ------------
-            m ≋⟨ Th ⟩ m
+  ≅-refl  : ------------
+            m ≅⟨ Th ⟩ m
 
-  ≋-sym   : m₁ ≋⟨ Th ⟩ m₂
+  ≅-sym   : m₁ ≅⟨ Th ⟩ m₂
             -------------
-          → m₂ ≋⟨ Th ⟩ m₁
+          → m₂ ≅⟨ Th ⟩ m₁
 
-  ≋-trans : m₁ ≋⟨ Th ⟩ m₂
-          → m₂ ≋⟨ Th ⟩ m₃
+  ≅-trans : m₁ ≅⟨ Th ⟩ m₂
+          → m₂ ≅⟨ Th ⟩ m₃
             -------------
-          → m₁ ≋⟨ Th ⟩ m₃
+          → m₁ ≅⟨ Th ⟩ m₃
 
-  ≋-cong  : (c : η .command)
+  ≅-cong  : (c : η .command)
           → (r₁ r₂ : η .response c → Hefty η A)
           → (s₁ s₂ : (ψ : η .fork c) → Hefty η (η .returns ψ))
-          → (∀ {x} → r₁ x ≋⟨ Th ⟩ r₂ x)
-          → (∀ {ψ} → s₁ ψ ≋⟨ Th ⟩ s₂ ψ)  
+          → (∀ {x} → r₁ x ≅⟨ Th ⟩ r₂ x)
+          → (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
             -----------------------------------------------------
-          → impure ⟪ c , r₁ , s₁ ⟫ ≋⟨ Th ⟩ impure ⟪ c , r₂ , s₂ ⟫
+          → impure ⟪ c , r₁ , s₁ ⟫ ≅⟨ Th ⟩ impure ⟪ c , r₂ , s₂ ⟫
 
-  ≋-eq    : (eq : Equationᴴ η)
+  ≅-eq    : (eq : Equationᴴ η)
           → eq ◃ᴴ Th
           → (δ : TypeContext (eq .Δ′))
           → (γ : eq .Γ′ δ)
           → (k : eq .R′ δ → Hefty η B)
             -----------------------------------------------
-          → eq .rhsᴴ δ γ >>= k ≋⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
+          → eq .rhsᴴ δ γ >>= k ≅⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
 
 
 {- Correctness of elaborations -} 

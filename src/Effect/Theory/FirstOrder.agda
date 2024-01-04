@@ -1,6 +1,7 @@
 open import Effect.Base
 open import Effect.Separation
 open import Effect.Handle
+open import Effect.Logic
 
 open import Free.Base
 
@@ -32,6 +33,8 @@ open import Level
    by Fusion, Zhixuan Yang and Nicholas Wu" -}
 module Effect.Theory.FirstOrder where
 
+open Connectives
+
 variable c c₁ c₂ c₃ : Free ε A
 
 -- We define type contexts as a product by induction over the length rather than
@@ -50,7 +53,6 @@ record Equation (ε : Effect) : Set₁ where
     {Δ′}    : ℕ
     {Γ′ R′} : TypeContext Δ′ → Set
     lhs rhs : Π[ Γ′ ⇒ R′ ⊢ Free ε ] 
-
   
 open Equation public 
 
@@ -71,21 +73,22 @@ eq-resp-≋ eqv = hmap-eq (eqv .iso _ .Inverse.to)
 
 -- We say that an algebra "respects" an equation if folding with that algebra
 -- over both the left- and right-hand-side of the equation produces equal results
-Respects : Algebraᶜ ε A → Equation ε → Set₁
-Respects alg (lhs ≗ rhs) =
-  ∀ {δ γ k} → fold-free k alg (lhs δ γ) ≡ fold-free k alg (rhs δ γ)
+Respects : Algebraᶜ ε A → □ Equation ε → Set₁
+Respects alg eq =
+  ∀ {δ γ k} → fold-free k alg (□-extract eq .lhs δ γ) ≡ fold-free k alg (□-extract eq .rhs δ γ) 
 
 -- A theory of an effect `ε` is simply a collection of equations
 record Theory (ε : Effect) : Set₁ where
   no-eta-equality
   constructor ∥_∥
   field
-    equations : List (Equation ε)
+    equations : List (□ Equation ε)
+
 
 open Theory public
 
 -- A predicate asserting that a given equation is part of a theory
-_◃_ : Equation ε → Theory ε → Set₁
+_◃_ : □ Equation ε → Theory ε → Set₁
 eq ◃ T = eq ∈ T .equations
 
 -- Theory inclusion
@@ -96,11 +99,8 @@ T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂
 instance theory-monotone : Monotone Theory
 theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
 
-hmap-theory : ε₁ ↦ ε₂ → Theory ε₁ → Theory ε₂
-hmap-theory θ T = ∥ map (hmap-eq θ) (T .equations) ∥
-
 theory-resp-≋ : ε₁ ≋ ε₂ → Theory ε₁ → Theory ε₂ 
-theory-resp-≋ eq = hmap-theory (eq .iso _ .Inverse.to) 
+theory-resp-≋ eqv T = ∥ map (□-resp-≋ eqv) $ T .equations ∥
 
 -- Heterogeneous theory inclusion
 _∣⊆∣_ : Theory ε₁ → Theory ε₂ → Set₁
@@ -149,12 +149,12 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
             ------------------------------------------
           → impure ⟨ s , p₁ ⟩ ≈⟨ T ⟩ impure ⟨ s , p₂ ⟩   
 
-  ≈-eq    : (eq : Equation ε)
-          → eq ◃ T
-          → (δ : TypeContext (eq .Δ′))
-          → (γ : eq .Γ′ δ)
-            ------------------------------
-          → eq .lhs δ γ ≈⟨ T ⟩ eq .rhs δ γ
+  ≈-eq    : (eq : □ Equation ε)
+          → eq ◃ T  
+          → (δ : TypeContext (□-extract eq .Δ′))
+          → (γ : □-extract eq .Γ′ δ)
+            --------------------------------------------------
+          → □-extract eq .lhs δ γ ≈⟨ T ⟩ □-extract eq .rhs δ γ
 
   ≈-bind  : {A B : Set} {c₁ c₂ : Free ε A}
           → c₁ ≈⟨ T ⟩ c₂
@@ -168,6 +168,7 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 ≡-to-≈ : {c₁ c₂ : Free ε A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
 ≡-to-≈ refl = ≈-refl
 
+
 -- Below we define the key correctness property of handlers 
 -- 
 -- In the IFCP paper they sketch a proof that Correctness of a handler `h`
@@ -180,7 +181,7 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 Correct : {P : Set} → Theory ε → Handler ε P F → Set₁
 Correct T h =
   ∀ {A ε′}
-  → {eq : Equation _}
+  → {eq : □ Equation _}
   → eq ◃ T
     --------------------------------------
   → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
@@ -212,13 +213,18 @@ Adequate {ε₁} {A} H T =
 
 open DisjointUnion
 
-sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequate H ]
-sep-adequate H T adq a m₁ m₂ σ {T′} T⊆T′ eq
-  with adq a (separate σ m₁) (separate σ m₂)
-         {T′ = theory-resp-≋ {!∙-to-≋ ?!} T′}
-         {!T⊆T′!} eq
-... | r = {!r!}
-
+postulate sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequate H ]
+-- sep-adequate {ε₁} H T adq {ε₂ = ε₂} {ε} a m₁ m₂ σ {T′} T⊆T′ eq
+--   with adq a (separate σ m₁) (separate σ m₂) {T′ = T′′} {!!} eq 
+--   where
+--     eq′ : ε ≋ (ε₁ ⊕ᶜ ε₂) 
+--     eq′ = (≋-sym (∙-to-≋ σ)) 
+--   
+--     T′′ : Theory (ε₁ ⊕ᶜ ε₂)
+--     T′′ = theory-resp-≋ eq′ T′
+-- 
+-- ... | eqv = {!!} 
+-- 
 -- 
 -- -- Correctness of transformations: we say that a handler `h` is a correct
 -- -- transformation iff it is the case that equality of computations under a summed
@@ -270,5 +276,5 @@ module ≈-Reasoning (T : Theory ε) where
   -- Equivalence following from equations of the theory, specialized to empty continuations
   --
   -- TODO: find membership proof using instance search? 
-  ≈-eq′ : (eq : Equation ε) → eq ◃ T → {δ : TypeContext (eq .Δ′)} → {γ : eq .Γ′ δ} → eq .lhs δ γ ≈ eq .rhs δ γ
-  ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ
+  ≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈ □-extract eq .rhs δ γ
+  ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ  

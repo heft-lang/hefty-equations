@@ -103,6 +103,9 @@ module Connectives where
   instance □-monotone : Monotone (□ P)
   □-monotone .weaken i px = necessary λ i′ → □⟨ px ⟩ ≲-trans i i′ 
 
+  □-resp-≋ : ε₁ ≋ ε₂ → □ P ε₁ → □ P ε₂
+  □-resp-≋ eqv px = necessary λ i → □⟨ px ⟩ ≲-resp-≋ˡ (≋-sym eqv) i
+
   -- Box and diamond are adjoint functors on the category of monotone predicates
   
   mod-curry : ∀[ ◇ P ⇒ Q ] → ∀[ P ⇒ □ Q ]
