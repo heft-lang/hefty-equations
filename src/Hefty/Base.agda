@@ -62,16 +62,27 @@ instance
 
   hefty-monad : Monad (Hefty σ)
   hefty-monad = record
-    { return = point
-    ; _∗     = flip bind-hefty
-    } 
+    { return    = point
+    ; _∗        = flip bind-hefty
+    ; >>=-idˡ   = λ _ _ → refl
+    ; >>=-idʳ   = right-identity
+    ; >>=-assoc = assoc 
+    }
+    where 
+      open import Relation.Binary.PropositionalEquality
 
-open import Relation.Binary.PropositionalEquality
-
->>=-unitᵣ : (m : Hefty σ A) → m >>= pure ≡ m
->>=-unitᵣ {σ} {A} (pure x)               = refl
->>=-unitᵣ {σ} {A} (impure ⟪ c , r , s ⟫) =
-  cong₂ (λ ○₁ ○₂ → impure ⟪ c , ○₁ , ○₂ ⟫)
-    (extensionality $ >>=-unitᵣ ∘ r)
-    (extensionality $ >>=-unitᵣ ∘ s)
-
+      right-identity : (m : Hefty σ A) → flip bind-hefty pure m ≡ m
+      right-identity {σ} {A} (pure x)               = refl
+      right-identity {σ} {A} (impure ⟪ c , r , s ⟫) = 
+        cong₂ (λ ○₁ ○₂ → impure ⟪ c , ○₁ , ○₂ ⟫)
+          (extensionality $ right-identity ∘ r)
+          (extensionality $ right-identity ∘ s) 
+ 
+      assoc : {A B D : Set} (k₁ : A → Hefty σ B) (k₂ : B → Hefty σ D) (m : Hefty σ A)
+            → flip (λ y x → bind-hefty x y) (flip (λ y x → bind-hefty x y) m k₁) k₂
+            ≡ flip (λ y x → bind-hefty x y) m (λ x → flip (λ y x₁ → bind-hefty x₁ y) (k₁ x) k₂)
+      assoc k₁ k₂ (pure x) = refl
+      assoc k₁ k₂ (impure ⟪ c , r , s ⟫) =
+        cong₂ (λ ○₁ ○₂ → impure ⟪ c , ○₁ , ○₂ ⟫)
+          (extensionality $ assoc k₁ k₂ ∘ r)
+          (extensionality $ assoc pure pure ∘ s)
