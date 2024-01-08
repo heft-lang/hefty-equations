@@ -275,14 +275,13 @@ module ≈-Reasoning (T : Theory ε) where
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix 3 _∎
 
-
-  maybe-lemma : ∀ {f : A → Free ε B} {z y : Free ε B} {x : Maybe A} → (∀ x′ → x ≡ just x′ → f x′ ≈ y) → (x ≡ nothing → z ≈ y) →  maybe′ f z x ≈ y 
-  maybe-lemma {x = just _}  j n = j _ refl
-  maybe-lemma {x = nothing} j n = n refl
-
-
 -- Equivalence following from equations of the theory, specialized to empty continuations
-≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈⟨ T ⟩ □-extract eq .rhs δ γ
+≈-eq′ : (eq : □ Equation ε)
+      → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)}
+      → {γ : □-extract eq .Γ′ δ}
+        --------------------------------------------------
+      → □-extract eq .lhs δ γ ≈⟨ T ⟩ □-extract eq .rhs δ γ
+      
 ≈-eq′ eq px {δ} {γ} =
   begin
     □-extract eq .lhs δ γ
@@ -294,6 +293,7 @@ module ≈-Reasoning (T : Theory ε) where
     □-extract eq .rhs δ γ
   ∎ 
   where open ≈-Reasoning _
+
 
 -- monadic bind respects syntactic equivalence of effect trees in the left position 
 >>=-resp-≈ˡ : {m₁ m₂ : Free ε A} {k : A → Free ε B} → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
@@ -313,6 +313,7 @@ module ≈-Reasoning (T : Theory ε) where
   ∎
   where open ≈-Reasoning _
 
+
 -- monadic bind respects syntactic equivalence of effect trees in the right position 
 >>=-resp-≈ʳ : {k₁ k₂ : A → Free ε B} {m : Free ε A} → (∀ a → k₁ a ≈⟨ T ⟩ k₂ a) → m >>= k₁ ≈⟨ T ⟩ m >>= k₂ 
 >>=-resp-≈ʳ {m = pure x} eq = eq _
@@ -327,3 +328,4 @@ module ≈-Reasoning (T : Theory ε) where
     impure ⟨ c , r ⟩ >>= k₂
   ∎
   where open ≈-Reasoning _ 
+
