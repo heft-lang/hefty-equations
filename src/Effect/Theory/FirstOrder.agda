@@ -281,15 +281,21 @@ module ≈-Reasoning (T : Theory ε) where
   maybe-lemma {x = nothing} j n = n refl
 
 
-  -- -- Equivalence following from equations of the theory, specialized to empty continuations
-  -- --
-  -- -- TODO: find membership proof using instance search? 
-  -- ≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈ □-extract eq .rhs δ γ
-  -- ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ  
+-- Equivalence following from equations of the theory, specialized to empty continuations
+≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈⟨ T ⟩ □-extract eq .rhs δ γ
+≈-eq′ eq px {δ} {γ} =
+  begin
+    □-extract eq .lhs δ γ
+  ≈⟪ ≈-sym (>>=-idʳ-≈ _) ⟫
+    □-extract eq .lhs δ γ >>= pure
+  ≈⟪ ≈-eq eq px δ γ pure ⟫
+    □-extract eq .rhs δ γ >>= pure 
+  ≈⟪ >>=-idʳ-≈ _ ⟫
+    □-extract eq .rhs δ γ
+  ∎ 
+  where open ≈-Reasoning _
 
-
-  
-
+-- monadic bind respects syntactic equivalence of effect trees 
 >>=-resp-≈ˡ : {m₁ m₂ : Free ε A} {k : A → Free ε B} → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
 >>=-resp-≈ˡ ≈-refl                      = ≈-refl
 >>=-resp-≈ˡ (≈-sym eq)                  = ≈-sym (>>=-resp-≈ˡ eq)
