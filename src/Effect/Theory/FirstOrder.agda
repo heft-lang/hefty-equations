@@ -150,24 +150,31 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
           → impure ⟨ s , p₁ ⟩ ≈⟨ T ⟩ impure ⟨ s , p₂ ⟩   
 
   ≈-eq    : (eq : □ Equation ε)
-          → eq ◃ T  
-          → (δ : TypeContext (□-extract eq .Δ′))
-          → (γ : □-extract eq .Γ′ δ)
-            --------------------------------------------------
-          → □-extract eq .lhs δ γ ≈⟨ T ⟩ □-extract eq .rhs δ γ
-
-  ≈-bind  : {A B : Set} {c₁ c₂ : Free ε A}
-          → c₁ ≈⟨ T ⟩ c₂
-          → (k : A → Free ε B)
-            -------------------------
-          → c₁ >>= k ≈⟨ T ⟩ c₂ >>= k 
-
+          → (px : eq ◃ T)  
+          → (δ  : TypeContext (□-extract eq .Δ′))
+          → (γ  : □-extract eq .Γ′ δ)
+          → (k  : R′ (□-extract eq) δ → Free ε A) 
+            --------------------------------------------------------------
+          → □-extract eq .lhs δ γ >>= k ≈⟨ T ⟩ □-extract eq .rhs δ γ >>= k
+          
 
 -- Propositional equality of effect trees can (clearly) be reflected as a
 -- syntactic equivalence
 ≡-to-≈ : {c₁ c₂ : Free ε A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
 ≡-to-≈ refl = ≈-refl
 
+{- Reflect the monad laws for Free as syntactic equivalences -}
+
+>>=-idˡ-≈ : ∀ (k : A → Free ε B) x → return x >>= k ≈⟨ T ⟩ k x
+>>=-idˡ-≈ k x = ≡-to-≈ (>>=-idˡ x k) 
+
+>>=-idʳ-≈ : (m : Free ε A) → m >>= pure ≈⟨ T ⟩ m
+>>=-idʳ-≈ m = ≡-to-≈ (>>=-idʳ m) 
+
+>>=-assoc-≈ : ∀ {D : Set} (k₁ : A → Free ε B) (k₂ : B → Free ε D) (m : Free ε A)
+             → flip (free-monad Monad.∗) (flip (free-monad Monad.∗) m k₁) k₂ ≈⟨ T ⟩ m >>= (k₁ >=> k₂)
+>>=-assoc-≈ k₁ k₂ m = ≡-to-≈ (>>=-assoc k₁ k₂ m)
+             
 
 -- Below we define the key correctness property of handlers 
 -- 
@@ -273,8 +280,29 @@ module ≈-Reasoning (T : Theory ε) where
   maybe-lemma {x = just _}  j n = j _ refl
   maybe-lemma {x = nothing} j n = n refl
 
-  -- Equivalence following from equations of the theory, specialized to empty continuations
-  --
-  -- TODO: find membership proof using instance search? 
-  ≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈ □-extract eq .rhs δ γ
-  ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ  
+
+  -- -- Equivalence following from equations of the theory, specialized to empty continuations
+  -- --
+  -- -- TODO: find membership proof using instance search? 
+  -- ≈-eq′ : (eq : □ Equation ε) → eq ◃ T → {δ : TypeContext (□-extract eq .Δ′)} → {γ : □-extract eq .Γ′ δ} → □-extract eq .lhs δ γ ≈ □-extract eq .rhs δ γ
+  -- ≈-eq′ eq px {δ} {γ} = ≈-eq eq px δ γ  
+
+
+  
+
+>>=-resp-≈ˡ : {m₁ m₂ : Free ε A} {k : A → Free ε B} → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
+>>=-resp-≈ˡ ≈-refl                      = ≈-refl
+>>=-resp-≈ˡ (≈-sym eq)                  = ≈-sym (>>=-resp-≈ˡ eq)
+>>=-resp-≈ˡ (≈-trans eq₁ eq₂)           = ≈-trans (>>=-resp-≈ˡ eq₁) (>>=-resp-≈ˡ eq₂)
+>>=-resp-≈ˡ {k = k} (≈-cong s p₁ p₂ x)  = ≈-cong s ((_>>= k) ∘ p₁) ((_>>= k) ∘ p₂) λ {v} → >>=-resp-≈ˡ (x {v})
+>>=-resp-≈ˡ {k = k} (≈-eq eq px δ γ k′) =
+  begin
+    (□-extract eq .lhs δ γ >>= k′) >>= k
+  ≈⟪ >>=-assoc-≈ k′ k (□-extract eq .lhs δ γ) ⟫
+    □-extract eq .lhs δ γ >>= (k′ >=> k)
+  ≈⟪ ≈-eq eq px δ γ (k′ >=> k) ⟫
+    □-extract eq .rhs δ γ >>= (k′ >=> k)
+  ≈⟪ ≈-sym (>>=-assoc-≈ k′ k (□-extract eq .rhs δ γ)) ⟫
+    (□-extract eq .rhs δ γ >>= k′) >>= k 
+  ∎
+  where open ≈-Reasoning _ 
