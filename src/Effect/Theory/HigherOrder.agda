@@ -152,7 +152,7 @@ Correctᴴ : Theoryᴴ η → Theory ε → Elaboration η ε → Set₁
 Correctᴴ Th T e =
   ∀ {eq : Equationᴴ _}
   → eq ◃ᴴ Th
-  → ∀ {ε′} → (i : _ ≲ ε′)
+  → ∀ {ε′} → ⦃ i : _ ≲ ε′ ⦄
   → (T′ : Theory ε′) → weaken i T ⊆ T′ 
   → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ i) eq 
 
@@ -235,35 +235,43 @@ map-id (impure ⟪ c , r , s ⟫) =
 
 module _ {T : Theory ε} where
 
-  ⟪⊕⟫-correct  : ∀ {e₁ e₂} 
-                 → Correctᴴ Th₁ T e₁
-                 → Correctᴴ Th₂ T e₂
-                 → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
+  -- "Homogeneous" composition of correctness proofs for h.o. effect theories.
+  --
+  -- This theorem establishes that correctness of composed elaborations follows
+  -- from correctness of their components, provided they assume the same lower
+  -- bound on the algebraic effects for elaboration, and establish correctness
+  -- w.r.t. the same first-order effect theory.
+  ⟪⊕⟫-correct
+    : ∀ {e₁ e₂} 
+      → Correctᴴ Th₁ T e₁
+      → Correctᴴ Th₂ T e₂
+        -------------------------------------
+      → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
 
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
     with [+]ᴴ-injective Th₁ Th₂ px
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
     | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑ᴴ-⊕-left _ px′
   ... | eq′ , px′′ , refl = begin
       fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
       fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₁ px′′ i T′ it ⟫
+    ≈⟪ c₁ px′′ ⦃ i ⦄ T′ it ⟫
       fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
       fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .rhsᴴ _ _))
     ∎
     where open ≈-Reasoning T′
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px i T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
     | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑ᴴ-⊕-right _ px′
   ... | eq′ , px′′ , refl = begin
       fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
       fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₂ px′′ i T′ it ⟫ 
+    ≈⟪ c₂ px′′ ⦃ i ⦄ T′ it ⟫ 
       fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
       fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
@@ -271,3 +279,20 @@ module _ {T : Theory ε} where
     ∎
     where open ≈-Reasoning T′ 
 
+weaken-correct : ∀ e (i : ε₁ ≲ ε₂) (Th : Theoryᴴ η) T′ → T ∣⊆∣ T′ → Correctᴴ Th T e → Correctᴴ Th T′ (weaken i e)
+weaken-correct = {!!} 
+
+compose-elab-correct
+  : ∀ (e₁ : Elaboration η₁ ε₁) (e₂ : Elaboration η₂ ε₂)
+    → Correctᴴ Th₁ T₁ e₁
+    → Correctᴴ Th₂ T₂ e₂
+    → (σ : ε₁ ∙ ε₂ ≈ ε)
+      -------------------------------------------------------------------------------------
+    → Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (compose-elab (e₁ ✴⟨ σ ⟩ e₂))
+compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e₂ c₁ c₂ σ =
+  ⟪⊕⟫-correct
+    {T = compose-theory (T₁ ✴⟨ σ ⟩ T₂)} {Th₁ = Th₁} {Th₂ = Th₂}
+    {e₁ = weaken (≲-∙-left σ) e₁}
+    {e₂ = weaken (≲-∙-right σ) e₂}
+    (weaken-correct {T = T₁} e₁ (≲-∙-left σ)  Th₁ (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (∣⊆∣-compose-left  T₁ T₂ σ) c₁)
+    (weaken-correct {T = T₂} e₂ (≲-∙-right σ) Th₂ (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (∣⊆∣-compose-right T₁ T₂ σ) c₂) 

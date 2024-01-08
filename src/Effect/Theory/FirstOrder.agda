@@ -114,6 +114,18 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 _[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
 _[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ weaken (≲-⊕ᶜ-right ε₁) T₂
 
+-- "Heterogeneous" composition of effect theories" 
+compose-theory : ∀[ (Theory ✴ Theory) ⇒ Theory ]
+compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩ weaken (≲-∙-right σ) T₂
+
+
+-- Heterogeneous theory inclusion respects heterogeneous composition
+{- TODO: prove -} 
+postulate 
+  ∣⊆∣-compose-left : ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂) → (σ : ε₁ ∙ ε₂ ≈ ε) → T₁ ∣⊆∣ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+  ∣⊆∣-compose-right : ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂) → (σ : ε₁ ∙ ε₂ ≈ ε) → T₂ ∣⊆∣ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+
+
 -- -- 
 -- -- -- Tensor of effect theories
 -- -- record _⊗_ (T₁ : Theory ε₁) (T₂ : Theory ε₂) : Set₁ where
