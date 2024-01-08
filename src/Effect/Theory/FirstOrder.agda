@@ -295,7 +295,7 @@ module ≈-Reasoning (T : Theory ε) where
   ∎ 
   where open ≈-Reasoning _
 
--- monadic bind respects syntactic equivalence of effect trees 
+-- monadic bind respects syntactic equivalence of effect trees in the left position 
 >>=-resp-≈ˡ : {m₁ m₂ : Free ε A} {k : A → Free ε B} → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
 >>=-resp-≈ˡ ≈-refl                      = ≈-refl
 >>=-resp-≈ˡ (≈-sym eq)                  = ≈-sym (>>=-resp-≈ˡ eq)
@@ -310,5 +310,20 @@ module ≈-Reasoning (T : Theory ε) where
     □-extract eq .rhs δ γ >>= (k′ >=> k)
   ≈⟪ ≈-sym (>>=-assoc-≈ k′ k (□-extract eq .rhs δ γ)) ⟫
     (□-extract eq .rhs δ γ >>= k′) >>= k 
+  ∎
+  where open ≈-Reasoning _
+
+-- monadic bind respects syntactic equivalence of effect trees in the right position 
+>>=-resp-≈ʳ : {k₁ k₂ : A → Free ε B} {m : Free ε A} → (∀ a → k₁ a ≈⟨ T ⟩ k₂ a) → m >>= k₁ ≈⟨ T ⟩ m >>= k₂ 
+>>=-resp-≈ʳ {m = pure x} eq = eq _
+>>=-resp-≈ʳ {k₁ = k₁} {k₂} {m = impure ⟨ c , r ⟩} eq =
+  begin
+    impure ⟨ c , r ⟩ >>= k₁
+  ≈⟪⟫ {- Definition of >>= -} 
+    impure ⟨ c , (_>>= k₁) ∘ r ⟩  
+  ≈⟪ ≈-cong c ((_>>= k₁) ∘ r) ((_>>= k₂) ∘ r) (>>=-resp-≈ʳ {m = r _} eq) ⟫
+    impure ⟨ c , (_>>= k₂) ∘ r ⟩  
+  ≈⟪⟫ {- Definition of >>= -}  
+    impure ⟨ c , r ⟩ >>= k₂
   ∎
   where open ≈-Reasoning _ 
