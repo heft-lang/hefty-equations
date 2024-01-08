@@ -54,10 +54,25 @@ instance
     } 
 
   free-monad : Monad (Free C)
-  free-monad .return = pure
-  
-  free-monad ._∗ k = fold-free k impure′
-  
+  free-monad = record
+    { return    = pure
+    ; _∗        = λ k → fold-free k impure′
+    ; >>=-idˡ   = λ _ _ → refl
+    ; >>=-idʳ   = right-identity
+    ; >>=-assoc = assoc
+    }
+    where
+      right-identity : ∀ (m : Free C A) → flip (λ k → fold-free k impure′) m pure ≡ m
+      right-identity (pure _)           = refl
+      right-identity (impure ⟨ c , k ⟩) = cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality $ right-identity ∘ k)
+
+      assoc : {A B D : Set}  (k₁ : A → Free C B) (k₂ : B → Free C D) (m : Free C A)
+            → flip (λ k → fold-free k impure′) (flip (λ k → fold-free k impure′) m k₁) k₂
+              -------------------------------------------------------------------------------------
+            ≡ flip (λ k → fold-free k impure′) m (λ x → flip (λ k → fold-free k impure′) (k₁ x) k₂)
+      assoc k₁ k₂ (pure x)           = refl
+      assoc k₁ k₂ (impure ⟨ c , k ⟩) = cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality $ assoc k₁ k₂ ∘ k)
+
 identity-fold-lemma : ∀ {c : Free C A} → fold-free pure impure′ c ≡ c  
 identity-fold-lemma {C} {A} {pure _} = refl
 identity-fold-lemma {C} {A} {impure ⟨ s , p ⟩} =

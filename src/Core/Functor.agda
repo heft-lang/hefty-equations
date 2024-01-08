@@ -162,6 +162,8 @@ record Monad (F : Set → Set) : Set₁ where
     return : A → F A
     _∗     : (A → F B) → (F A → F B)
 
+    
+
   infixr 5 _>>=_ 
   _>>=_ : F A → (A → F B) → F B 
   _>>=_ = flip _∗
@@ -170,7 +172,20 @@ record Monad (F : Set → Set) : Set₁ where
   (f >=> g) x = f x >>= g 
 
   _>>_ : F A → F B → F B
-  x >> y = x >>= λ _ → y  
+  x >> y = x >>= λ _ → y
+
+  field
+    >>=-idˡ : ∀ (x : A) (k : A → F B)
+                ---------------------
+              → return x >>= k ≡ k x
+              
+    >>=-idʳ : ∀ (m : F A)
+                ----------------
+              → m >>= return ≡ m
+              
+    >>=-assoc : ∀ {D} (k₁ : A → F B) (k₂ : B → F D) (m : F A) 
+                  -------------------------------------------
+                → (m >>= k₁) >>= k₂ ≡ m >>= (k₁ >=> k₂)  
 
 open Monad ⦃...⦄ public 
 
