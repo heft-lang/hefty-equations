@@ -13,7 +13,7 @@ open import Effect.Separation
 open import Effect.Logic
 
 open import Data.List hiding ([_])
-open import Data.List.Membership.Propositional
+open import Data.List.Membership.Propo itional
 open import Data.List.Relation.Unary.Any hiding (map)
 
 open import Data.Vec hiding (map ; _++_ ; [_])
@@ -279,8 +279,14 @@ module _ {T : Theory ε} where
     ∎
     where open ≈-Reasoning T′ 
 
-weaken-correct : ∀ e (i : ε₁ ≲ ε₂) (Th : Theoryᴴ η) T′ → T ∣⊆∣ T′ → Correctᴴ Th T e → Correctᴴ Th T′ (weaken i e)
-weaken-correct = {!!} 
+weaken-correct :
+  ∀ e (i : ε₁ ≲ ε₂) (Th : Theoryᴴ η) T′
+  → T ⊆⟨ i ⟩ T′
+  → Correctᴴ Th T e
+    ---------------------------
+  → Correctᴴ Th T′ (weaken i e)
+weaken-correct {T = T} e i Th T′ sub₁ c px ⦃ i = i′ ⦄ T′′ sub₂
+  = c px ⦃ ≲-trans i i′ ⦄ T′′ (⟨⊆⟩-trans {T₁ = T} {T₂ = T′} {T = T′′} sub₁ sub₂)
 
 compose-elab-correct
   : ∀ (e₁ : Elaboration η₁ ε₁) (e₂ : Elaboration η₂ ε₂)
@@ -289,10 +295,17 @@ compose-elab-correct
     → (σ : ε₁ ∙ ε₂ ≈ ε)
       -------------------------------------------------------------------------------------
     → Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (compose-elab (e₁ ✴⟨ σ ⟩ e₂))
+    
 compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e₂ c₁ c₂ σ =
   ⟪⊕⟫-correct
     {T = compose-theory (T₁ ✴⟨ σ ⟩ T₂)} {Th₁ = Th₁} {Th₂ = Th₂}
     {e₁ = weaken (≲-∙-left σ) e₁}
     {e₂ = weaken (≲-∙-right σ) e₂}
-    (weaken-correct {T = T₁} e₁ (≲-∙-left σ)  Th₁ (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (∣⊆∣-compose-left  T₁ T₂ σ) c₁)
-    (weaken-correct {T = T₂} e₂ (≲-∙-right σ) Th₂ (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (∣⊆∣-compose-right T₁ T₂ σ) c₂) 
+    ( weaken-correct {T = T₁} e₁ (≲-∙-left σ) Th₁
+        ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
+        ( ∣⊆∣-compose-left  T₁ T₂ σ )
+      c₁ )
+    ( weaken-correct {T = T₂} e₂ (≲-∙-right σ) Th₂
+        ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
+        ( ∣⊆∣-compose-right T₁ T₂ σ)
+      c₂ ) 

@@ -9,6 +9,7 @@ open import Core.Functor
 open import Core.Container
 open import Core.MonotonePredicate Effect _≲_
 open import Core.DisjointUnion
+open import Core.Extensionality
 
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
@@ -16,12 +17,15 @@ open import Data.Unit
 
 open import Data.List
 open import Data.List.Membership.Propositional
+open import Data.List.Membership.Propositional.Properties
+open import Data.List.Relation.Unary.Any hiding (map)
+
 open import Data.Nat
 open import Data.Vec hiding (map ; _++_)
 open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
 open import Relation.Unary hiding (_∈_ ; _⊆_)
-open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; cong)
+open import Relation.Binary.PropositionalEquality hiding (_≗_)
 open import Data.Empty
 
 open import Function
@@ -102,9 +106,78 @@ theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥
 theory-resp-≋ : ε₁ ≋ ε₂ → Theory ε₁ → Theory ε₂ 
 theory-resp-≋ eqv T = ∥ map (□-resp-≋ eqv) $ T .equations ∥
 
+◃-weaken : {eq : □ Equation ε} → ∀ T → eq ◃ T → (i : ε ≲ ε′) → weaken i eq ◃ weaken i T
+◃-weaken T px i with T .equations
+◃-weaken T (here refl) _ | _ ∷ _  = here refl
+◃-weaken T (there px)  i | _ ∷ xs = there (◃-weaken ∥ xs ∥ px i)
+
 -- Heterogeneous theory inclusion
-_∣⊆∣_ : Theory ε₁ → Theory ε₂ → Set₁
-T₁ ∣⊆∣ T₂ = ∀ i → weaken i T₁ ⊆ T₂
+module _ where 
+  _⊆⟨_⟩_ : Theory ε₁ → ε₁ ≲ ε₂ → Theory ε₂ → Set₁
+  T₁ ⊆⟨ i ⟩ T₂ = ∀ {eq} → eq ◃ T₁ → weaken i eq ◃ T₂ 
+
+
+  -- The following two lemmas witness that heterogeneous theory inclusion
+  -- carries the structure of what we might refer to as a "graded preorder" (or,
+  -- monoid) The grading is given by effect inclusion witnesses, which form a
+  -- monoid with reflexivity and transitivity as respectively the unit and
+  -- multiplication of the monoid.
+  --
+  -- TODO: is this a known structure? 
+
+  postulate ⟨⊆⟩-refl : {T : Theory ε} → T ⊆⟨ ≲-refl ⟩ T
+-- ⟨⊆⟩-refl {T = T} {eq = eq} px with T .equations
+-- ⟨⊆⟩-refl {T = T} {eq = .eq} (here refl) | eq ∷ _ = here (
+--   begin
+--     necessary (λ i → □⟨ eq ⟩ ≲-trans ≲-refl i)
+--   ≡⟨ {! !} ⟩
+--     necessary (λ i → □⟨ eq ⟩ i) 
+--   ≡⟨⟩ {- η-equivalence for □ modality -} 
+--     eq
+--   ∎ )
+--   where open ≡-Reasoning
+-- ⟨⊆⟩-refl {T = T} {eq = eq} (there px) | _ ∷ xs = there (⟨⊆⟩-refl {T = ∥ xs ∥} px)
+--
+  postulate 
+    ⟨⊆⟩-trans :
+      ∀ {T₁ : Theory ε₁} {T₂ : Theory ε₂} {T : Theory ε}
+        {i₁ : ε₁ ≲ ε₂} {i₂ : ε₂ ≲ ε}
+      → T₁ ⊆⟨ i₁ ⟩ T₂ → T₂ ⊆⟨ i₂ ⟩ T
+        ----------------------------
+      → T₁ ⊆⟨ ≲-trans i₁ i₂ ⟩ T
+-- ⟨⊆⟩-trans {T₁ = T₁} {T₂ = T₂} {T = T} {i₁ = i₁} {i₂} sub₁ sub₂ {eq} px =
+--   subst (λ ○ → ○ ◃ T) (
+--     begin
+--       (necessary λ i′ → □⟨ eq ⟩ ≲-trans i₁ (≲-trans i₂ i′))
+--     ≡⟨ {!!} ⟩
+--       (necessary λ i′ → □⟨ eq ⟩ ≲-trans (≲-trans i₁ i₂) i′)
+--     ∎ ) (sub₂ (sub₁ px))
+--   where open ≡-Reasoning
+--
+
+  -- We can't quite complete the proofs above yet. To do so, we would need to
+  -- assert that weakening of equations respects the monoidal structure of
+  -- effect inclusion in a suitable sense. What does this mean, precisely? Given
+  -- two witnesses i₁ and i₂ that can be "equated" under the monoid laws (with
+  -- reflexivity as the unit and transitivity as composition), weakening an
+  -- equation with either witness should give the same result.
+  --
+  -- This begs the question of what it means for two witnesses to be
+  -- equal. Propositional equality would be too strong, especially for the
+  -- current semantic defintion of effect inclusion as it would require equality
+  -- of the inverse proofs. This would require UIP to prove, but beyond that
+  -- it's completely unecessary if we're only interested in knowing that
+  -- inclusions give the same result once we compute the injections. A more
+  -- appealing setup would be to require (extensional) equality of the transport
+  -- witnesses.
+  --
+  -- Consequently, we would require additional proofs for all equations--which
+  -- are defined as function spaces over inclusion witnesses--to respect this
+  -- weaker notion of equality. Equations shouldn't really use this witness
+  -- other than to pass it onto smart constructors, so if we can prove that
+  -- weakening of effect trees respects extensional equality of inclusions
+  -- (which it should), we should be good.
+
 
 -- Coproduct of effect theories
 _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
@@ -114,27 +187,40 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 _[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
 _[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ weaken (≲-⊕ᶜ-right ε₁) T₂
 
+◃-⟨+⟩-left : ∀ {eq : □ Equation ε} → (T₁ T₂ : Theory ε) → eq ◃ T₁ → eq ◃ (T₁ ⟨+⟩ T₂)
+◃-⟨+⟩-left T₁ T₂ px = ∈-++⁺ˡ px
+
+◃-⟨+⟩-right : ∀ {eq : □ Equation ε} → (T₁ T₂ : Theory ε) → eq ◃ T₂ → eq ◃ (T₁ ⟨+⟩ T₂)
+◃-⟨+⟩-right T₁ T₂ px = ∈-++⁺ʳ (T₁ .equations) px
+
 -- "Heterogeneous" composition of effect theories" 
 compose-theory : ∀[ (Theory ✴ Theory) ⇒ Theory ]
 compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩ weaken (≲-∙-right σ) T₂
 
 
--- Heterogeneous theory inclusion respects heterogeneous composition
-{- TODO: prove -} 
-postulate 
-  ∣⊆∣-compose-left : ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂) → (σ : ε₁ ∙ ε₂ ≈ ε) → T₁ ∣⊆∣ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
-  ∣⊆∣-compose-right : ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂) → (σ : ε₁ ∙ ε₂ ≈ ε) → T₂ ∣⊆∣ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+-- Heterogeneous theory inclusion respects heterogeneous composition in both positions
+⟨⊆⟩-compose-left :
+  ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂)
+  → (σ : ε₁ ∙ ε₂ ≈ ε)
+     ------------------------------------------------
+  → T₁ ⊆⟨ ≲-∙-left σ ⟩ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+⟨⊆⟩-compose-left T₁ T₂ σ px =
+  ◃-⟨+⟩-left
+    (weaken (≲-∙-left σ) T₁)
+    (weaken (≲-∙-right σ) T₂)
+    (◃-weaken T₁ px (≲-∙-left σ))
 
+⟨⊆⟩-compose-right :
+  ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂)
+  → (σ : ε₁ ∙ ε₂ ≈ ε)
+    -------------------------------------------------
+  → T₂ ⊆⟨ ≲-∙-right σ ⟩ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+⟨⊆⟩-compose-right T₁ T₂ σ px =
+  ◃-⟨+⟩-right
+    (weaken (≲-∙-left σ) T₁)
+    (weaken (≲-∙-right σ) T₂)
+    (◃-weaken T₂ px (≲-∙-right σ))
 
--- -- 
--- -- -- Tensor of effect theories
--- -- record _⊗_ (T₁ : Theory ε₁) (T₂ : Theory ε₂) : Set₁ where
--- --   field
--- --     laws : {c₁ : ε₁ .shape} → {c₂ : ε₂ .shape} → {!!} 
--- -- 
--- --   theory : Theory (ε₁ ⊕ᶜ ε₂)
--- --   theory = T₁ [+] T₂ 
--- -- 
 
 variable T T₁ T₂ T₃ T′ : Theory ε
 
@@ -245,25 +331,6 @@ postulate sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequ
 -- ... | eqv = {!!} 
 -- 
 -- 
--- -- Correctness of transformations: we say that a handler `h` is a correct
--- -- transformation iff it is the case that equality of computations under a summed
--- -- effect theory `T₁ [+] T₂` implies equality under theory `T₂` after handling
--- -- `c₁` and `c₂` with `h`.
--- CorrectT : {P : Set} → Handler ε P F → Set₁
--- CorrectT {ε = ε} h =
---   ∀ {ε′}{c₁ c₂ : Free (ε ⊕ᶜ ε′) _}
---     {T₁ : Theory ε} {T₂ : Theory ε′} {v}
---   → c₁ ≈⟨ T₁ [+] T₂ ⟩ c₂ → handle h c₁ v ≈⟨ T₂ ⟩ handle h c₂ v 
---
-
---
--- TODO: define the first-order effect setup in terms of modular carriers
--- etc... to be able to make a more clear argument that we can borrow the
--- correctness proof from the paper?
---
--- perhaps even replicate a proof using postulated parametricity
--- 
-
 
 module ≈-Reasoning (T : Theory ε) where
 
@@ -286,6 +353,7 @@ module ≈-Reasoning (T : Theory ε) where
   infix 1 begin_
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix 3 _∎
+
 
 -- Equivalence following from equations of the theory, specialized to empty continuations
 ≈-eq′ : (eq : □ Equation ε)
