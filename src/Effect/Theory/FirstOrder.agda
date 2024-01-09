@@ -111,11 +111,16 @@ theory-resp-≋ eqv T = ∥ map (□-resp-≋ eqv) $ T .equations ∥
 ◃-weaken T (here refl) _ | _ ∷ _  = here refl
 ◃-weaken T (there px)  i | _ ∷ xs = there (◃-weaken ∥ xs ∥ px i)
 
--- Heterogeneous theory inclusion
-module _ where 
-  _⊆⟨_⟩_ : Theory ε₁ → ε₁ ≲ ε₂ → Theory ε₂ → Set₁
-  T₁ ⊆⟨ i ⟩ T₂ = ∀ {eq} → eq ◃ T₁ → weaken i eq ◃ T₂ 
+postulate ◃-inv : {eq : □ Equation ε₂} → ∀ T → (i : ε₁ ≲ ε₂) → eq ◃ weaken i T → ∃ λ eq′ → eq′ ◃ T × weaken i eq′ ≡ eq
 
+-- Heterogeneous theory inclusion
+module _ where
+
+  -- Use a record to help type inference 
+  record _⊆⟨_⟩_ (T₁ : Theory ε₁) (i : ε₁ ≲ ε₂) (T₂ : Theory ε₂) : Set₁ where 
+    field sub : ∀ {eq} → eq ◃ T₁ → weaken i eq ◃ T₂ 
+
+  open _⊆⟨_⟩_ public 
 
   -- The following two lemmas witness that heterogeneous theory inclusion
   -- carries the structure of what we might refer to as a "graded preorder" (or,
@@ -202,9 +207,10 @@ compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩
 ⟨⊆⟩-compose-left :
   ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂)
   → (σ : ε₁ ∙ ε₂ ≈ ε)
-     ------------------------------------------------
+     -----------------------------------------------
   → T₁ ⊆⟨ ≲-∙-left σ ⟩ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
-⟨⊆⟩-compose-left T₁ T₂ σ px =
+  
+⟨⊆⟩-compose-left T₁ T₂ σ .sub px =
   ◃-⟨+⟩-left
     (weaken (≲-∙-left σ) T₁)
     (weaken (≲-∙-right σ) T₂)
@@ -215,7 +221,8 @@ compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩
   → (σ : ε₁ ∙ ε₂ ≈ ε)
     -------------------------------------------------
   → T₂ ⊆⟨ ≲-∙-right σ ⟩ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
-⟨⊆⟩-compose-right T₁ T₂ σ px =
+
+⟨⊆⟩-compose-right T₁ T₂ σ .sub px =
   ◃-⟨+⟩-right
     (weaken (≲-∙-left σ) T₁)
     (weaken (≲-∙-right σ) T₂)
