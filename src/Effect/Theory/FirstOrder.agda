@@ -111,7 +111,6 @@ theory-resp-≋ eqv T = ∥ map (□-resp-≋ eqv) $ T .equations ∥
 ◃-weaken T (here refl) _ | _ ∷ _  = here refl
 ◃-weaken T (there px)  i | _ ∷ xs = there (◃-weaken ∥ xs ∥ px i)
 
-postulate ◃-inv : {eq : □ Equation ε₂} → ∀ T → (i : ε₁ ≲ ε₂) → eq ◃ weaken i T → ∃ λ eq′ → eq′ ◃ T × weaken i eq′ ≡ eq
 
 -- Heterogeneous theory inclusion
 module _ where
