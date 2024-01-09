@@ -1,5 +1,6 @@
 open import Core.Functor
 open import Core.Container
+open import Core.Extensionality
 
 open import Effect.Base
 open import Free.Base
@@ -113,7 +114,10 @@ swap-↔-natiso = record
 
 record _≲_ (ε₁ ε₂ : Effect) : Set₁ where
   field
-    inc : PointwiseInclusion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ 
+    inc : PointwiseInclusion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ
+
+  inj : ∀[ ⟦ ε₁ ⟧ᶜ ⇒ ⟦ ε₂ ⟧ᶜ ]
+  inj x = inc .proj₂ _ .DisjointUnion.union .Inverse.to (inj₁ x) 
 
 open _≲_ ⦃...⦄
 
@@ -133,10 +137,21 @@ instance ≲-refl : Reflexive _≲_
     ; reflexive     = λ where refl → ≲-refl
     ; trans         = ≲-trans
     }
-  } 
+  }
+
+-- Equivalence of inclusion witnesses
+record _⇔i_ (i₁ i₂ : ε₁ ≲ ε₂) : Set₁ where
+  field
+    inj-eq : (x : ⟦ ε₁ ⟧ᶜ A) → inj ⦃ i₁ ⦄ x ≡ inj ⦃ i₂ ⦄ x
+
+open _⇔i_
+
+-- TODO: prove that the monoid laws hold for effect inclusion, up to the
+-- equivalence relation defined above
+module _ where 
 
 inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
-inject .αᶜ = impure ∘ inc .proj₂ _ .DisjointUnion.union .Inverse.to ∘ inj₁  
+inject .αᶜ = impure ∘ inj  
 
 -- Effect weakening / masking for the free monad
 --
@@ -144,6 +159,19 @@ inject .αᶜ = impure ∘ inc .proj₂ _ .DisjointUnion.union .Inverse.to ∘ i
 -- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
 ♯ : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
 ♯ = fold-free pure inject
+
+-- Weakening respects equivalence of inclusion witnesses 
+♯-resp-⇔i : ∀ (i₁ i₂ : ε₁ ≲ ε₂) (m : Free ε₁ A) → i₁ ⇔i i₂ → ♯ ⦃ i₁ ⦄ m ≡ ♯ ⦃ i₂ ⦄ m
+♯-resp-⇔i i₁ i₂ (pure x) _ = refl
+♯-resp-⇔i i₁ i₂ (impure ⟨ c , k ⟩) eq = cong impure $ 
+  begin
+    inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₁ ⦄ ∘ k ⟩
+  ≡⟨ cong (λ ○ → inj ⦃ i₁ ⦄ ⟨ (c , ○) ⟩) (extensionality $ λ x → ♯-resp-⇔i i₁ i₂ (k x) eq) ⟩
+    inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩ 
+  ≡⟨ eq .inj-eq _ ⟩ 
+    inj ⦃ i₂ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩
+  ∎ 
+  where open ≡-Reasoning
 
 open Ternary
 
@@ -212,9 +240,7 @@ postulate ≲-to-∙ : ε₁ ≲ ε → ∃ λ ε₂ → ε₁ ∙ ε₂ ≈ ε
 ≲-resp-≋ˡ eq i = record {
     inc = inc ⦃ i ⦄ .proj₁ , λ x → record
             { union = ⊎-congˡ {s = 0ℓ} (↔-sym (eq .iso x)) ↔-∘ inc ⦃ i ⦄ .proj₂ _ .DisjointUnion.union
-            }
-  }
-
+            } }
 
 ♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
 ♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
