@@ -13,6 +13,7 @@ open import Relation.Binary.PropositionalEquality
 
 open import Function
 open import Function.Construct.Identity
+open import Function.Construct.Symmetry
 open import Function.Construct.Composition
 
 module Effect.DisjointUnion where
@@ -73,7 +74,23 @@ module _ where
   union-comm {ε₁} {ε₂} u .union _ = swapᶜ-↔ {ε₂} {ε₁} _ ↔-∘ u .union _ 
 
   union-assocʳ : RightAssociative
-  union-assocʳ {ε₁} {ε₂} {ε₁₂} {ε₃} {ε₁₂₃} u₁ u₂ = (ε₂ ⊕ᶜ ε₃) , Un , λ where .union _ → id-↔ _
+  union-assocʳ {ε₁} {ε₂} {ε₁₂} {ε₃} {ε₁₂₃} u₁ u₂
+    = (ε₂ ⊕ᶜ ε₃) , Un , λ where .union _ → ↔-id _
     where
       Un : Union ε₁ (ε₂ ⊕ᶜ ε₃) ε₁₂₃
-      Un .union _ = {!!} ↔-∘ u₂ .union _ 
+      Un .union _ =
+            assocᶜ-↔ {ε₁} {ε₂} {ε₃} _
+        ↔-∘ ( ⊕ᶜ-congˡ {ε₁ ⊕ᶜ ε₂} {ε₁₂} {ε₃} (u₁ .union) _
+        ↔-∘ u₂ .union _ )
+
+
+  union-respects-⇿ : Respects _⇿_
+  union-respects-⇿ = record
+    { r₁ = λ where
+        {c₁} {c₂} {c} eq u .union X →
+          ⊕ᶜ-congˡ {c₂} {c₁} {c} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
+    ; r₂ = λ where
+        {c₁} {c₂} {c} eq u .union X →
+          ⊕ᶜ-congʳ {c} {c₂} {c₁} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
+    ; r₃ = λ where eq u .union X → u .union X ↔-∘ eq X
+    } 
