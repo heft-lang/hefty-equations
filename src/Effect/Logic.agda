@@ -110,9 +110,8 @@ module Connectives where
   □-monotone .weaken i px =
     necessary (λ i′ → □⟨ px ⟩ ≲-trans i i′) 
   
-
-  □-resp-≋ : ε₁ ⇿ ε₂ → □ P ε₁ → □ P ε₂
-  □-resp-≋ eq px = necessary (λ i → □⟨ px ⟩ ≲-respects-⇿ˡ (⇿-sym eq) i)
+  □-resp-⇿ : ε₁ ⇿ ε₂ → □ P ε₁ → □ P ε₂
+  □-resp-⇿ eq px = necessary (λ i → □⟨ px ⟩ ≲-respects-⇿ˡ (⇿-sym eq) i)
 
   -- Box and diamond are adjoint functors on the category of monotone predicates
   
