@@ -1,268 +1,132 @@
-{-# OPTIONS --with-K #-} 
-
 open import Core.Functor
 open import Core.Container
-open import Core.Extensionality
-
-open import Effect.Base
-open import Free.Base
-
-open import Relation.Unary hiding (Empty)
-open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
-open import Relation.Binary.PropositionalEquality.Properties renaming (isEquivalence to ≡-isEquivalence)
-open import Relation.Binary hiding (_⇒_ ; _⇔_)
-open import Relation.Binary.Bundles
-open import Relation.Binary.Definitions
-
-open import Function hiding (_⇔_)
-
-open import Data.Product hiding (swap)
-open import Data.Sum
-open import Data.Maybe
-open import Data.Empty.Polymorphic
-open import Data.Sum.Properties using (swap-involutive ; swap-↔)
-
 import Core.Ternary as Ternary
-open import Core.DisjointUnion
 
-open import Function.Construct.Symmetry
-open import Function.Construct.Composition
+open import Effect.Base 
 
-open import Level
+open import Data.Sum 
+open import Data.Product
+open import Data.Empty
 
+open import Relation.Unary
+open import Relation.Binary.PropositionalEquality
 
--- Defines a separation algebra of effects (defined as containers) based on (the
--- pointwise version of) a ternary predicate characterizing disjoint unions of
--- sets. That is, effect separation is defined on top of a chosen ternary
--- separation predicate over its extension.
---
--- TODO: the development here is specialized to ternary disjoint separation, but
--- could we generalize to any arbitrary unital, commutative and associative
--- ternary relation on sets? This would permit, for example, the kind
--- overlapping unions we also use in the OOPSLA paper, which would in theory
--- also be useful for combining elaborations that share some effects, but not
--- all. Critical question would be how (if at all) this affects reasoning about
--- higher-order effects. 
+open import Function
+open import Function.Construct.Identity using (↔-id)
+
 module Effect.Separation where
 
-module U = Ternary.Relation Set DisjointUnion 
-
-PointwiseDisjointUnion : (F G H : Set → Set) → Set _
-PointwiseDisjointUnion F G H = U.Pointwise _ F G H 
-
-
-PointwiseInclusion : (F G : Set → Set) → Set _
-PointwiseInclusion F G = Ternary.Relation.Ext _ PointwiseDisjointUnion F G
-
--- Container/effect separation
-record _∙_≈_ (ε₁ ε₂ ε : Effect) : Set₁ where
+record Union (ε₁ ε₂ ε : Effect) : Set₁ where
   field
-    sep         : PointwiseDisjointUnion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ ⟦ ε ⟧ᶜ 
-    natural-iso : NaturalIsomorphism (DisjointUnion.union ∘ sep)  
+    union  : (ε₁ ⊕ᶜ ε₂) ⇿ ε
 
-open _∙_≈_ public 
+  open Inverse 
 
-{- transfer some properties of disjoint union to the pointwise version -} 
+  inja : ε₁ ↦ ε 
+  inja = union .equivalence _ .to ∘ injˡ ε₂ 
 
-open Ternary.Relation {ℓ = suc 0ℓ} (Set → Set) 
+  inja-natural : Natural inja
+  inja-natural =
+    ∘-natural (injˡ ε₂) (union .equivalence _ .to)
+      (injˡ-natural {C₂ = ε₂})
+      (union .natural .to-natural) 
 
-punion-unitˡ : LeftIdentity PointwiseDisjointUnion λ _ → ⊥
-punion-unitˡ _ = disjoint-union-unitˡ
+  injb : ε₂ ↦ ε
+  injb = union .equivalence _ .to ∘ injʳ ε₁
 
-punion-unitʳ : RightIdentity PointwiseDisjointUnion λ _ → ⊥ 
-punion-unitʳ _ = disjoint-union-unitʳ
+  injb-natural : Natural injb
+  injb-natural =
+    ∘-natural (injʳ ε₁) (union .equivalence _ .to)
+      (injʳ-natural {C₁ = ε₁})
+      (union .natural .to-natural) 
 
-punion-comm : Commutative PointwiseDisjointUnion
-punion-comm σ _ = disjoint-union-comm (σ _)
+  proj : ε ↦ (ε₁ ⊕ᶜ ε₂)
+  proj = union .equivalence _ .from
 
-punion-assocʳ : RightAssociative PointwiseDisjointUnion
-punion-assocʳ σ₁ σ₂ =
-    (λ A → disjoint-union-assocʳ (σ₁ A) (σ₂ A) .proj₁)
-  , (λ A → disjoint-union-assocʳ (σ₁ A) (σ₂ A) .proj₂ .proj₁)
-  , (λ A → disjoint-union-assocʳ (σ₁ A) (σ₂ A) .proj₂ .proj₂)
+  proj-natural : Natural proj 
+  proj-natural = union .natural .from-natural 
 
-pinc-refl : Reflexive PointwiseInclusion
-pinc-refl = (λ _ → ⊥) , punion-unitʳ 
+-- infix notation
+_∙_≈_ = Union 
 
-pinc-transitive : Transitive PointwiseInclusion
-pinc-transitive i₁ i₂ =
-    punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₁
-  , punion-assocʳ (i₁ .proj₂) (i₂ .proj₂) .proj₂ .proj₁ 
+open Union
+open Inverse
 
-swap-↔-natiso : ∀ {F G : Set → Set}
-                → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄
-                → NaturalIsomorphism {F = F ∪ G} {G = G ∪ F} λ _ → swap-↔
-swap-↔-natiso = record
-  { to-natural   = record
-    { commute = [ (λ _ → refl) , (λ _ → refl) ]
-    }
-  ; from-natural = record
-    { commute = [ (λ _ → refl) , (λ _ → refl) ]
-    }
-  } 
-
-∙-comm : Ternary.Relation.Commutative Effect _∙_≈_
-∙-comm σ .sep         = punion-comm (σ .sep)
-∙-comm {c₁} {c₂} {c} σ .natural-iso =
-  natiso-∘ {F = ⟦ c₂ ⟧ᶜ ∪ ⟦ c₁ ⟧ᶜ} {G = ⟦ c₁ ⟧ᶜ ∪ ⟦ c₂ ⟧ᶜ} {H = ⟦ c ⟧ᶜ}
-    {F↔G = λ x → swap-↔}
-    {G↔H = λ x → σ .sep x .DisjointUnion.union}
-    swap-↔-natiso (σ .natural-iso)
-
-
-{- A preorder on effects, that stores the difference between the bigger and
-   smaller set of effects -}
-
-record _≲_ (ε₁ ε₂ : Effect) : Set₁ where
-  field
-    inc : PointwiseInclusion ⟦ ε₁ ⟧ᶜ ⟦ ε₂ ⟧ᶜ
-
-  inj : ∀[ ⟦ ε₁ ⟧ᶜ ⇒ ⟦ ε₂ ⟧ᶜ ]
-  inj x = inc .proj₂ _ .DisjointUnion.union .Inverse.to (inj₁ x) 
-
-open _≲_ ⦃...⦄
-
-instance ≲-refl : Reflexive _≲_
-≲-refl .inc = pinc-refl 
-
-≲-trans : Transitive _≲_
-≲-trans i₁ i₂ .inc = pinc-transitive (i₁ .inc) (i₂ .inc)
-
-≲-isPreorder : IsPreorder _≡_ _≲_
-≲-isPreorder = record
-  { isEquivalence = ≡-isEquivalence
-  ; reflexive     = λ where refl → ≲-refl
-  ; trans         = ≲-trans
-  } 
-
-≲-preorder : Preorder _ _ _
-≲-preorder = record
-  { Carrier    = Effect
-  ; _≈_        = _≡_
-  ; _∼_        = _≲_
-  ; isPreorder = ≲-isPreorder
-  }
-
--- Effect inclusion respects the monoid laws, up to the equivalence relation
--- defined above
-module _ where 
-
-  ≲-identityˡ : (i : ε₁ ≲ ε) →  ≲-trans ≲-refl i ≡ i
-  ≲-identityˡ = {!swap-↔-natural ? ?!} 
-
-  ≲-identityʳ : (i : ε₁ ≲ ε) → ≲-trans i ≲-refl ≡ i
-  ≲-identityʳ = {!!} --refl
-
-  ≲-assoc : (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε) (i₃ : ε ≲ ε′)
-          → ≲-trans (≲-trans i₁ i₂) i₃ ≡ ≲-trans i₁ (≲-trans i₂ i₃) 
-  ≲-assoc = {!!} -- refl
-
-inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
-inject .αᶜ = impure ∘ inj  
-
--- Effect weakening / masking for the free monad
---
--- Viewing containers as a category (with injections as morphisms), this defines
--- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
-♯ : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
-♯ = fold-free pure inject
--- 
--- -- Weakening respects equivalence of inclusion witnesses 
--- ♯-resp-⇔i : ∀ (i₁ i₂ : ε₁ ≲ ε₂) (m : Free ε₁ A) → i₁ ⇔i i₂ → ♯ ⦃ i₁ ⦄ m ≡ ♯ ⦃ i₂ ⦄ m
--- ♯-resp-⇔i i₁ i₂ (pure x) _ = refl
--- ♯-resp-⇔i i₁ i₂ (impure ⟨ c , k ⟩) eq = cong impure $ 
---   begin
---     inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₁ ⦄ ∘ k ⟩
---   ≡⟨ cong (λ ○ → inj ⦃ i₁ ⦄ ⟨ (c , ○) ⟩) (extensionality $ λ x → ♯-resp-⇔i i₁ i₂ (k x) eq) ⟩
---     inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩ 
---   ≡⟨ eq .inj-eq _ ⟩ 
---     inj ⦃ i₂ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩
---   ∎ 
---   where open ≡-Reasoning
--- 
-open Ternary
-
-coproduct-lemma : Π[ (⟦ ε₁ ⟧ᶜ ∪ ⟦ ε₂ ⟧ᶜ) ⇔ ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ ]
-coproduct-lemma _ = record
-  { to        =
-    [ (λ where ⟨ s , p ⟩ → ⟨ inj₁ s , p ⟩)
-    , (λ where ⟨ s , p ⟩ → ⟨ inj₂ s , p ⟩)
-    ]
-  ; from      = λ where
-    ⟨ inj₁ s , p ⟩ → inj₁ ⟨ s , p ⟩
-    ⟨ inj₂ s , p ⟩ → inj₂ ⟨ s , p ⟩
-  ; to-cong   = λ where refl → refl
-  ; from-cong = λ where refl → refl
-  ; inverse   = ( λ where
-                    ⟨ inj₁ s , p ⟩ → refl
-                    ⟨ inj₂ s , p ⟩ → refl
-                ) , [ (λ _ → refl) , (λ _ → refl) ]
-  }
-
-coproduct-lemma-natiso : ∀ {ε₁ ε₂} → NaturalIsomorphism $ coproduct-lemma {ε₁ = ε₁} {ε₂}
-coproduct-lemma-natiso = record
-  { to-natural   = λ where .commute → [ (λ _ → refl) , (λ _ → refl) ]
-  ; from-natural = λ where .commute ⟨ inj₁ _ , _ ⟩ → refl
-                           .commute ⟨ inj₂ _ , _ ⟩ → refl 
-  } 
-
-⊎-sym : (A ⊎ B) ↔ (B ⊎ A)
-⊎-sym = record
-  { to        = swap
-  ; from      = swap
-  ; to-cong   = λ where refl → refl
-  ; from-cong = λ where refl → refl
-  ; inverse   = swap-involutive , swap-involutive
-  }
-
-∙-to-≋ : ε₁ ∙ ε₂ ≈ ε → (ε₁ ⊕ᶜ ε₂) ≋ ε
-∙-to-≋ σ = record
-  { iso         = λ x → ↔-sym (coproduct-lemma x) ↔-∘ σ .sep x .DisjointUnion.union
-  ; iso-natural = natiso-∘ (natiso-sym coproduct-lemma-natiso) (σ .natural-iso)
-  }
-
-{- TODO: effect separation also respects effect equivalence in all positions. Do
-we need this? -}
-
-≲-⊕ᶜ-left : ∀ ε′ → ε ≲ (ε ⊕ᶜ ε′)
-≲-⊕ᶜ-left ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → coproduct-lemma _
-
-≲-⊕ᶜ-right : ∀ ε′ → ε ≲ (ε′ ⊕ᶜ ε)
-≲-⊕ᶜ-right ε′ .inc = ⟦ ε′ ⟧ᶜ , λ where _ .DisjointUnion.union → ⊎-sym ↔-∘ (coproduct-lemma _)
-
-≲-∙-left : ε₁ ∙ ε₂ ≈ ε → ε₁ ≲ ε
-≲-∙-left σ .inc = -, σ .sep
-
-≲-∙-right : ε₁ ∙ ε₂ ≈ ε → ε₂ ≲ ε
-≲-∙-right σ .inc = -, ∙-comm σ .sep
-
--- TODO: we can't show this with the current definition of effect inclusion and
--- separation, I think, but should be provable if we set things up in the right
--- way.
---
--- Added note: the "right way" would be for effect inclusion to be the extension
--- order of effect separation. Currently, there's the indirection of relating
--- the extension functors instead, which prevents us from proving this lemma
-postulate ≲-to-∙ : ε₁ ≲ ε → ∃ λ ε₂ → ε₁ ∙ ε₂ ≈ ε
-
--- Effect inclusion respects (natural) effect equivalence
-≲-resp-≋ˡ : ε₁ ≋ ε₂ → ε₁ ≲ ε → ε₂ ≲ ε
-≲-resp-≋ˡ eq i = record {
-    inc = inc ⦃ i ⦄ .proj₁ , λ x → record
-            { union = ⊎-congˡ {s = 0ℓ} (↔-sym (eq .iso x)) ↔-∘ inc ⦃ i ⦄ .proj₂ _ .DisjointUnion.union
-            } }
-
--- Dedicated weakening operations for common weakenings
+-- Prove some properties about disjoint unions of effects 
 module _ where
 
-  ♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-  ♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
+  open Ternary.Relation Effect Union
 
-  ♯ʳ : ∀ ε₁ → ∀[ Free ε₂ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-  ♯ʳ ε₁ = ♯ ⦃ ≲-⊕ᶜ-right ε₁ ⦄
+  union-unitˡ : LeftIdentity ⊥ᶜ
+  union-unitˡ {ε} .union .equivalence _ = record
+    { to        = to′
+    ; from      = from′
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ _ → refl) , λ where ⟨ inj₂ c , k ⟩ → refl
+    }
+    where
+      to′ : (⊥ᶜ ⊕ᶜ ε) ↦ ε
+      to′ ⟨ inj₂ c , k ⟩ = ⟨ c , k ⟩
 
-  ♯ˡ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₁ ⇒ Free ε ]
-  ♯ˡ′ σ = ♯ ⦃ ≲-∙-left σ ⦄
+      from′ : ε ↦ (⊥ᶜ ⊕ᶜ ε)
+      from′ ⟨ c , k ⟩ = ⟨ inj₂ c , k ⟩    
+  union-unitˡ {ε} .union .natural  = record
+    { to-natural   = λ where .commute ⟨ inj₂ c , k ⟩ → refl
+    ; from-natural = λ where .commute _              → refl
+    } 
 
-  ♯ʳ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₂ ⇒ Free ε ]
-  ♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄
+  union-unitʳ : RightIdentity ⊥ᶜ
+  union-unitʳ {ε} .union .equivalence _ = record
+    { to        = to′
+    ; from      = from′
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ _ → refl) , (λ where ⟨ inj₁ c , k ⟩ → refl)
+    }
+    where
+      to′ : (ε ⊕ᶜ ⊥ᶜ) ↦ ε
+      to′ ⟨ inj₁ c , k ⟩ = ⟨ c , k ⟩
+
+      from′ : ε ↦ (ε ⊕ᶜ ⊥ᶜ)
+      from′ ⟨ c , k ⟩ = ⟨ (inj₁ c , k) ⟩ 
+  union-unitʳ {ε} .union .natural = record
+    { to-natural   = λ where .commute ⟨ inj₁ c , k ⟩ → refl
+    ; from-natural = λ where .commute _              → refl
+    } 
+
+  union-comm : Commutative
+  union-comm {ε₁} {ε₂} u .union = ⇿-trans (swapᶜ-⇿ ε₂ ε₁)  (u .union)
+
+  union-assocʳ : RightAssociative
+  union-assocʳ {ε₁} {ε₂} {ε₁₂} {ε₃} {ε₁₂₃} u₁ u₂
+    = (ε₂ ⊕ᶜ ε₃)
+    , Un
+    , λ where .union → ⇿-refl 
+    where
+      Un : Union ε₁ (ε₂ ⊕ᶜ ε₃) ε₁₂₃
+      Un .union =
+          ⇿-trans (assocᶜ-⇿ ε₁ ε₂ ε₃)
+        $ ⇿-trans (⊕ᶜ-congˡ (ε₁ ⊕ᶜ ε₂) ε₁₂ ε₃ (u₁ .union)) (u₂ .union)
+
+  union-respects-⇿ : Respects _⇿_
+  union-respects-⇿ = record
+    { r₁ = λ where
+        {ε₁} {ε₂} {ε} eq u .union →
+           ⇿-trans (⊕ᶜ-congˡ ε₂ ε₁ ε (⇿-sym eq)) (u .union)
+    ; r₂ = λ where
+        {ε₁} {ε₂} {ε} eq u .union →
+          ⇿-trans (⊕ᶜ-congʳ ε ε₂ ε₁ (⇿-sym eq)) (u .union)
+    ; r₃ = λ where
+        {ε₁} {ε₂} {ε} eq u .union →
+          ⇿-trans (u .union) eq
+    }
+  
+  ⊕ᶜ-union : Union ε₁ ε₂ (ε₁ ⊕ᶜ ε₂) 
+  ⊕ᶜ-union .union = record
+    { equivalence = λ _ → ↔-id _
+    ; natural     = record
+      { to-natural   = λ where .commute _ → refl
+      ; from-natural = λ where .commute _ → refl
+      }
+    } 
