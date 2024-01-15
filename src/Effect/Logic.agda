@@ -7,13 +7,15 @@ open import Relation.Binary.PropositionalEquality
 
 open import Effect.Base
 open import Effect.Separation
+open import Effect.Inclusion
 
 open import Data.Product
 open import Function using (_$_ ; _∘_)
 open import Level
 
+open import Core.Container using (_⇿_ ; ⇿-sym)
 open import Core.Extensionality
-open import Core.MonotonePredicate Effect _≲_ ≲-isPreorder
+open import Core.MonotonePredicate Effect _≲_ (≲-preorder .Preorder.isPreorder)
 
 module Effect.Logic where
 
@@ -92,8 +94,6 @@ module Connectives where
     constructor necessary 
     field
       □⟨_⟩_ : ∀ {x′} → x ≲ x′ → P x′
-
-      resp-⇔i : ∀ {x′}{i₁ i₂ : x ≲ x′ } → □⟨_⟩_ i₁ ≡ □⟨_⟩_ i₂  
   
   open □ public 
 
@@ -101,36 +101,23 @@ module Connectives where
   □-extract px = □⟨ px ⟩ ≲-refl 
 
   □-duplicate : ∀[ □ P ⇒ □ (□ P ) ]
-  □-duplicate px = necessary (λ i → necessary (λ i′ → □⟨ px ⟩ ≲-trans i i′) {!!}) {!!}
+  □-duplicate px = necessary (λ i → necessary (λ i′ → □⟨ px ⟩ ≲-trans i i′)) 
+
 
   -- All necessities are monotone by default, if the stored function space
   -- respects equivalence of inclusion witnesses
   instance □-monotone : Monotone (□ P)
   □-monotone .weaken i px =
-    necessary (λ i′ → □⟨ px ⟩ ≲-trans i i′) {!!}
-  □-monotone .weaken-refl {px = px} = 
-    begin
-      weaken ≲-refl px
-    ≡⟨⟩
-      weaken ≲-refl (necessary (λ i → □⟨ px ⟩ i) {!!}) 
-    ≡⟨⟩ 
-      necessary (λ i → □⟨ px ⟩ ≲-trans ≲-refl i) {!!} 
-    ≡⟨ {!!}  ⟩
-      necessary (λ i → □⟨ px ⟩ i) {!!}  
-    ≡⟨⟩ {- η-equavalence of □ -} 
-      px
-    ∎
-    where open ≡-Reasoning 
-  □-monotone .weaken-trans = {!!} 
-    where open ≡-Reasoning 
+    necessary (λ i′ → □⟨ px ⟩ ≲-trans i i′) 
+  
 
-  □-resp-≋ : ε₁ ≋ ε₂ → □ P ε₁ → □ P ε₂
-  □-resp-≋ eqv px = necessary (λ i → □⟨ px ⟩ ≲-resp-≋ˡ (≋-sym eqv) i) {!!}
+  □-resp-≋ : ε₁ ⇿ ε₂ → □ P ε₁ → □ P ε₂
+  □-resp-≋ eq px = necessary (λ i → □⟨ px ⟩ ≲-respects-⇿ˡ (⇿-sym eq) i)
 
   -- Box and diamond are adjoint functors on the category of monotone predicates
   
   mod-curry : ∀[ ◇ P ⇒ Q ] → ∀[ P ⇒ □ Q ]
-  mod-curry f px = necessary (λ i → f $ ◇⟨ i ⟩ px) {!refl!}
+  mod-curry f px = necessary (λ i → f $ ◇⟨ i ⟩ px)
   
   mod-uncurry : ∀[ P ⇒ □ Q ] → ∀[ ◇ P ⇒ Q ]
   mod-uncurry f (◇⟨ i ⟩ px) = □⟨ f px ⟩ i
@@ -144,7 +131,7 @@ module Connectives where
   P ⇛ Q = □ (P ⇒ Q) 
   
   kripke-curry : ⦃ Monotone P₁ ⦄ → ∀[ (P₁ ∩ P₂) ⇒ Q ] → ∀[ P₁ ⇒ (P₂ ⇛ Q) ] 
-  kripke-curry f px₁ = necessary (λ i px₂ → f (weaken i px₁ , px₂)) {!!} 
+  kripke-curry f px₁ = necessary (λ i px₂ → f (weaken i px₁ , px₂))
   
   kripke-uncurry : ∀[ P₁ ⇒ (P₂ ⇛ Q) ] → ∀[ (P₁ ∩ P₂) ⇒ Q ] 
   kripke-uncurry f (px₁ , px₂) = □⟨ f px₁ ⟩ ≲-refl $ px₂
