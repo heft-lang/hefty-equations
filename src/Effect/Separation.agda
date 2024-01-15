@@ -1,3 +1,5 @@
+{-# OPTIONS --with-K #-} 
+
 open import Core.Functor
 open import Core.Container
 open import Core.Extensionality
@@ -8,6 +10,7 @@ open import Free.Base
 open import Relation.Unary hiding (Empty)
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
 open import Relation.Binary.PropositionalEquality.Properties renaming (isEquivalence to ≡-isEquivalence)
+open import Relation.Binary hiding (_⇒_ ; _⇔_)
 open import Relation.Binary.Bundles
 open import Relation.Binary.Definitions
 
@@ -72,8 +75,6 @@ punion-unitʳ _ = disjoint-union-unitʳ
 punion-comm : Commutative PointwiseDisjointUnion
 punion-comm σ _ = disjoint-union-comm (σ _)
 
-
-
 punion-assocʳ : RightAssociative PointwiseDisjointUnion
 punion-assocʳ σ₁ σ₂ =
     (λ A → disjoint-union-assocʳ (σ₁ A) (σ₂ A) .proj₁)
@@ -127,28 +128,34 @@ instance ≲-refl : Reflexive _≲_
 ≲-trans : Transitive _≲_
 ≲-trans i₁ i₂ .inc = pinc-transitive (i₁ .inc) (i₂ .inc)
 
+≲-isPreorder : IsPreorder _≡_ _≲_
+≲-isPreorder = record
+  { isEquivalence = ≡-isEquivalence
+  ; reflexive     = λ where refl → ≲-refl
+  ; trans         = ≲-trans
+  } 
+
 ≲-preorder : Preorder _ _ _
 ≲-preorder = record
   { Carrier    = Effect
   ; _≈_        = _≡_
   ; _∼_        = _≲_
-  ; isPreorder = record
-    { isEquivalence = ≡-isEquivalence
-    ; reflexive     = λ where refl → ≲-refl
-    ; trans         = ≲-trans
-    }
+  ; isPreorder = ≲-isPreorder
   }
 
--- Equivalence of inclusion witnesses
-record _⇔i_ (i₁ i₂ : ε₁ ≲ ε₂) : Set₁ where
-  field
-    inj-eq : (x : ⟦ ε₁ ⟧ᶜ A) → inj ⦃ i₁ ⦄ x ≡ inj ⦃ i₂ ⦄ x
-
-open _⇔i_
-
--- TODO: prove that the monoid laws hold for effect inclusion, up to the
--- equivalence relation defined above
+-- Effect inclusion respects the monoid laws, up to the equivalence relation
+-- defined above
 module _ where 
+
+  ≲-identityˡ : (i : ε₁ ≲ ε) →  ≲-trans ≲-refl i ≡ i
+  ≲-identityˡ = {!swap-↔-natural ? ?!} 
+
+  ≲-identityʳ : (i : ε₁ ≲ ε) → ≲-trans i ≲-refl ≡ i
+  ≲-identityʳ = {!!} --refl
+
+  ≲-assoc : (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε) (i₃ : ε ≲ ε′)
+          → ≲-trans (≲-trans i₁ i₂) i₃ ≡ ≲-trans i₁ (≲-trans i₂ i₃) 
+  ≲-assoc = {!!} -- refl
 
 inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A) 
 inject .αᶜ = impure ∘ inj  
@@ -159,20 +166,20 @@ inject .αᶜ = impure ∘ inj
 -- the action on morphisms of the Functor Free ∈ [Container,[Set,Set]]
 ♯ : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
 ♯ = fold-free pure inject
-
--- Weakening respects equivalence of inclusion witnesses 
-♯-resp-⇔i : ∀ (i₁ i₂ : ε₁ ≲ ε₂) (m : Free ε₁ A) → i₁ ⇔i i₂ → ♯ ⦃ i₁ ⦄ m ≡ ♯ ⦃ i₂ ⦄ m
-♯-resp-⇔i i₁ i₂ (pure x) _ = refl
-♯-resp-⇔i i₁ i₂ (impure ⟨ c , k ⟩) eq = cong impure $ 
-  begin
-    inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₁ ⦄ ∘ k ⟩
-  ≡⟨ cong (λ ○ → inj ⦃ i₁ ⦄ ⟨ (c , ○) ⟩) (extensionality $ λ x → ♯-resp-⇔i i₁ i₂ (k x) eq) ⟩
-    inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩ 
-  ≡⟨ eq .inj-eq _ ⟩ 
-    inj ⦃ i₂ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩
-  ∎ 
-  where open ≡-Reasoning
-
+-- 
+-- -- Weakening respects equivalence of inclusion witnesses 
+-- ♯-resp-⇔i : ∀ (i₁ i₂ : ε₁ ≲ ε₂) (m : Free ε₁ A) → i₁ ⇔i i₂ → ♯ ⦃ i₁ ⦄ m ≡ ♯ ⦃ i₂ ⦄ m
+-- ♯-resp-⇔i i₁ i₂ (pure x) _ = refl
+-- ♯-resp-⇔i i₁ i₂ (impure ⟨ c , k ⟩) eq = cong impure $ 
+--   begin
+--     inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₁ ⦄ ∘ k ⟩
+--   ≡⟨ cong (λ ○ → inj ⦃ i₁ ⦄ ⟨ (c , ○) ⟩) (extensionality $ λ x → ♯-resp-⇔i i₁ i₂ (k x) eq) ⟩
+--     inj ⦃ i₁ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩ 
+--   ≡⟨ eq .inj-eq _ ⟩ 
+--     inj ⦃ i₂ ⦄ ⟨ c , ♯ ⦃ i₂ ⦄ ∘ k ⟩
+--   ∎ 
+--   where open ≡-Reasoning
+-- 
 open Ternary
 
 coproduct-lemma : Π[ (⟦ ε₁ ⟧ᶜ ∪ ⟦ ε₂ ⟧ᶜ) ⇔ ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ ]
@@ -232,24 +239,30 @@ we need this? -}
 -- TODO: we can't show this with the current definition of effect inclusion and
 -- separation, I think, but should be provable if we set things up in the right
 -- way.
+--
+-- Added note: the "right way" would be for effect inclusion to be the extension
+-- order of effect separation. Currently, there's the indirection of relating
+-- the extension functors instead, which prevents us from proving this lemma
 postulate ≲-to-∙ : ε₁ ≲ ε → ∃ λ ε₂ → ε₁ ∙ ε₂ ≈ ε
 
 -- Effect inclusion respects (natural) effect equivalence
-
 ≲-resp-≋ˡ : ε₁ ≋ ε₂ → ε₁ ≲ ε → ε₂ ≲ ε
 ≲-resp-≋ˡ eq i = record {
     inc = inc ⦃ i ⦄ .proj₁ , λ x → record
             { union = ⊎-congˡ {s = 0ℓ} (↔-sym (eq .iso x)) ↔-∘ inc ⦃ i ⦄ .proj₂ _ .DisjointUnion.union
             } }
 
-♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
+-- Dedicated weakening operations for common weakenings
+module _ where
 
-♯ʳ : ∀ ε₁ → ∀[ Free ε₂ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-♯ʳ ε₁ = ♯ ⦃ ≲-⊕ᶜ-right ε₁ ⦄
+  ♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
+  ♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
 
-♯ˡ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₁ ⇒ Free ε ]
-♯ˡ′ σ = ♯ ⦃ ≲-∙-left σ ⦄
+  ♯ʳ : ∀ ε₁ → ∀[ Free ε₂ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
+  ♯ʳ ε₁ = ♯ ⦃ ≲-⊕ᶜ-right ε₁ ⦄
 
-♯ʳ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₂ ⇒ Free ε ]
-♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄
+  ♯ˡ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₁ ⇒ Free ε ]
+  ♯ˡ′ σ = ♯ ⦃ ≲-∙-left σ ⦄
+
+  ♯ʳ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₂ ⇒ Free ε ]
+  ♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄

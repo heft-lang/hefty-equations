@@ -10,7 +10,7 @@ open import Data.Product
 
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.Bundles
-import Relation.Binary.PropositionalEquality as ≡
+open import Relation.Binary.PropositionalEquality renaming (refl to ≡-refl ; trans to ≡-trans)
 
 
 -- Definines so-called "monotone" predicates.
@@ -20,7 +20,10 @@ import Relation.Binary.PropositionalEquality as ≡
 -- induces a natural notion of weakening, which naturally extends to a notion of
 -- "monotonicity respecting" predicate transformers, analogous to the functor
 -- instances defined in Core.Functor.
-module Core.MonotonePredicate {ℓ} (Carrier : Set ℓ) (_~_ : Rel Carrier ℓ) where
+module Core.MonotonePredicate {ℓ}
+  (Carrier : Set ℓ)
+  (_~_ : Rel Carrier ℓ)
+  (~-isPreorder : IsPreorder _≡_ _~_) where
 
 -- Crucialy, we define monotone predicates w.r.t. the extension order (or, free
 -- preorder) generated from a unital and transitive ternary relation. This
@@ -31,8 +34,20 @@ open Relation.Unary
 
 variable P Q P₁ P₂ Q₁ Q₂ P′ Q′ : Pred Carrier ℓ
 
+open IsPreorder ~-isPreorder 
+
+-- Monotonicity of predicates. Or, in other words, monotone predicates are
+-- functors over the (thin) category defined by the preorder _~_ (and thus
+-- should respect the functor laws). 
 record Monotone (P : Pred Carrier ℓ) : Set (suc ℓ) where
-  field weaken : ∀ {x y} → x ~ y → P x → P y 
+  field
+    weaken      : ∀ {x y} → x ~ y → P x → P y 
+
+    -- Functor laws for monotone predicates 
+    weaken-refl  : ∀ {x} {px : P x} → weaken refl px ≡ px 
+    weaken-trans : ∀ {x y z} {px : P x} {i₁ : x ~ y} {i₂ : y ~ z}
+                   → weaken (trans i₁ i₂) px ≡ weaken i₂ (weaken i₁ px )     
+
 
 open Monotone ⦃...⦄ public
 
@@ -43,6 +58,7 @@ record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ) whe
     
 open HMonotone ⦃...⦄ public 
 
+-- Should also respect functor laws, but we don't really use this (yet), so TODO? 
 record Antitone (P : Pred Carrier ℓ) : Set (suc ℓ) where 
   field strengthen : ∀ {x y} → x ~ y → P y → P x
 

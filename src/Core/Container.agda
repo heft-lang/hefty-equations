@@ -47,6 +47,8 @@ _↦_ : Container → Container → Set₁
 C₁ ↦ C₂ = ∀[ ⟦ C₁ ⟧ᶜ ⇒ ⟦ C₂ ⟧ᶜ ]
 
 -- container isomorphism
+--
+-- TODO: require naturality? 
 _⇿_ : Container → Container → Set₁
 C₁ ⇿ C₂ = ∀ X → ⟦ C₁ ⟧ᶜ X ↔ ⟦ C₂ ⟧ᶜ X
 
@@ -82,6 +84,16 @@ swapᶜ-↔ {C₁} {C₂} X = record
   ; inverse   = swapᶜ-involutive , swapᶜ-involutive
   }
 
+swapᶜ-↔-natural : ∀ C₁ C₂ → NaturalIsomorphism (swapᶜ-↔ {C₁} {C₂})
+swapᶜ-↔-natural _ _ = record
+  { to-natural   = λ where
+      .commute ⟨ inj₁ x , k ⟩ → refl
+      .commute ⟨ inj₂ y , k ⟩ → refl
+  ; from-natural = λ where
+      .commute ⟨ inj₁ x , k ⟩ → refl
+      .commute ⟨ inj₂ y , k ⟩ → refl
+  } 
+
 assocᶜʳ : ((C₁ ⊕ᶜ C₂) ⊕ᶜ C₃) ↦ (C₁ ⊕ᶜ (C₂ ⊕ᶜ C₃))
 assocᶜʳ ⟨ inj₁ (inj₁ c) , k ⟩ = ⟨ inj₁ c , k ⟩
 assocᶜʳ ⟨ inj₁ (inj₂ c) , k ⟩ = ⟨ (inj₂ (inj₁ c) , k) ⟩
@@ -111,6 +123,18 @@ assocᶜ-↔ {C₁} {C₂} {C₃} _ = record
     assoc-inverseʳ ⟨ inj₂ (inj₁ _) , _ ⟩ = refl
     assoc-inverseʳ ⟨ inj₂ (inj₂ _) , _ ⟩ = refl
 
+assocᶜ-natiso : ∀ C₁ C₂ C₃ → NaturalIsomorphism (assocᶜ-↔ {C₁} {C₂} {C₃})
+assocᶜ-natiso _ _ _ = record
+  { to-natural   = λ where
+      .commute ⟨ inj₁ c        , k ⟩ → refl
+      .commute ⟨ inj₂ (inj₁ c) , k ⟩ → refl
+      .commute ⟨ inj₂ (inj₂ c) , k ⟩ → refl
+  ; from-natural = λ where
+      .commute ⟨ inj₁ (inj₁ c) , k ⟩ → refl
+      .commute ⟨ inj₁ (inj₂ c) , k ⟩ → refl
+      .commute ⟨ inj₂ c        , k ⟩ → refl
+  } 
+
 open Inverse 
 
 ⊕ᶜ-congˡ : C₁ ⇿ C₂ → (C₁ ⊕ᶜ C) ⇿ (C₂ ⊕ᶜ C)
@@ -138,6 +162,22 @@ open Inverse
     cong-inverseʳ ⟨ inj₁ c , k ⟩ = cong (injˡ C) (iso _ .inverse. proj₂ _)
     cong-inverseʳ ⟨ inj₂ c , k ⟩ = refl
 
+⊕ᶜ-congˡ-natiso :
+  ∀ C₁ C₂ C
+  → (eq : C₁ ⇿ C₂) (natural : NaturalIsomorphism eq)
+  → NaturalIsomorphism (⊕ᶜ-congˡ {C₁} {C₂} {C} eq)
+⊕ᶜ-congˡ-natiso C₁ C₂ C eq natural = record
+  { to-natural   = λ where
+      .commute {f = f} ⟨ inj₁ c , k ⟩ →
+         cong (injˡ C) (natural .to-natural .commute {f = f} ⟨ c , k ⟩) 
+      .commute ⟨ inj₂ y , k ⟩ → refl
+  ; from-natural = λ where
+      .commute {f = f} ⟨ inj₁ c , k ⟩ →
+        cong (injˡ C) (natural .from-natural .commute {f = f} ⟨ c , k ⟩)
+      .commute {f = f} ⟨ inj₂ c , k ⟩ → refl
+  }
+  where open ≡-Reasoning
+
 ⊕ᶜ-congʳ : C₁ ⇿ C₂ → (C ⊕ᶜ C₁) ⇿ (C ⊕ᶜ C₂)
 ⊕ᶜ-congʳ {C₁} {C₂} {C} iso X = record
   { to        = to′
@@ -162,6 +202,21 @@ open Inverse
     cong-inverseʳ : ∀ x → from′ (to′ x) ≡ x 
     cong-inverseʳ ⟨ inj₁ x , k ⟩ = refl
     cong-inverseʳ ⟨ inj₂ y , k ⟩ = cong (injʳ C) (iso _ .inverse .proj₂ _)
+
+⊕ᶜ-congʳ-natiso :
+  ∀ C₁ C₂ C
+  → (eq : C₁ ⇿ C₂) (natural : NaturalIsomorphism eq)
+  → NaturalIsomorphism (⊕ᶜ-congʳ {C₁} {C₂} {C} eq)
+⊕ᶜ-congʳ-natiso C₁ C₂ C eq natural = record
+  { to-natural   = λ where
+      .commute ⟨ inj₁ c , k ⟩ → refl
+      .commute {f = f} ⟨ inj₂ c , k ⟩ →
+        cong (injʳ C) (natural .to-natural .commute {f = f} ⟨ c , k ⟩)
+  ; from-natural = λ where
+      .commute ⟨ inj₁ c , k ⟩ → refl
+      .commute {f = f} ⟨ inj₂ c , k ⟩ →
+        cong (injʳ C) (natural .from-natural .commute {f = f } ⟨ c , k ⟩)
+  }
 
 ⊥ᶜ : Container
 ⊥ᶜ = record { shape = ⊥ ; position = λ() } 

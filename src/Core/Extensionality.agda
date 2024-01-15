@@ -7,3 +7,6 @@ open import Axiom.Extensionality.Propositional
 
 postulate
   extensionality : Extensionality zero zero
+
+extensionality′ : ExtensionalityImplicit zero zero
+extensionality′ = implicit-extensionality extensionality 

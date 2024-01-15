@@ -1,4 +1,4 @@
-
+open import Core.Functor
 open import Core.Container
 import Core.Ternary as Ternary
 
@@ -20,7 +20,8 @@ module Effect.DisjointUnion where
 
 record Union (ε₁ ε₂ ε : Effect) : Set₁ where
   field
-    union : ∀ X → ⟦ ε₁ ⊕ᶜ ε₂ ⟧ᶜ X ↔ ⟦ ε ⟧ᶜ X 
+    union  : (ε₁ ⊕ᶜ ε₂) ⇿ ε
+    natiso : NaturalIsomorphism union 
 
   open Inverse 
 
@@ -54,6 +55,10 @@ module _ where
 
       from′ : ε ↦ (⊥ᶜ ⊕ᶜ ε)
       from′ ⟨ c , k ⟩ = ⟨ inj₂ c , k ⟩
+  union-unitˡ {ε} .natiso = record
+    { to-natural   = λ where .commute ⟨ inj₂ c , k ⟩ → refl
+    ; from-natural = λ where .commute _              → refl
+    } 
 
   union-unitʳ : RightIdentity ⊥ᶜ
   union-unitʳ {ε} .union _ = record
@@ -69,28 +74,55 @@ module _ where
 
       from′ : ε ↦ (ε ⊕ᶜ ⊥ᶜ)
       from′ ⟨ c , k ⟩ = ⟨ (inj₁ c , k) ⟩ 
+  union-unitʳ {ε} .natiso = record
+    { to-natural   = λ where .commute ⟨ inj₁ c , k ⟩ → refl
+    ; from-natural = λ where .commute _              → refl
+    } 
 
   union-comm : Commutative
-  union-comm {ε₁} {ε₂} u .union _ = swapᶜ-↔ {ε₂} {ε₁} _ ↔-∘ u .union _ 
+  union-comm {ε₁} {ε₂} u .union _
+    = swapᶜ-↔ {ε₂} {ε₁} _ ↔-∘ u .union _
+  union-comm {ε₁} {ε₂} u .natiso
+    = natiso-∘ (swapᶜ-↔-natural ε₂ ε₁) (u .natiso)
 
   union-assocʳ : RightAssociative
   union-assocʳ {ε₁} {ε₂} {ε₁₂} {ε₃} {ε₁₂₃} u₁ u₂
-    = (ε₂ ⊕ᶜ ε₃) , Un , λ where .union _ → ↔-id _
+    = (ε₂ ⊕ᶜ ε₃)
+    , Un
+    , record
+        { union = λ _ → ↔-id _
+        ; natiso = record
+          { to-natural   = λ where .commute _ → refl
+          ; from-natural = λ where .commute _ → refl
+          }
+        } 
     where
       Un : Union ε₁ (ε₂ ⊕ᶜ ε₃) ε₁₂₃
       Un .union _ =
             assocᶜ-↔ {ε₁} {ε₂} {ε₃} _
         ↔-∘ ( ⊕ᶜ-congˡ {ε₁ ⊕ᶜ ε₂} {ε₁₂} {ε₃} (u₁ .union) _
         ↔-∘ u₂ .union _ )
+      Un .natiso =
+        ( natiso-∘ (assocᶜ-natiso ε₁ ε₂ ε₃)
+        ( natiso-∘ (⊕ᶜ-congˡ-natiso (ε₁ ⊕ᶜ ε₂) ε₁₂ ε₃ (u₁ .union) (u₁ .natiso))
+                   (u₂ .natiso)) ) 
 
-
-  union-respects-⇿ : Respects _⇿_
-  union-respects-⇿ = record
-    { r₁ = λ where
-        {c₁} {c₂} {c} eq u .union X →
-          ⊕ᶜ-congˡ {c₂} {c₁} {c} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
-    ; r₂ = λ where
-        {c₁} {c₂} {c} eq u .union X →
-          ⊕ᶜ-congʳ {c} {c₂} {c₁} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
-    ; r₃ = λ where eq u .union X → u .union X ↔-∘ eq X
-    } 
+  {- TODO: this requires that the container isomorphism is natural -} 
+  postulate union-respects-⇿ : Respects _⇿_
+-- union-respects-⇿ = record
+--   { r₁ = λ where
+--       {c₁} {c₂} {c} eq u .union X →
+--         ⊕ᶜ-congˡ {c₂} {c₁} {c} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
+--       {c₁} {c₂} {c} eq u .natiso →
+--         {!!} 
+--   ; r₂ = λ where
+--       {c₁} {c₂} {c} eq u .union X →
+--         ⊕ᶜ-congʳ {c} {c₂} {c₁} (λ X → ↔-sym (eq X)) _ ↔-∘ u .union X
+--       {c₁} {c₂} {c} eq u .natiso →
+--         {!!}
+--   ; r₃ = λ where
+--       eq u .union X → u .union X ↔-∘ eq X
+--       eq u .natiso  → natiso-∘ (u .natiso)
+--         {!!} 
+--   } 
+-- 
