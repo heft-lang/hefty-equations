@@ -12,9 +12,9 @@ open import Data.Product
 open import Data.Sum
 
 open import Function hiding (_⇔_)
-open import Function.Construct.Identity
-open import Function.Construct.Symmetry
-open import Function.Construct.Composition
+open import Function.Construct.Identity using (↔-id)
+open import Function.Construct.Symmetry using (↔-sym)
+open import Function.Construct.Composition using (_↔-∘_)
 
 open import Relation.Binary using (Preorder)
 open import Relation.Binary.Definitions
@@ -70,45 +70,8 @@ postulate injᴴ-command : ⦃ η₁ ⊑ᴴ η₂ ⦄ → η₁ .command → η�
 
 open _⊑ᴴ_ ⦃...⦄ public 
 
--- Equivalence of effect signatures, witnessed by a natural isomorphism between
--- their extension functors
-record _≋_ (ε₁ ε₂ : Effect) : Set₁ where
-  field
-    iso : ∀ x → ⟦ ε₁ ⟧ᶜ x ↔ ⟦ ε₂ ⟧ᶜ x
-    iso-natural : NaturalIsomorphism iso 
-
-open _≋_ public
-
-≋-refl : Reflexive _≋_
-≋-refl = record
-  { iso         = λ _ → ↔-id _
-  ; iso-natural = record
-    { to-natural   = λ where .commute _ → refl
-    ; from-natural = λ where .commute _ → refl
-    }
-  }
-
-≋-sym : Symmetric _≋_
-≋-sym eq = record
-  { iso         = ↔-sym ∘ eq .iso
-  ; iso-natural = natiso-sym (eq .iso-natural)
-  } 
-
-≋-trans : Transitive _≋_
-≋-trans eq₁ eq₂ = record
-  { iso         = λ x → eq₁ .iso x ↔-∘ eq₂ .iso x 
-  ; iso-natural = natiso-∘ (eq₁ .iso-natural) (eq₂ .iso-natural)
-  } 
-
-≋-isEquivalence : IsEquivalence _≋_
-≋-isEquivalence = record
-  { refl  = ≋-refl
-  ; sym   = ≋-sym
-  ; trans = ≋-trans
-  } 
-
-free-resp-≋ : ε₁ ≋ ε₂ → ∀[ Free ε₁ ⇒ Free ε₂ ]
-free-resp-≋ eq = hmap-free (eq .iso _ .Inverse.to) 
+free-resp-⇿ : ε₁ ⇿ ε₂ → ∀[ Free ε₁ ⇒ Free ε₂ ]
+free-resp-⇿ eq = hmap-free (eq .equivalence _ .Inverse.to) 
 
 injectᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Algebra η₁ (Hefty η₂)
 injectᴴ .α v = impure (injᴴ v)  
@@ -133,8 +96,6 @@ postulate TODO : ∀ {a} {A : Set a} → A
   ; fork-stable     = trans (fork-stable ⦃ sub₁ ⦄) (fork-stable ⦃ sub₂ ⦄)
   ; types-stable    = trans TODO (types-stable ⦃ sub₂ ⦄)
   }
-
-
 
 ⊑ᴴ-⊕-left : η₁ ⊑ᴴ (η₁ ⊕ η₂)
 ⊑ᴴ-⊕-left = record

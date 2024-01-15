@@ -1,3 +1,6 @@
+open import Core.Extensionality
+open import Core.Functor
+
 open import Data.Product
 open import Data.Sum
 open import Data.Empty
@@ -9,10 +12,9 @@ open import Function.Construct.Composition using (_↔-∘_)
 
 open import Relation.Unary
 open import Relation.Binary hiding (_⇒_)
-
-open import Core.Functor
-
 open import Relation.Binary.PropositionalEquality hiding ([_])
+
+open import Level 
 
 module Core.Container where
 
@@ -57,6 +59,8 @@ instance
   con-functor .fmap-∘ f g ⟨ s , p ⟩ = refl 
 
 
+open Inverse 
+
 module _ where
 
   -- Container morphisms are natural transformations between the extension functors 
@@ -69,7 +73,13 @@ module _ where
       equivalence :  ∀ X → ⟦ C₁ ⟧ᶜ X ↔ ⟦ C₂ ⟧ᶜ X
       natural     : NaturalIsomorphism equivalence 
 
-  open _⇿_ public 
+    toᶜ : C₁ ↦ C₂
+    toᶜ = equivalence _ . to
+
+    fromᶜ : C₂ ↦ C₁
+    fromᶜ = equivalence _ .from 
+
+  open _⇿_ public
 
 
   -- Container isomorphisms form an equivalence relation on containers
@@ -104,10 +114,14 @@ module _ where
 injˡ : ∀ C₂ → C₁ ↦ (C₁ ⊕ᶜ C₂)
 injˡ _ ⟨ c , k ⟩ = ⟨ inj₁ c , k ⟩
 
-
+injˡ-natural : Natural (injˡ {C₁} C₂)
+injˡ-natural = record { commute = λ _ → refl } 
 
 injʳ : ∀ C₁ → C₂ ↦ (C₁ ⊕ᶜ C₂)
 injʳ _ ⟨ c , k ⟩ = ⟨ (inj₂ c , k) ⟩
+
+injʳ-natural : Natural (injʳ {C₂} C₁)
+injʳ-natural = record { commute = λ _ → refl } 
 
 swapᶜ : ∀ C₁ C₂ → (C₁ ⊕ᶜ C₂) ↦ (C₂ ⊕ᶜ C₁)
 swapᶜ _ _ ⟨ inj₁ c , k ⟩ = ⟨ inj₂ c , k ⟩
@@ -173,7 +187,6 @@ assocᶜ-⇿ _ _ _ .natural = record
       .commute ⟨ inj₂ c        , k ⟩ → refl
   } 
 
-open Inverse 
 
 ⊕ᶜ-congˡ : ∀ C₁ C₂ C → C₁ ⇿ C₂ → (C₁ ⊕ᶜ C) ⇿ (C₂ ⊕ᶜ C)
 ⊕ᶜ-congˡ C₁ C₂ C iso .equivalence X = record

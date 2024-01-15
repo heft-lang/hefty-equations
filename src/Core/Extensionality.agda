@@ -6,7 +6,11 @@ open import Level
 open import Axiom.Extensionality.Propositional
 
 postulate
-  extensionality : Extensionality zero zero
+  polymorphicExtensionality : ∀ a b → Extensionality a b 
+
+extensionality = polymorphicExtensionality zero zero
 
 extensionality′ : ExtensionalityImplicit zero zero
 extensionality′ = implicit-extensionality extensionality 
+
+pfext = polymorphicExtensionality

@@ -58,6 +58,22 @@ record Natural {a b} {F G : Set a → Set b}
 
 open Natural public
 
+id-natural : ∀ {a b} {F : Set a → Set b} → ⦃ _ : Functor F ⦄ → Natural {F = F} id
+id-natural = record { commute = λ _ → refl }
+
+-- Naturality is preserved by composition
+∘-natural :
+  ∀ {a b} {F G H : Set a → Set b}
+  → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄ → ⦃ _ : Functor H ⦄
+  → (θ₁ : ∀[ F ⇒ G ]) (θ₂ : ∀[ G ⇒ H ])
+  → Natural θ₁ → Natural θ₂
+    -----------------------
+  → Natural (θ₂ ∘ θ₁)
+∘-natural θ₁ θ₂ n₁ n₂ = record
+  { commute = λ _ →
+      trans (cong (fmap θ₂) (n₁ .commute _)) $ n₂ .commute _
+  }
+
 record NaturalIsomorphism {a b} {F G : Set a → Set b}
                           ⦃ _ : Functor F ⦄ ⦃ _ : Functor G ⦄
                           (iso : ∀ x → F x ↔ G x) : Set (sℓ a ⊔ b) where

@@ -43,12 +43,6 @@ record Monotone (P : Pred Carrier ℓ) : Set (suc ℓ) where
   field
     weaken      : ∀ {x y} → x ~ y → P x → P y 
 
-    -- Functor laws for monotone predicates 
-    weaken-refl  : ∀ {x} {px : P x} → weaken refl px ≡ px 
-    weaken-trans : ∀ {x y z} {px : P x} {i₁ : x ~ y} {i₂ : y ~ z}
-                   → weaken (trans i₁ i₂) px ≡ weaken i₂ (weaken i₁ px )     
-
-
 open Monotone ⦃...⦄ public
 
 record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ) where
