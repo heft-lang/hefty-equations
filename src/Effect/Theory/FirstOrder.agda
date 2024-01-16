@@ -1,15 +1,9 @@
 open import Effect.Base
 open import Effect.Separation
+open import Effect.Inclusion 
 open import Effect.Handle
 open import Effect.Logic
-
-open import Free.Base
-
-open import Core.Functor
-open import Core.Container
-open import Core.MonotonePredicate Effect _≲_
-open import Core.DisjointUnion
-open import Core.Extensionality
+open import Effect.Syntax.Free
 
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
@@ -25,12 +19,19 @@ open import Data.Vec hiding (map ; _++_)
 open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
 open import Relation.Unary hiding (_∈_ ; _⊆_)
+open import Relation.Binary using (Preorder)
 open import Relation.Binary.PropositionalEquality hiding (_≗_)
 open import Data.Empty
 
+
+open import Core.Functor
+open import Core.Container
+open import Core.MonotonePredicate Effect _≲_ (≲-preorder .Preorder.isPreorder)
+open import Core.Extensionality
+
 open import Function
-open import Function.Construct.Symmetry
-open import Function.Construct.Composition
+open import Function.Construct.Symmetry using (↔-sym)
+open import Function.Construct.Composition using (_↔-∘_)
 open import Level
 
 {- Most stuff in this module is adapted from "Reasoning about Effect Interaction
@@ -52,16 +53,18 @@ TypeContext (suc n) = Set × TypeContext n
 
 -- Equations, packaged together with their context 
 record Equation (ε : Effect) : Set₁ where
-  constructor _≗_ 
+  constructor _≗_  
   field
     {Δ′}    : ℕ
     {Γ′ R′} : TypeContext Δ′ → Set
+    
     lhs rhs : Π[ Γ′ ⇒ R′ ⊢ Free ε ] 
-  
+
 open Equation public 
 
 variable Δ Δ₁ Δ₂ : ℕ 
          Γ Γ₁ Γ₂ R : Vec Set Δ → Set 
+
 
 instance eq-monotone : Monotone Equation
 eq-monotone .weaken i eq = (♯ ⦃ i ⦄ ∘₂ eq .lhs) ≗ (♯ ⦃ i ⦄ ∘₂ eq .rhs) 
@@ -72,8 +75,8 @@ hmap-eq θ eq = (hmap-free θ ∘₂ eq .lhs) ≗ (hmap-free θ ∘₂ eq .rhs)
 
 -- We can re-brand equations over a given effect to equations for a different
 -- but equivalent effect
-eq-resp-≋ : ε₁ ≋ ε₂ → Equation ε₁ → Equation ε₂
-eq-resp-≋ eqv = hmap-eq (eqv .iso _ .Inverse.to) 
+eq-resp-⇿ : ε₁ ⇿ ε₂ → Equation ε₁ → Equation ε₂
+eq-resp-⇿ eq = hmap-eq (eq .equivalence _ .Inverse.to) 
 
 -- We say that an algebra "respects" an equation if folding with that algebra
 -- over both the left- and right-hand-side of the equation produces equal results
@@ -86,8 +89,7 @@ record Theory (ε : Effect) : Set₁ where
   no-eta-equality
   constructor ∥_∥
   field
-    equations : List (□ Equation ε)
-
+    equations : List $ □ Equation ε
 
 open Theory public
 
@@ -103,8 +105,8 @@ T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂
 instance theory-monotone : Monotone Theory
 theory-monotone .weaken i T = ∥ (map (weaken i) $ T .equations) ∥ 
 
-theory-resp-≋ : ε₁ ≋ ε₂ → Theory ε₁ → Theory ε₂ 
-theory-resp-≋ eqv T = ∥ map (□-resp-≋ eqv) $ T .equations ∥
+theory-resp-⇿ : ε₁ ⇿ ε₂ → Theory ε₁ → Theory ε₂ 
+theory-resp-⇿ eqv T = ∥ map (□-resp-⇿ eqv) $ T .equations ∥
 
 ◃-weaken : {eq : □ Equation ε} → ∀ T → eq ◃ T → (i : ε ≲ ε′) → weaken i eq ◃ weaken i T
 ◃-weaken T px i with T .equations
@@ -129,19 +131,21 @@ module _ where
   --
   -- TODO: is this a known structure? 
 
-  postulate ⟨⊆⟩-refl : {T : Theory ε} → T ⊆⟨ ≲-refl ⟩ T
--- ⟨⊆⟩-refl {T = T} {eq = eq} px with T .equations
--- ⟨⊆⟩-refl {T = T} {eq = .eq} (here refl) | eq ∷ _ = here (
+  postulate 
+    ⟨⊆⟩-refl : {T : Theory ε} → T ⊆⟨ ≲-refl ⟩ T
+-- ⟨⊆⟩-refl {T = T} .sub px with T .equations
+-- ⟨⊆⟩-refl {T = T} .sub (here refl) | eq ∷ _ = here (
 --   begin
 --     necessary (λ i → □⟨ eq ⟩ ≲-trans ≲-refl i)
---   ≡⟨ {! !} ⟩
+--   ≡⟨ {!!} ⟩
 --     necessary (λ i → □⟨ eq ⟩ i) 
---   ≡⟨⟩ {- η-equivalence for □ modality -} 
+--   ≡⟨⟩ 
 --     eq
 --   ∎ )
---   where open ≡-Reasoning
--- ⟨⊆⟩-refl {T = T} {eq = eq} (there px) | _ ∷ xs = there (⟨⊆⟩-refl {T = ∥ xs ∥} px)
---
+--   where open ≡-Reasoning 
+-- ⟨⊆⟩-refl {T = T} .sub (there px)  | _ ∷ _ = there (⟨⊆⟩-refl {T = ∥ _ ∥} .sub px)
+-- 
+ 
   postulate 
     ⟨⊆⟩-trans :
       ∀ {T₁ : Theory ε₁} {T₂ : Theory ε₂} {T : Theory ε}
@@ -322,17 +326,17 @@ Adequate {ε₁} {A} H T =
     ---------------------------------
   → m₁ ≈⟨ T′ ⟩ m₂
 
-open DisjointUnion
+
 
 postulate sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequate H ]
 -- sep-adequate {ε₁} H T adq {ε₂ = ε₂} {ε} a m₁ m₂ σ {T′} T⊆T′ eq
 --   with adq a (separate σ m₁) (separate σ m₂) {T′ = T′′} {!!} eq 
 --   where
---     eq′ : ε ≋ (ε₁ ⊕ᶜ ε₂) 
---     eq′ = (≋-sym (∙-to-≋ σ)) 
+--     eq′ : ε ⇿ (ε₁ ⊕ᶜ ε₂) 
+--     eq′ = (⇿-sym (∙-to-⇿ σ)) 
 --   
 --     T′′ : Theory (ε₁ ⊕ᶜ ε₂)
---     T′′ = theory-resp-≋ eq′ T′
+--     T′′ = theory-resp-⇿ eq′ T′
 -- 
 -- ... | eqv = {!!} 
 -- 

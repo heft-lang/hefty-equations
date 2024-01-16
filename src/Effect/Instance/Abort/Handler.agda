@@ -1,13 +1,13 @@
 open import Core.Functor
 open import Core.Container
 open import Core.Extensionality
-open import Core.DisjointUnion
 
 open import Effect.Base
 open import Effect.Handle
 open import Effect.Separation
+open import Effect.Inclusion
 open import Effect.Logic
-open import Free.Base 
+open import Effect.Syntax.Free
 
 open import Data.Unit
 open import Data.Maybe hiding (_>>=_)

@@ -4,8 +4,8 @@ open import Core.Functor
 open import Core.Container
 open import Core.Signature
 
-open import Free.Base
-open import Hefty.Base
+open import Effect.Syntax.Free
+open import Effect.Syntax.Hefty
 
 open import Data.Empty 
 open import Data.Product
@@ -112,10 +112,5 @@ postulate TODO : ∀ {a} {A : Set a} → A
   ; fork-stable     = refl
   ; types-stable    = refl
   }
-
-
-
-
-
-
+  
 

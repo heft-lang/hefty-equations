@@ -3,10 +3,9 @@ open import Relation.Unary
 open import Core.Functor
 open import Core.Container
 open import Core.Signature
-open import Core.DisjointUnion
 
-open import Free.Base
-open import Hefty.Base
+open import Effect.Syntax.Free
+open import Effect.Syntax.Hefty
 open import Effect.Base
 
 open import Data.Empty 
@@ -14,6 +13,7 @@ open import Data.Product
 open import Data.Sum
 
 open import Effect.Separation
+open import Effect.Inclusion 
 open import Effect.Logic as Logic
 
 open import Function hiding (_⇔_)
@@ -25,7 +25,7 @@ open import Effect.Handle
 
 module Effect.Elaborate where
 
-open import Core.MonotonePredicate Effect _≲_
+open import Core.MonotonePredicate Effect _≲_ (≲-preorder .Preorder.isPreorder)
 open Logic.Connectives
 
 {- Semantics for higher-order effects -}
@@ -67,4 +67,6 @@ compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫
 -- Or, in other words, we can curry (and thus partially apply) the heterogeneous
 -- composition operation.
 extend-with : ∀[ Elaboration η₁ ⇒ (Elaboration η₂ ─✴ Elaboration (η₁ ⊕ η₂)) ]
-extend-with = ✴-curry compose-elab 
+extend-with = ✴-curry compose-elab
+
+

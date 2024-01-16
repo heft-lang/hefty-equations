@@ -1,7 +1,10 @@
 open import Core.Container
 
 open import Effect.Base
-open import Free.Base
+open import Effect.Separation
+open import Effect.Inclusion
+
+open import Effect.Syntax.Free
 
 open import Data.Unit
 open import Data.Product
@@ -21,8 +24,8 @@ State S = record
                        (`put _) → ⊤
   }
 
-get : ⦃ State S ⊑ ε ⦄ → Free ε S
-get = ♯ impure ⟨ `get , pure ⟩ 
+get : ⦃ State S ≲ ε ⦄ → Free ε S
+get = ♯ (impure ⟨ `get , pure ⟩)
 
-put : ⦃ State S ⊑ ε ⦄ → S → Free ε ⊤
-put s = ♯ impure ⟨ `put s , pure ⟩ 
+put : ⦃ State S ≲ ε ⦄ → S → Free ε ⊤
+put s = ♯ (impure ⟨ `put s , pure ⟩)

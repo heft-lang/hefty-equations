@@ -5,7 +5,7 @@ open import Core.Container
 open import Core.Ternary 
 
 open import Effect.Base 
-open import Free.Base 
+open import Effect.Syntax.Free 
 open import Effect.Separation
 
 open import Relation.Unary

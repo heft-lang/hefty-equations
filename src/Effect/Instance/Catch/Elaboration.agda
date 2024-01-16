@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type #-} 
+{-# OPTIONS --type-in-type --allow-unsolved-metas #-} 
 
 open import Core.Functor
 open import Core.Signature
@@ -7,12 +7,13 @@ open import Core.Extensionality
 open import Core.MonotonePredicate 
 
 open import Effect.Base
-open import Free.Base
-open import Hefty.Base
+open import Effect.Syntax.Free
+open import Effect.Syntax.Hefty
 
 open import Effect.Handle
 open import Effect.Elaborate
 open import Effect.Separation
+open import Effect.Inclusion
 open import Effect.Logic 
 
 open import Effect.Theory.FirstOrder
@@ -41,23 +42,21 @@ open import Relation.Unary hiding (Empty ; _⊆_)
 module Effect.Instance.Catch.Elaboration where
 
 open Connectives
-open _≲_ 
 
 CatchElab : Elaboration Catch Abort
 CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
   where
     CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra Catch (Free ε)
-    CatchElabAlg     ⦃ i ⦄ .α ⟪ `throw   , k , s ⟫ = abort
-    CatchElabAlg {ε} ⦃ i ⦄ .α ⟪ `catch A , k , s ⟫ = do
+    CatchElabAlg     ⦃ i           ⦄ .α ⟪ `throw   , k , s ⟫ = abort
+    CatchElabAlg {ε} ⦃ i@(ε' , σ') ⦄ .α ⟪ `catch A , k , s ⟫ = do
       v ← ♯ (handleAbort σ' (s (inj₁ tt)))
       maybe′ k (s (inj₂ tt) >>= k) v
 
       where
-        ε' = proj₁ (≲-to-∙ i)
-        σ' = proj₂ (≲-to-∙ i)
         instance inst : ε' ≲ ε
-        inst = ≲-∙-right σ'
-        
+        inst = Abort , union-comm σ'
+
+
 -- 
 -- elab-respects-bind : ∀ c r s (k : A → Free Abort B) → CatchElab .elab .α ⟪ c , r , s ⟫ >>= k ≡ CatchElab .elab .α ⟪ c , (_>>= k) ∘ r , s ⟫
 -- elab-respects-bind `throw r s k = {!!}
@@ -92,27 +91,25 @@ CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
 
 
 CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
-CatchElabCorrect px {ε′ = ε′} i T′ sub {γ = k} = go px ⦃ i ⦄ sub 
+CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub 
   where
     open ≈-Reasoning T′
-    ε' = proj₁ (≲-to-∙ i)
-    σ' = proj₂ (≲-to-∙ i)
-    instance inst : ε' ≲ ε′
-    inst = ≲-∙-right σ'
+    instance inst : proj₁ i ≲ ε′
+    inst = _ , (union-comm $ proj₂ i)
 
     ℋ⟦_⟧ : ∀[ Free ε′ ⇒ Maybe ⊢ Free ε′ ]
-    ℋ⟦_⟧ = ♯ ∘ handleAbort σ' 
+    ℋ⟦_⟧ = ♯ ∘ handleAbort (proj₂ i)
 
     go : ∀ {eq : Equationᴴ _}
          → eq ◃ᴴ CatchTheory
-         → ⦃ i : Abort ≲ ε′ ⦄
-         → weaken i AbortTheory ⊆ T′
+         → AbortTheory ⊆⟨ i ⟩ T′
            -------------------------------------------------
          → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ CatchElab .elab ⟩ i) eq
 
 
     -- bind-throw 
     go (here refl) _ {γ = k} =
+    
       begin
         ℰ⟦ throw >>= k ⟧
       ≈⟪⟫ {- Definition of >>= and throw -}
@@ -120,7 +117,7 @@ CatchElabCorrect px {ε′ = ε′} i T′ sub {γ = k} = go px ⦃ i ⦄ sub
       ≈⟪⟫ {- Definition of throw -} 
         ℰ⟦ throw ⟧
       ∎
-
+      
     -- catch-return 
     go (there (here refl)) sub {γ = m , x} =
       begin
@@ -135,28 +132,40 @@ CatchElabCorrect px {ε′ = ε′} i T′ sub {γ = k} = go px ⦃ i ⦄ sub
         ℰ⟦ return x ⟧
       ∎
 
-    -- catch-throw 
-    go (there (there (here refl))) sub = {!!}
+    -- catch-throw-1 
+    go (there (there (here refl))) sub {δ = A , _} {γ = m} =
+      begin
+        ℰ⟦ catch throw m ⟧
+      ≈⟪⟫ {- definition of ℰ⟦-⟧ -} 
+        ℋ⟦ ℰ⟦ throw ⟧ ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
+      ≈⟪⟫ {- -} 
+        ℋ⟦ abort ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
+      ≈⟪ ≡-to-≈ (cong (λ ○ → ○ >>= λ v → maybe′ pure (ℰ⟦ m ⟧ >>= pure) v) lemma) ⟫
+        pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
+      ≈⟪⟫ {- Definition of >>= and maybe′ -} 
+        ℰ⟦ m ⟧ >>= pure 
+      ≈⟪ ≡-to-≈ identity-fold-lemma ⟫ 
+        ℰ⟦ m ⟧
+      ∎
+      where
+        {- TODO: make this into a more general lemma? -} 
+        lemma : ℋ⟦ abort ⟧ ≡ pure nothing 
+        lemma = {!!} 
 
+    {- catch-throw-2 -} 
+    go (there (there (there (here refl)))) sub {γ = m} =
+      begin
+        ℰ⟦ catch m throw ⟧
+      ≈⟪⟫
+        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure) 
+      ≈⟪ {!!} ⟫
+        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧) 
+      ≈⟪ {!!} ⟫ 
+        ℰ⟦ m ⟧
+      ∎
 
-    go (there (there (there x))) sub = {!!}
-    
--- CatchElabCorrect (there (there (here refl))) {A ∷ []} {m} =
+    go (there (there (there (there (here refl))))) sub = {!!}
 
---   begin
---     ℰ⟦ catch throw m ⟧
---   ≈⟪⟫ {-  definition of `elaborate` -} 
---     fold-hefty pure (CatchElab .elab) (catch throw m)
---   ≈⟪⟫ {- definition of `CatchElab` -} 
---     maybe′ pure (ℰ⟦ m ⟧ >>= pure) ℋ⟦ abort ⟧
---   ≈⟪⟫ {- definition of `extract` and `handleAbort` -} 
---     maybe′ pure (ℰ⟦ m ⟧ >>= pure) nothing 
---   ≈⟪⟫ {- definition of `maybe` -} 
---     ℰ⟦ m ⟧ >>= pure  
---   ≈⟪ ≡-to-≈ identity-fold-lemma ⟫ -- TODO: monad laws should be syntactic proofs 
---     ℰ⟦ m ⟧
---   ∎
-  
 -- CatchElabCorrect (there (there (there (here refl)))) {δ = A ∷ []} {m} = ? 
 
   

@@ -4,7 +4,7 @@ open import Core.Functor
 open import Core.Signature 
 
 open import Effect.Base
-open import Hefty.Base
+open import Effect.Syntax.Hefty
 
 open import Data.Empty
 open import Data.Unit

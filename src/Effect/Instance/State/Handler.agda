@@ -3,7 +3,7 @@ open import Core.Container
 open import Core.Extensionality
 
 open import Effect.Base
-open import Free.Base 
+open import Effect.Syntax.Free
 
 open import Data.Unit
 open import Data.Maybe hiding (_>>=_)

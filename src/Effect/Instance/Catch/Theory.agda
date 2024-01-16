@@ -1,7 +1,7 @@
 open import Core.Functor
 
 open import Effect.Base
-open import Hefty.Base
+open import Effect.Syntax.Hefty
 
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
@@ -92,4 +92,4 @@ CatchTheory =
   ∷ catch-throw₁
   ∷ catch-throw₂
   ∷ catch-catch
-  ∷ []  ∥ᴴ 
+  ∷ [] ∥ᴴ 

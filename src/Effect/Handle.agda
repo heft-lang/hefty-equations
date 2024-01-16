@@ -5,9 +5,8 @@ open import Core.Container
 open import Core.Signature
 open import Core.Extensionality
 
-open import Free.Base
-open import Hefty.Base
 open import Effect.Base
+open import Effect.Syntax.Free
 
 open import Data.Empty 
 open import Data.Product

@@ -1,7 +1,7 @@
 open import Core.Functor
 
 open import Effect.Base
-open import Free.Base
+open import Effect.Syntax.Free
 
 open import Effect.Theory.FirstOrder
 open import Effect.Instance.State.Syntax

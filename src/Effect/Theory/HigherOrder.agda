@@ -1,6 +1,3 @@
-open import Free.Base
-open import Hefty.Base
-
 open import Core.Functor
 open import Core.Signature
 open import Core.Extensionality
@@ -11,6 +8,10 @@ open import Effect.Theory.FirstOrder
 open import Effect.Elaborate
 open import Effect.Separation
 open import Effect.Logic
+open import Effect.Inclusion
+
+open import Effect.Syntax.Free
+open import Effect.Syntax.Hefty
 
 open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
@@ -286,8 +287,9 @@ weaken-correct :
   → Correctᴴ Th T e
     ---------------------------
   → Correctᴴ Th T′ (weaken i e)
-weaken-correct {T = T} e i Th T′ sub₁ c {eq = eq} px ⦃ i = i′ ⦄ T′′ sub₂
-  = c px ⦃ ≲-trans i i′ ⦄ T′′ (⟨⊆⟩-trans sub₁ sub₂) 
+  
+weaken-correct e i Th T′ sub₁ c px ⦃ i = i′ ⦄ T′′ sub₂
+  = c px ⦃ ≲-trans i i′ ⦄ T′′ $ ⟨⊆⟩-trans sub₁ sub₂ 
 
 
 compose-elab-correct

@@ -3,8 +3,9 @@ open import Core.Functor
 open import Relation.Unary
 
 open import Effect.Base
-open import Free.Base
+open import Effect.Syntax.Free
 open import Effect.Separation
+open import Effect.Inclusion 
 open import Effect.Logic
 
 open import Effect.Theory.FirstOrder
