@@ -5,32 +5,85 @@ open import Effect.Syntax.Free
 
 open import Effect.Theory.FirstOrder
 open import Effect.Instance.State.Syntax
+open import Effect.Logic
+open import Effect.Inclusion 
 
 open import Data.Vec
 open import Data.List
 open import Data.Unit
 open import Data.Product
 
+open import Relation.Unary
+
 module Effect.Instance.State.Theory where
 
-get-get : Equation (State S) 1 (λ where (A ∷ []) → S → S → Free (State S) A) λ where (A ∷ []) → A
-get-get =
-  (λ where (_ ∷ []) k → get >>= λ s → get >>= k s) ≗ (λ where (_ ∷ []) k → get >>= λ s → k s s ) 
+open Connectives
 
-get-put : Equation (State S) 0 (λ where [] → ⊤) λ where [] → ⊤
-get-put = (λ where [] tt → get >>= put) ≗ (λ where [] tt → return tt) 
+get-get : □ Equation (State S)
+get-get = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
 
-put-get : Equation (State S) 0 (λ where [] → S) λ where [] → S
-put-get = (λ where [] s → put s >> get) ≗ λ where [] s → put s >> return s 
+  where
+    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
 
-put-put : Equation (State S) 0 (λ where [] → S × S) λ where [] → ⊤
-put-put = (λ where [] (s , s′) → put s >> put s′) ≗ λ where [] (s , s′) → put s′ 
+      ctx ret : TypeContext 1 → Set
+      ctx (A , _) = S → S → Free ε A
+      ret (A , _) = A
+      left right : Π[ ctx ⇒ ret ⊢ Free ε ]
+
+      left  _ k = get >>= λ s → get >>= k s
+      right _ k = get >>= λ s → k s s  
+
+
+get-put : □ Equation (State S)
+get-put = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
+
+  where 
+    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+
+      ctx ret : TypeContext 0 → Set
+      ctx _ = ⊤ 
+      ret _ = ⊤
+      left right : Π[ ctx ⇒ ret ⊢ Free ε ]
+
+      left  _ _ = get >>= put 
+      right _ _ = return tt
+
+
+put-get : □ Equation (State S)
+put-get = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
+
+  where 
+    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+
+      ctx ret : TypeContext 0 → Set
+      ctx _ = S 
+      ret _ = S
+      left right : Π[ ctx ⇒ ret ⊢ Free ε ]
+
+      left  _ s = put s >> get 
+      right _ s = put s >> return s
+
+
+put-put : □ Equation (State S) 
+put-put = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄ 
+
+  where 
+    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+
+      ctx ret : TypeContext 0 → Set
+      ctx _ = S × S 
+      ret _ = ⊤
+      left right : Π[ ctx ⇒ ret ⊢ Free ε ]
+
+      left  _ (s , s′) = put s >> put s′ 
+      right _ (s , s′) = put s′
+
 
 StateTheory : Theory (State S)
 StateTheory =
-  ∥ ◆ get-get
-  ∷ ◆ put-get
-  ∷ ◆ get-put
-  ∷ ◆ put-put
+  ∥ get-get
+  ∷ get-put
+  ∷ put-get 
+  ∷ put-put
   ∷ [] ∥ 
   
