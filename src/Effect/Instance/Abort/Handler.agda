@@ -23,8 +23,6 @@ open import Effect.Theory.FirstOrder
 open import Effect.Instance.Abort.Syntax
 open import Effect.Instance.Abort.Theory
 
-open import Effect.Instance.Empty.Syntax
-
 open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
 
@@ -51,16 +49,6 @@ module Properties where
 
   modular : Modular AbortHandler
   modular = handle-modular AbortHandler 
-  
-  impure-injectiveˡ :
-    ∀ {ε} {c₁ c₂ : ε .shape} {k₁ : ε .position c₁ → Free ε A} {k₂ : ε .position c₂ → Free ε A}
-    → impure ⟨ c₁ , k₁ ⟩ ≡ impure ⟨ c₂ , k₂ ⟩ → c₁ ≡ c₂
-  impure-injectiveˡ refl = refl
-
-  impure-injectiveʳ :
-    ∀ {ε} {c : ε .shape} {k₁ k₂ : ε .position c → Free ε A}
-    → impure ⟨ c , k₁ ⟩ ≡ impure ⟨ c , k₂ ⟩ → k₁ ≡ k₂ 
-  impure-injectiveʳ refl = refl
 
   -- TODO: there's really only one relevant case here. Can we factor the proof
   -- such that we only have to provide that case?

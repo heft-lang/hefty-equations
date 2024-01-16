@@ -419,3 +419,12 @@ module ≈-Reasoning (T : Theory ε) where
   ∎
   where open ≈-Reasoning _ 
 
+impure-injectiveˡ :
+  ∀ {ε} {c₁ c₂ : ε .shape} {k₁ : ε .position c₁ → Free ε A} {k₂ : ε .position c₂ → Free ε A}
+  → impure ⟨ c₁ , k₁ ⟩ ≡ impure ⟨ c₂ , k₂ ⟩ → c₁ ≡ c₂
+impure-injectiveˡ refl = refl
+
+impure-injectiveʳ :
+  ∀ {ε} {c : ε .shape} {k₁ k₂ : ε .position c → Free ε A}
+  → impure ⟨ c , k₁ ⟩ ≡ impure ⟨ c , k₂ ⟩ → k₁ ≡ k₂ 
+impure-injectiveʳ refl = refl
