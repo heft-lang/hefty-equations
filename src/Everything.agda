@@ -20,6 +20,7 @@ open import Effect.Logic
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder 
 
+open import Effect.Instance.Empty.Syntax 
 
 open import Effect.Instance.Abort.Syntax
 open import Effect.Instance.Abort.Theory
