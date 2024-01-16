@@ -32,6 +32,7 @@ open import Data.Product
 open import Data.Maybe hiding (_>>=_)
 open import Data.Sum
 open import Data.Unit
+open import Data.Empty
 
 open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
@@ -43,18 +44,17 @@ module Effect.Instance.Catch.Elaboration where
 
 open Connectives
 
+ℋ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Free ε ⇒ Maybe ⊢ Free ε ]
+ℋ⟦_⟧ ⦃ i ⦄ = ♯ ⦃ Abort , (union-comm $ i .proj₂) ⦄  ∘ handleAbort (i .proj₂)
+
 CatchElab : Elaboration Catch Abort
 CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
   where
     CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra Catch (Free ε)
-    CatchElabAlg     ⦃ i           ⦄ .α ⟪ `throw   , k , s ⟫ = abort
-    CatchElabAlg {ε} ⦃ i@(ε' , σ') ⦄ .α ⟪ `catch A , k , s ⟫ = do
-      v ← ♯ (handleAbort σ' (s (inj₁ tt)))
+    CatchElabAlg .α ⟪ `throw   , k , s ⟫ = abort
+    CatchElabAlg .α ⟪ `catch A , k , s ⟫ = do
+      v ← ℋ⟦ (s (inj₁ tt)) ⟧
       maybe′ k (s (inj₂ tt) >>= k) v
-
-      where
-        instance inst : ε' ≲ ε
-        inst = Abort , union-comm σ'
 
 
 -- 
@@ -64,30 +64,9 @@ CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
 --
 
 
--- 
--- record HandleSem (ε : Effect) (F : Set → Set) : Set where
---   field ℋ⟦_⟧ : ∀[ Free ε ⇒ F ]
--- 
--- open HandleSem ⦃...⦄
--- 
--- record ElabSem (η : Effectᴴ) (ε : Effect) : Set where
---   field ℰ⟦_⟧ : ∀[ Hefty η ⇒ Free ε ]
--- 
---   ℰ : ∀[ Hefty η ⇒ Free ε ]
---   ℰ = ℰ⟦_⟧
---     
--- 
--- open ElabSem ⦃...⦄
--- 
--- instance catchESem : ElabSem Catch Abort
--- catchESem = record { ℰ⟦_⟧ = elaborate CatchElab }
--- 
--- instance abortHSem : HandleSem Abort Maybe
--- abortHSem = record { ℋ⟦_⟧ = λ x → {!!}  }
---
-
 ℰ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Hefty Catch ⇒ Free ε ]  
-ℰ⟦_⟧ ⦃ i ⦄ = fold-hefty pure (□⟨ CatchElab .elab ⟩ i) 
+ℰ⟦_⟧ ⦃ i ⦄ = fold-hefty pure (□⟨ CatchElab .elab ⟩ i)
+
 
 
 CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
@@ -97,8 +76,6 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
     instance inst : proj₁ i ≲ ε′
     inst = _ , (union-comm $ proj₂ i)
 
-    ℋ⟦_⟧ : ∀[ Free ε′ ⇒ Maybe ⊢ Free ε′ ]
-    ℋ⟦_⟧ = ♯ ∘ handleAbort (proj₂ i)
 
     go : ∀ {eq : Equationᴴ _}
          → eq ◃ᴴ CatchTheory
@@ -140,7 +117,7 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
         ℋ⟦ ℰ⟦ throw ⟧ ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- -} 
         ℋ⟦ abort ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
-      ≈⟪ ≡-to-≈ (cong (λ ○ → ○ >>= λ v → maybe′ pure (ℰ⟦ m ⟧ >>= pure) v) lemma) ⟫
+      ≈⟪ ≡-to-≈ (cong (λ ○ → ○ >>= λ v → maybe′ pure (ℰ⟦ m ⟧ >>= pure) v) ℋ-lemma) ⟫
         pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- Definition of >>= and maybe′ -} 
         ℰ⟦ m ⟧ >>= pure 
@@ -148,23 +125,32 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
         ℰ⟦ m ⟧
       ∎
       where
-        {- TODO: make this into a more general lemma? -} 
-        lemma : ℋ⟦ abort ⟧ ≡ pure nothing 
-        lemma = {!!} 
+        open ≡-Reasoning renaming (begin_ to ≡-begin_ ; _∎ to _QED) 
+
+        ℋ-lemma : ℋ⟦ abort ⟧ ≡ pure nothing 
+        ℋ-lemma =
+          ≡-begin
+            ℋ⟦ abort ⟧
+          ≡⟨⟩
+            ♯ ⦃ Abort , union-comm (i .proj₂) ⦄ (handleAbort (i .proj₂) abort)
+          ≡⟨ cong (♯ ⦃ Abort , union-comm (i .proj₂) ⦄) (Properties.handle-abort-is-nothing (i .proj₂)) ⟩ 
+            ♯ ⦃ Abort , union-comm (i .proj₂) ⦄ (pure nothing) 
+          ≡⟨⟩
+            pure nothing
+          QED
+
 
     {- catch-throw-2 -} 
     go (there (there (there (here refl)))) sub {γ = m} =
       begin
         ℰ⟦ catch m throw ⟧
-      ≈⟪⟫
+      ≈⟪⟫ {- Definition of elabCatch -}  
         ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure) 
-      ≈⟪ {!!} ⟫
-        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧) 
       ≈⟪ {!!} ⟫ 
         ℰ⟦ m ⟧
       ∎
 
-    go (there (there (there (there (here refl))))) sub = {!!}
+    go (there (there (there (there (here refl))))) sub = {!sub!}
 
 -- CatchElabCorrect (there (there (there (here refl)))) {δ = A ∷ []} {m} = ? 
 
