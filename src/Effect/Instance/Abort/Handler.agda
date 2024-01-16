@@ -84,3 +84,37 @@ module Properties where
 
   correct : Correct AbortTheory AbortHandler 
   correct (here refl) = refl
+
+  handle-abort : (σ : Abort ∙ ε ≈ ε′) → handleAbort {A = A} σ (abort ⦃ _ , σ ⦄) ≡ pure nothing
+  handle-abort {ε} σ =
+    begin
+      handleAbort σ abort
+    ≡⟨⟩ 
+      handle AbortHandler σ tt abort
+    ≡⟨⟩
+      handle AbortHandler σ tt (♯ (impure ⟨ `abort , ⊥-elim ⟩))
+    ≡⟨⟩
+      handle′ AbortHandler tt (separate σ (impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩)))
+    ≡⟨⟩
+      handle′ AbortHandler tt (fold-free pure (λ where .αᶜ → impure ∘ proj σ) $ impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩))
+    ≡⟨⟩ 
+      handle′ AbortHandler tt (impure (proj σ (fmap (separate σ) (inj ⟨ `abort , ((λ x → fold-free pure inject (⊥-elim x))) ⟩)))) 
+    ≡⟨ cong (handle′ AbortHandler tt ∘ impure ∘ proj σ)
+       ( sym (inj-natural .commute {f = separate σ} _)
+       ) ⟩
+      handle′ AbortHandler tt (impure (proj σ (inj (⟨ (`abort , (λ x → separate σ $ fold-free pure inject (⊥-elim x))) ⟩)))) 
+    ≡⟨ cong (handle′ AbortHandler tt ∘ impure)
+         ( σ .union .equivalence _ .inverse .proj₂
+           ( injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → separate σ $ fold-free pure inject (⊥-elim x))) ⟩)
+         ) ⟩
+    handle′ AbortHandler tt (impure (injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → separate σ $ fold-free pure inject (⊥-elim x))) ⟩)) 
+    ≡⟨⟩ 
+      pure nothing
+    ∎
+    where
+      open Union
+      open Inverse 
+      open ≡-Reasoning
+      instance inst : Abort ≲ _
+      inst = _ , σ
+  
