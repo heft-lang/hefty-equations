@@ -12,6 +12,8 @@ open import Relation.Unary
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality
 
+open import Data.Sum 
+
 open import Function
 open import Level
 
@@ -57,6 +59,9 @@ module _ where
   inj : ⦃ ε₁ ≲ ε₂ ⦄ → ε₁ ↦ ε₂
   inj ⦃ ε′ , u ⦄ = u .union .equivalence _ .to ∘ injˡ ε′ 
 
+  inj-natural : ⦃ i : ε₁ ≲ ε₂ ⦄ → Natural inj
+  inj-natural ⦃ i ⦄ .commute {f = f} ⟨ c , k ⟩ = i .proj₂ .union .natural .to-natural .commute {f = f} _
+    
   inject : ⦃ ε₁ ≲ ε₂ ⦄ → Algebraᶜ ε₁ (Free ε₂ A)
   inject .αᶜ = impure ∘ inj
 
