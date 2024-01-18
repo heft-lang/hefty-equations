@@ -83,7 +83,6 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
            -------------------------------------------------
          → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ CatchElab .elab ⟩ i) eq
 
-
     -- bind-throw 
     go (here refl) _ {γ = k} =
     
@@ -117,7 +116,7 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
         ℋ⟦ ℰ⟦ throw ⟧ ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- -} 
         ℋ⟦ abort ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
-      ≈⟪ ≡-to-≈ (cong (λ ○ → ○ >>= λ v → maybe′ pure (ℰ⟦ m ⟧ >>= pure) v) ℋ-lemma) ⟫
+      ≈⟪ >>=-resp-≈ˡ (≡-to-≈ ℋ-lemma) ⟫
         pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- Definition of >>= and maybe′ -} 
         ℰ⟦ m ⟧ >>= pure 
@@ -139,16 +138,82 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
             pure nothing
           QED
 
-
-    {- catch-throw-2 -} 
+    {- catch-throw-2 -}
     go (there (there (there (here refl)))) sub {γ = m} =
       begin
         ℰ⟦ catch m throw ⟧
       ≈⟪⟫ {- Definition of elabCatch -}  
-        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure) 
-      ≈⟪ {!!} ⟫ 
+        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure)
+      ≈⟪⟫
+        ℋ⟦ ℰ⟦ m ⟧ ⟧ >>= maybe′ pure (abort >>= pure)  
+      ≈⟪ ≡-to-≈ $ catch-throw-lemma ℰ⟦ m ⟧ ⟫ 
         ℰ⟦ m ⟧
       ∎
+      where
 
+        open Union (i .proj₂)
+        open ≡-Reasoning renaming (begin_ to ≡-begin_; _∎ to _QED) 
+
+        catch-throw-lemma : ∀ (m : Free ε′ A) → ℋ⟦ m ⟧ >>= maybe′ pure (abort >>= pure) ≡ m
+        catch-throw-lemma (pure x)               = refl
+        catch-throw-lemma (impure v@(⟨ c , k ⟩)) with proj v | inspect proj v
+        ... | ⟨ inj₁ `abort , k′ ⟩ | ≡[ eq ] =
+          ≡-begin
+            ℋ⟦ impure v ⟧ >>= f
+          ≡⟨⟩
+            ♯ (handle′ AbortHandler tt (impure (proj (fmap (separate (i .proj₂)) v)))) >>= f
+          ≡⟨ cong (λ ○ → ♯ (handle′ AbortHandler tt (impure ○)) >>= f) (proj-natural .commute {f = separate (i .proj₂)} _) ⟩
+            ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) (proj v)))) >>= f
+          ≡⟨ cong (λ ○ → ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) ○))) >>= f) eq ⟩
+            ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) ⟨ inj₁ `abort , k′ ⟩))) >>= f
+          ≡⟨⟩ {- simplify -} 
+            abort >>= pure
+          ≡⟨ >>=-idʳ abort ⟩
+            abort 
+          ≡⟨⟩ 
+            impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩) 
+          ≡⟨ cong (λ ○ → impure (inj ⟨ `abort , ○ ⟩)) (extensionality (λ())) ⟩ 
+            impure (inja ⟨ `abort , k′ ⟩)  
+          ≡⟨ cong impure (sym (proj-injˡ _ _ eq)) ⟩
+            impure v
+          QED
+
+          where
+            f = maybe′ pure (abort >>= pure)
+            
+        ... | ⟨ inj₂ c′ , k′ ⟩ | ≡[ eq ] =
+
+          ≡-begin
+            ℋ⟦ impure ⟨ c , k ⟩ ⟧ >>= f
+          ≡⟨⟩ {- inline definition -} 
+            ♯ (handle′ AbortHandler tt (impure (proj (fmap (separate (i .proj₂)) v)))) >>= f
+          ≡⟨ cong (λ ○ → ♯ (handle′ AbortHandler tt (impure ○)) >>= f) (proj-natural .commute {f = separate (i .proj₂)} _)⟩
+            ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) (proj v)))) >>= f
+          ≡⟨ cong (λ ○ → ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) ○))) >>= f) eq ⟩
+            ♯ (handle′ AbortHandler tt (impure (fmap (separate (i .proj₂)) ⟨ inj₂ c′ , k′ ⟩))) >>= f
+          ≡⟨⟩ {- simplify -} 
+            impure (injb ⟨ c′ , ℋ⟦_⟧ ∘ k′ ⟩) >>= f
+          ≡⟨⟩ {- definition of >>= -} 
+            impure (fmap ⦃ con-functor ⦄ (_>>= f) (injb ⟨ c′ , ℋ⟦_⟧ ∘ k′ ⟩)) 
+          ≡⟨ cong impure (sym $ injb-natural .commute {f = _>>= f} _) ⟩
+            impure (injb ⟨ c′ , (_>>= f) ∘ ℋ⟦_⟧ ∘ k′ ⟩)
+          ≡⟨ cong (λ ○ → impure (injb ⟨ c′ , ○ ⟩)) (extensionality λ x → subst (λ m → ℋ⟦ m ⟧ >>= f ≡ m) (cont-eq x) (ih (transp-pos {!!} x))) ⟩  
+            impure (injb ⟨ c′ , k′ ⟩) 
+          ≡⟨ (cong impure (sym $ proj-injʳ _ _ eq)) ⟩
+            impure ⟨ c , k ⟩
+          QED
+          
+          where
+            f = maybe′ pure (abort >>= pure)
+
+            transp-pos :  {x : ⟦ ε′ ⟧ᶜ (Free ε′ _)} {y : ⟦ proj₁ i ⟧ᶜ (Free ε′ _)} → proj x ≡ injʳ Abort y  → i .proj₁ .position (y .reflectᶜ .proj₁) → position ε′ (x .reflectᶜ .proj₁)
+            transp-pos eq pos rewrite eq = {!pos!}
+
+            postulate cont-eq : (x : position (i .proj₁) c′) → k (transp-pos eq x) ≡ k′ x
+            -- cont-eq = {!!}
+
+            ih : (x : position ε′ c) → ℋ⟦ k x ⟧ >>= maybe′ pure (abort >>= pure) ≡ k x
+            ih = catch-throw-lemma ∘ k 
+            
     {- catch-catch -} 
     go (there (there (there (there (here refl))))) sub = {!!}
