@@ -1,5 +1,3 @@
-{-# OPTIONS --type-in-type --allow-unsolved-metas #-} 
-
 open import Core.Functor
 open import Core.Signature
 open import Core.Container
@@ -50,25 +48,19 @@ open Connectives
 CatchElab : Elaboration Catch Abort
 CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
   where
-    CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra Catch (Free ε)
+    CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra (Catch ε) (Free ε)
     CatchElabAlg .α ⟪ `throw   , k , s ⟫ = abort
     CatchElabAlg .α ⟪ `catch A , k , s ⟫ = do
       v ← ℋ⟦ (s (inj₁ tt)) ⟧
       maybe′ k (s (inj₂ tt) >>= k) v
 
 
--- 
--- elab-respects-bind : ∀ c r s (k : A → Free Abort B) → CatchElab .elab .α ⟪ c , r , s ⟫ >>= k ≡ CatchElab .elab .α ⟪ c , (_>>= k) ∘ r , s ⟫
--- elab-respects-bind `throw r s k = {!!}
--- elab-respects-bind (`catch t) r s k = {!!}
---
-
-
-ℰ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Hefty Catch ⇒ Free ε ]  
+ℰ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Hefty (Catch ε) ⇒ Free ε ]  
 ℰ⟦_⟧ ⦃ i ⦄ = fold-hefty pure (□⟨ CatchElab .elab ⟩ i)
 
-
-
+-- TODO: explain why we need to disable the termination checker here, and why we
+-- think this is okay
+{-# TERMINATING #-}
 CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
 CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub 
   where
@@ -197,7 +189,7 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
             impure (fmap ⦃ con-functor ⦄ (_>>= f) (injb ⟨ c′ , ℋ⟦_⟧ ∘ k′ ⟩)) 
           ≡⟨ cong impure (sym $ injb-natural .commute {f = _>>= f} _) ⟩
             impure (injb ⟨ c′ , (_>>= f) ∘ ℋ⟦_⟧ ∘ k′ ⟩)
-          ≡⟨ cong (λ ○ → impure (injb ⟨ c′ , ○ ⟩)) (extensionality λ x → subst (λ m → ℋ⟦ m ⟧ >>= f ≡ m) (cont-eq x) (ih (transp-pos {!!} x))) ⟩  
+          ≡⟨ cong (λ ○ → impure (injb ⟨ c′ , ○ ⟩)) (extensionality λ x → catch-throw-lemma (k′ x)) ⟩  
             impure (injb ⟨ c′ , k′ ⟩) 
           ≡⟨ (cong impure (sym $ proj-injʳ _ _ eq)) ⟩
             impure ⟨ c , k ⟩
@@ -205,15 +197,24 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
           
           where
             f = maybe′ pure (abort >>= pure)
-
-            transp-pos :  {x : ⟦ ε′ ⟧ᶜ (Free ε′ _)} {y : ⟦ proj₁ i ⟧ᶜ (Free ε′ _)} → proj x ≡ injʳ Abort y  → i .proj₁ .position (y .reflectᶜ .proj₁) → position ε′ (x .reflectᶜ .proj₁)
-            transp-pos eq pos rewrite eq = {!pos!}
-
-            postulate cont-eq : (x : position (i .proj₁) c′) → k (transp-pos eq x) ≡ k′ x
-            -- cont-eq = {!!}
-
-            ih : (x : position ε′ c) → ℋ⟦ k x ⟧ >>= maybe′ pure (abort >>= pure) ≡ k x
-            ih = catch-throw-lemma ∘ k 
             
-    {- catch-catch -} 
-    go (there (there (there (there (here refl))))) sub = {!!}
+  --   {- catch-catch -} 
+  --   go (there (there (there (there (here refl))))) sub {γ = m₁ , m₂ , k , m₃} =
+
+  --     begin
+  --       ℰ⟦ catch (catch m₁ m₂ >>= k) m₃ ⟧
+  --     ≈⟪⟫
+  --       ℋ⟦ ℰ⟦ catch m₁ m₂ >>= k ⟧ ⟧ >>= f
+  --     ≈⟪⟫ 
+  --       ℋ⟦ ℋ⟦ {!!} ⟧ >>= {!g!} ⟧ >>= f 
+  --     ≈⟪ {!!} ⟫
+  --       ℰ⟦ catch (m₁ >>= k) (catch (m₂ >>= k) m₃) ⟧
+  --     ∎
+
+  --     where
+  --       f = maybe′ pure (ℰ⟦ m₃ ⟧ >>= pure)
+  --       g = maybe′ {!!} {!!} 
+
+
+  -- -- local f ask >>= k = ask >>= k ∘ f
+  -- -- 

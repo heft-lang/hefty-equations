@@ -13,6 +13,7 @@ open import Effect.Instance.Abort.Syntax
 
 open import Data.Product 
 open import Data.List
+open import Data.Sum 
 
 module Effect.Instance.Abort.Theory where
 
@@ -35,4 +36,6 @@ bind-abort = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
 AbortTheory : Theory Abort
 AbortTheory =
   ∥ bind-abort
-  ∷ [] ∥ 
+  ∷ [] ∥
+
+

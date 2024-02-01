@@ -45,3 +45,4 @@ module Properties where
   
   correct : ∀ {R} → Correct ReaderTheory (ReaderHandler R)
   correct (here refl) = refl
+

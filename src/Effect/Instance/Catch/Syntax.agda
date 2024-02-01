@@ -21,8 +21,8 @@ data CatchC : Set where
   `throw : CatchC
   `catch : (t : Set) → CatchC
   
-Catch : Signature 
-Catch = record
+Catch : Effect → Signature 
+Catch _ = record
   { command  = CatchC
   ; response = λ where (`catch t) → t
                        `throw     → ⊥ 
@@ -31,14 +31,11 @@ Catch = record
   ; returns  = λ where {(`catch A)} → [ (λ where tt → A) , (λ where tt → A) ]
   }
 
-throw : ⦃ Catch ⊑ᴴ η ⦄ → Hefty η A
+throw : ⦃ Catch ε ⊑ᴴ η ⦄ → Hefty η A
 throw = ♯ᴴ (impure ⟪ `throw , (λ()) , (λ()) ⟫)
 
-match_·_on_ : ∀ {C : Set} → (f : A → B) (x : A) → ((Σ B λ y → f x ≡ y) → C) → C 
-match f · x on g = g (f x , refl)
-
-catch : ⦃ Catch ⊑ᴴ η ⦄ → Hefty η A → Hefty η A → Hefty η A 
-catch {η}{A} m₁ m₂ = impure
+catch : ⦃ Catch ε ⊑ᴴ η ⦄ → Hefty η A → Hefty η A → Hefty η A 
+catch {ε} {η = η}{A} m₁ m₂ = impure
   ⟪ injᴴ-c (`catch _)
   , pure ∘ subst id (sym response-stable) 
   , catch-subs 
@@ -51,10 +48,10 @@ catch {η}{A} m₁ m₂ = impure
     ... | inj₁ tt | ≡[ eq ]
       = subst (Hefty η)
           ( trans
-              ( subst (λ □ → A ≡ Catch .returns □) (sym eq) refl )
+              ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
               types-stable ) m₁
     ... | inj₂ tt | ≡[ eq ]
       = subst (Hefty η)
           ( trans
-            ( subst (λ □ → A ≡ Catch .returns □) (sym eq) refl )
+            ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
             types-stable ) m₂

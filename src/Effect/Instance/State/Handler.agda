@@ -33,8 +33,8 @@ StateHandler = record
     }
   } 
 
-handleAbort : State S ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
-handleAbort σ m s = handle StateHandler σ s m 
+handleState : State S ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
+handleState σ m s = handle StateHandler σ s m 
 
 StateHandlerCorrect : Correct StateTheory (StateHandler {S = S})
 StateHandlerCorrect (here refl)                              = refl

@@ -85,8 +85,8 @@ module Properties where
   correct : Correct AbortTheory AbortHandler 
   correct (here refl) = refl
 
-  handle-abort : (σ : Abort ∙ ε ≈ ε′) → handleAbort {A = A} σ (abort ⦃ _ , σ ⦄) ≡ pure nothing
-  handle-abort {ε} σ =
+  handle-abort-is-nothing : (σ : Abort ∙ ε ≈ ε′) → handleAbort {A = A} σ (abort ⦃ _ , σ ⦄) ≡ pure nothing
+  handle-abort-is-nothing {ε} σ =
     begin
       handleAbort σ abort
     ≡⟨⟩ 
