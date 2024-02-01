@@ -46,6 +46,9 @@ _⊕_ : (_ _ : Signature) → Signature
                        {inj₂ c} → σ₂ .returns 
   }
 
+_·⊕_ : {A : Set a} → (_ _ : A → Signature) → A → Signature
+(P ·⊕ Q) x = P x ⊕ Q x
+
 _⟨⊕⟩_ : ∀[ Algebra σ₁ ⇒ Algebra σ₂ ⇒ Algebra (σ₁ ⊕ σ₂) ]
 (x ⟨⊕⟩ y) .α ⟪ inj₁ c , r , s ⟫ = x .α ⟪ c , r , s ⟫
 (x ⟨⊕⟩ y) .α ⟪ inj₂ c , r , s ⟫ = y .α ⟪ c , r , s ⟫

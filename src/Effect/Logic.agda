@@ -135,3 +135,4 @@ module Connectives where
   kripke-uncurry : ∀[ P₁ ⇒ (P₂ ⇛ Q) ] → ∀[ (P₁ ∩ P₂) ⇒ Q ] 
   kripke-uncurry f (px₁ , px₂) = □⟨ f px₁ ⟩ ≲-refl $ px₂
   
+  

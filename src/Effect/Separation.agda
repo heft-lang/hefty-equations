@@ -9,7 +9,7 @@ open import Data.Product
 open import Data.Empty
 
 open import Relation.Unary
-open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
 
 open import Function
 open import Function.Construct.Identity using (↔-id)
@@ -45,6 +45,23 @@ record Union (ε₁ ε₂ ε : Effect) : Set₁ where
 
   proj-natural : Natural proj 
   proj-natural = union .natural .from-natural 
+
+  proj-injˡ : ∀ {X} (x : ⟦ ε ⟧ᶜ X) x′ → proj x ≡ injˡ ε₂ x′ → x ≡ inja x′
+  proj-injˡ x x′ eq with union .equivalence _ .from x | inspect (union .equivalence _ .from) x 
+  ... | ⟨ inj₁ c , k ⟩ | ≡[ eq′ ] =
+    begin
+      x
+    ≡⟨ (sym $ union .equivalence _ .inverse .proj₁ x) ⟩
+      union .equivalence _ .to (union .equivalence _ .from x) 
+    ≡⟨ cong (union .equivalence _ .to) eq′ ⟩
+      union .equivalence _ .to ⟨ inj₁ c , k ⟩ 
+    ≡⟨ cong (union .equivalence _ .to) eq ⟩ 
+      union .equivalence _ .to (injˡ ε₂ x′)
+    ∎
+    where
+      open ≡-Reasoning 
+
+  postulate proj-injʳ : ∀ {X} (x : ⟦ ε ⟧ᶜ X) x′ → proj x ≡ injʳ ε₁ x′ → x ≡ injb x′
 
 -- infix notation
 _∙_≈_ = Union 

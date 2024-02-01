@@ -30,15 +30,18 @@ open Logic.Connectives
 
 {- Semantics for higher-order effects -}
 
-record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
+S : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} → (A → B → C) → (A → B) → A → C
+S = λ x y z → x z (y z) 
+
+record Elaboration (η : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   constructor e⟨_⟩
   field
-    elab : □ (Algebra η ∘ Free) ε
+    elab : □ (S (Algebra ∘ η) Free)  ε
 
-  elaborate : ∀[ Hefty η ⇒ Free ε ]
+  elaborate : ∀[ Hefty (η ε) ⇒ Free ε ]
   elaborate = fold-hefty pure (□-extract elab)
 
-instance elab-monotone : Monotone (Elaboration η)
+instance elab-monotone : Monotone (Elaboration ξ)
 elab-monotone .weaken i e⟨ elab ⟩ = e⟨ weaken i elab ⟩
 
 open Elaboration public
@@ -48,13 +51,13 @@ open _✴_
 
 -- "Homogeneous" composition of elaborations. Combines two elaborations that
 -- assume the *same* lower bound on the effects that they elaborate into
-_⟪⊕⟫_ : ∀[ Elaboration η₁ ⇒ Elaboration η₂ ⇒ Elaboration (η₁ ⊕ η₂) ]
+_⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ₁ ·⊕ ξ₂) ]
 (e₁ ⟪⊕⟫ e₂) .elab = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
 
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate
 -- into
-compose-elab : ∀[ (Elaboration η₁ ✴ Elaboration η₂) ⇒ Elaboration (η₁ ⊕ η₂)  ]
+compose-elab : ∀[ (Elaboration ξ₁ ✴ Elaboration ξ₂) ⇒ Elaboration (ξ₁ ·⊕ ξ₂)  ]
 compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫ weaken (≲-∙-right σ) e₂
 
 -- The adjoint relation between separating conjuntion and implication gives us
@@ -66,7 +69,7 @@ compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫
 --
 -- Or, in other words, we can curry (and thus partially apply) the heterogeneous
 -- composition operation.
-extend-with : ∀[ Elaboration η₁ ⇒ (Elaboration η₂ ─✴ Elaboration (η₁ ⊕ η₂)) ]
+extend-with : ∀[ Elaboration ξ₁ ⇒ (Elaboration ξ₂ ─✴ Elaboration (ξ₁ ·⊕ ξ₂)) ]
 extend-with = ✴-curry compose-elab
 
 

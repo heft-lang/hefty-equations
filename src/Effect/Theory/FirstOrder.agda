@@ -384,7 +384,6 @@ module ≈-Reasoning (T : Theory ε) where
   ∎ 
   where open ≈-Reasoning _
 
-
 -- monadic bind respects syntactic equivalence of effect trees in the left position 
 >>=-resp-≈ˡ : {m₁ m₂ : Free ε A} {k : A → Free ε B} → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
 >>=-resp-≈ˡ ≈-refl                      = ≈-refl

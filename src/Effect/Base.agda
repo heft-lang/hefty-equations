@@ -35,7 +35,8 @@ Effectᴴ = Signature
   }
 
 variable ε ε₁ ε₂ ε₃ ε′ : Effect
-         η η₁ η₂ η₃ η′ : Effectᴴ 
+         η η₁ η₂ η₃ η′ : Effectᴴ
+         ξ ξ₁ ξ₂ ξ₃ ξ′    : Effect → Effectᴴ 
 
 embed : ∀[ F ⊢ ⟦ ε ⟧ᶜ ⇒ ⟦ ↑ ε ⟧ F ]
 embed ⟨ s , p ⟩ .reflect = s , p , λ()
@@ -65,8 +66,6 @@ record _⊑ᴴ_ (η₁ η₂ : Effectᴴ) : Set₁ where
     , r ∘ subst id (sym response-stable)
     , fmap (subst id types-stable) ∘ s ∘ subst id (sym fork-stable))
     ⟫
-
-postulate injᴴ-command : ⦃ η₁ ⊑ᴴ η₂ ⦄ → η₁ .command → η₂ .command
 
 open _⊑ᴴ_ ⦃...⦄ public 
 

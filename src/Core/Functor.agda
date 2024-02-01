@@ -41,7 +41,7 @@ instance
     { fmap    = id
     ; fmap-id = λ x → refl
     ; fmap-∘  = λ f g x → refl
-    } 
+    }
 
 -- 
 --   product-functor : ∀ {a b} {F G : Set a → Set b} → ⦃ Functor F ⦄ → ⦃ Functor G ⦄ →  Functor (F ∩ G)
@@ -205,4 +205,6 @@ record Monad (F : Set → Set) : Set₁ where
 
 open Monad ⦃...⦄ public 
 
-
+instance  
+  id-pointed : Pointed λ x → x
+  id-pointed = record { point = id } 
