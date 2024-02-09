@@ -1,0 +1,71 @@
+\newcommand{\Type}{{\color{starcolor}\star}}
+
+% Homogeneous data type composition
+\newcommand{\CompOp}{\sqcup}
+\newcommand{\Comp}[2]{{#1} \CompOp{} {#2}}
+
+% Homogeneous data type intersection
+\newcommand{\InterOp}{\sqcap}
+\newcommand{\Inter}[2]{{#1} \InterOp{} {#2}}
+
+% Homogeneous data type difference
+\newcommand{\DiffOp}{\ /\ }
+\newcommand{\Diff}[2]{{#1} \DiffOp {#2}}
+
+% Homogeneous data type union
+\newcommand{\UnionOp}{\cup}
+\newcommand{\Union}[2]{{#1} \UnionOp {#2}}
+
+% Heterogeneous data type composition
+\newcommand{\ParOp}{\dot \sqcup}
+\newcommand{\Par}[2]{{#1}\ \ParOp\ {#2}}
+
+% Heterogeneous data type intersection
+\newcommand{\HInterOp}{\dot \sqcap}
+\newcommand{\HInter}[2]{{#1}\ \HInterOp\ {#2}}
+
+% Heterogeneous data type difference 
+\newcommand{\HDiffOp}{\mathbin{\!/\mkern-5mu/\!}}
+\newcommand{\HDiff}[2]{{#1}\ \HDiffOp\ {#2}}
+
+% Heterogeneous data type union
+\newcommand{\HUnionOp}{\dot \cup}
+\newcommand{\HUnion}[2]{{#1}\ \HUnionOp\ {#2}}
+
+% projections
+\newcommand{\proj}[2]{\boldsymbol{\color{picolor}\pi_{#1}}\ #2}
+
+\newcommand{\ParRel}[3]{\Par{#1}{#2} \equiv #3}
+
+\newcommand{\SubOp}{\sqsubseteq}
+\newcommand{\Sub}[2]{#1 \SubOp #2}
+
+\newcommand{\SubPOp}{\dot \sqsubseteq}
+\newcommand{\SubP}[2]{#1\ \SubPOp\ #2}
+
+\renewcommand{\Join}[2]{{#1} \JoinOp{} {#2}}
+\newcommand{\JoinRel}[3]{\Comp{#1}{#2} \equiv #3}
+
+\newcommand{\Widen}[2]{{#1} \bigtriangledown {#2}}
+\newcommand{\InjOp}{\mathit{inj}}
+\newcommand{\Inj}[1]{\InjOp\ #1}
+\newcommand{\MonoOp}{\mathit{Mono}}
+\newcommand{\Mono}[2]{\MonoOp\ {#1}\ {#2}}
+\newcommand{\DisjOp}{\mathit{Disjoint}}
+\newcommand{\Disj}[2]{\DisjOp\ {#1}\ {#2}}
+\newcommand{\Member}[2]{{#1} \in {#2}}
+\newcommand{\MemberI}[2]{{#1} \in^{\mathsf{i}} {#2}}
+\newcommand{\TOW}{\rightarrowtail}
+\newcommand{\WidenCD}[2]{{#1} \mathop{\blacktriangledown^{\mathsf{c}}} {#2}}
+\newcommand{\WidenFN}[2]{{#1} \mathop{\blacktriangledown^{\mathsf{f}}} {#2}}
+\newcommand{\ComposeOp}{\oplus}
+%% \newcommand{\Compose}[2]{{#1} \ComposeOp{} {#2}}
+%% \newcommand{\ComposeFragOp}{\mathop{\ComposeOp{}^{\mathsf{F}}}}
+%% \newcommand{\ComposeFrag}[2]{{#1} \ComposeFragOp{} {#2}}
+
+\newcommand{\Denote}[1]{{\color{opcolor}\llbracket {#1} \rrbracket}}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../document"
+%%% End:

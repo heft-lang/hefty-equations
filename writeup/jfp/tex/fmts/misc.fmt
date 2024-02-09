@@ -1,0 +1,7 @@
+\usepackage{xcolor}
+
+\definecolor{red}{HTML}{CC0000}
+\definecolor{green}{HTML}{009955}
+
+%format ✓ = "{\color{green}\checkmark}"
+%format ⊘ = "{\color{red}\oslash}"
