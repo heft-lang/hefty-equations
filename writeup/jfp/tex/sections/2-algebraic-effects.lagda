@@ -967,7 +967,7 @@ the first parameter position to the argument computation in the second parameter
 position.  The \aF{app} operation has a computation as its second parameter so
 that it remains compatible with different evaluation strategies.
 
-\todo{Update discussion to new setup of scoped effects }
+\todo{Update discussion to new setup of scoped effects}
 
 To see why the operations summarized by the \ad{LambdaM} record above are not
 scoped operations, let us revisit the definition of scoped operations,

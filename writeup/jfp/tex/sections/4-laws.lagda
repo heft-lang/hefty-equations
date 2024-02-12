@@ -10,6 +10,7 @@ open import Effect.Monad
 open import Relation.Binary.PropositionalEquality
 open import Data.Maybe using (Maybe; just; nothing)
 open import Tactic.Cong
+open import Data.Product 
 
 open FreeModule renaming (_𝓑_ to bindF) hiding (_>>_)
 open HeftyModule renaming (_𝓑_ to bindH) hiding (_>>_; m; n; catch)
@@ -47,8 +48,8 @@ record  CatchIntf (M : Set → Set)
         (_𝓑_   :  ∀ {A B}
                  →  M A → (A → M B) → M B) : Set₁ where
   field  ⦃ u ⦄  : Universe
-         𝑡ℎ𝑟𝑜𝑤   : {t : Ty} → M ⟦ t ⟧
-         𝑐𝑎𝑡𝑐ℎ   : {t : Ty} → M ⟦ t ⟧ → M ⟦ t ⟧ → M ⟦ t ⟧
+         𝑡ℎ𝑟𝑜𝑤   : {t : Ty} → M ⟦ t ⟧ᵀ
+         𝑐𝑎𝑡𝑐ℎ   : {t : Ty} → M ⟦ t ⟧ᵀ → M ⟦ t ⟧ᵀ → M ⟦ t ⟧ᵀ
          R       : Set → Set
          run     : M A → R A
 \end{code}
@@ -57,17 +58,17 @@ record  CatchIntf (M : Set → Set)
 \begin{minipage}{0.445\linewidth}
 \footnotesize
 \begin{code}
-         bind-throw  : {t₁ t₂ : Ty} (k : ⟦ t₁ ⟧ → M ⟦ t₁ ⟧)
+         bind-throw  : {t₁ t₂ : Ty} (k : ⟦ t₁ ⟧ᵀ → M ⟦ t₁ ⟧ᵀ)
            → run (𝑡ℎ𝑟𝑜𝑤 𝓑 k) ≡ run 𝑡ℎ𝑟𝑜𝑤
-         catch-throw₁  : {t : Ty} (m : M ⟦ t ⟧)
+         catch-throw₁  : {t : Ty} (m : M ⟦ t ⟧ᵀ)
            → run (𝑐𝑎𝑡𝑐ℎ 𝑡ℎ𝑟𝑜𝑤 m) ≡ run m
-         catch-throw₂  : {t : Ty} (m : M ⟦ t ⟧)
+         catch-throw₂  : {t : Ty} (m : M ⟦ t ⟧ᵀ)
            → run (𝑐𝑎𝑡𝑐ℎ m 𝑡ℎ𝑟𝑜𝑤) ≡ run m
-         catch-return  : {t : Ty} (x : ⟦ t ⟧) (m : M ⟦ t ⟧)
+         catch-return  : {t : Ty} (x : ⟦ t ⟧ᵀ) (m : M ⟦ t ⟧ᵀ)
            → run (𝑐𝑎𝑡𝑐ℎ (return x) m) ≡ run (return x)
 \end{code}
 \begin{code}[hide]
-         catch-cong    : {t : Ty} (m₁ m₁′ m₂ m₂′ : M ⟦ t ⟧)
+         catch-cong    : {t : Ty} (m₁ m₁′ m₂ m₂′ : M ⟦ t ⟧ᵀ)
            → run m₁ ≡ run m₁′
            → run m₂ ≡ run m₂′
            → run (𝑐𝑎𝑡𝑐ℎ m₁ m₂) ≡ run (𝑐𝑎𝑡𝑐ℎ m₁′ m₂′)
@@ -160,7 +161,7 @@ module CatchLawModule where
       ≡⟨ cong (λ P → h ((♯ h (e m)) 𝓑 P))
            (extensionality (λ x →
              cong (λ P → maybe pure P x)
-               (cong (impure (inj₁ throw))
+               (cong (λ k → impure (inj₁ throw , k))
                      (extensionality (λ x → ⊥-elim x))))) ⟩
         h ((♯ h (e m)) 𝓑 maybe pure ‵throw)
       ≡⟨ catch-throw-lem (e m) ⟩
@@ -179,8 +180,8 @@ module CatchLawModule where
                         → h ((♯ h m) 𝓑 maybe pure ‵throw)
                           ≡ (given hThrow handle m) tt
         catch-throw-lem (pure x)                = refl
-        catch-throw-lem (impure (inj₁ throw) k) = refl
-        catch-throw-lem (impure (inj₂ y) k) = cong (impure y) (extensionality (λ x → catch-throw-lem (k x)))
+        catch-throw-lem (impure (inj₁ throw , k)) = refl
+        catch-throw-lem (impure (inj₂ y , k)) = cong (impure ∘ (y ,_)) (extensionality (λ x → catch-throw-lem (k x)))
     catch-cong CatchImpl₀ m₁ m₁' m₂ m₂' eq₁ eq₂ = begin
         h (e (‵catch m₁ m₂))
       ≡⟨ refl ⟩
@@ -239,8 +240,8 @@ module CatchLawModule where
                          → (given hThrow handle (m 𝓑ᶠ k)) tt
                            ≡ (given hThrow handle m) tt 𝓑ᶠ maybe (λ x → (given hThrow handle (k x)) tt) (pure nothing)
        hThrow-bind-distr (pure x) k = refl
-       hThrow-bind-distr (impure (inj₁ throw) k₁) k = refl
-       hThrow-bind-distr (impure (inj₂ y) k₁) k = cong (impure y) (extensionality (λ x → hThrow-bind-distr (k₁ x) k))
+       hThrow-bind-distr (impure (inj₁ throw , k₁)) k = refl
+       hThrow-bind-distr (impure (inj₂ y , k₁)) k = cong (impure ∘ (y ,_)) (extensionality (λ x → hThrow-bind-distr (k₁ x) k))
 \end{code}
 \end{AgdaMultiCode}
 \end{minipage}%
@@ -308,8 +309,8 @@ module CatchLawModule where
                         → h ((♯ h m) 𝓑 maybe pure ‵throw)
                           ≡ (given hThrow handle m) tt
         catch-throw-lem (pure x) = refl
-        catch-throw-lem (impure (inj₁ throw) k) = refl
-        catch-throw-lem (impure (inj₂ y) k) = cong (impure y) (extensionality (λ x → catch-throw-lem (k x)))
+        catch-throw-lem (impure (inj₁ throw , k)) = refl
+        catch-throw-lem (impure (inj₂ y , k)) = cong (impure ∘ (y ,_)) (extensionality (λ x → catch-throw-lem (k x)))
 \end{code}
 \begin{code}[hide]
     catch-cong CatchImpl₁ m₁ m₁′ m₂ m₂′ eq₁ eq₂ = begin
@@ -361,8 +362,8 @@ module CatchLawModule where
         h-distr : (m : Free (Throw ⊕ Δ) A) (k : A → Free (Throw ⊕ Δ) B)
                 → h (m 𝓑 k) ≡ (h m) 𝓑 maybe (h ∘ k) (pure nothing)
         h-distr (pure x) k = refl
-        h-distr (impure (inj₁ throw) k₁) k = refl
-        h-distr (impure (inj₂ y) k₁) k = cong (impure y) (extensionality (λ x → h-distr (k₁ x) k))
+        h-distr (impure (inj₁ throw , k₁)) k = refl
+        h-distr (impure (inj₂ y , k₁)) k = cong (impure ∘ (y ,_)) (extensionality (λ x → h-distr (k₁ x) k))
 \end{code}
 \end{AgdaMultiCode}
 \end{minipage}

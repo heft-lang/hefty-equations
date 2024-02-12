@@ -76,25 +76,25 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
 
     data LamOp ⦃ l : LamUniverse ⦄ : Set where
       lam : {t₁ t₂ : Ty}                     → LamOp
-      var : {t : Ty}      → ⟦ c t ⟧          → LamOp
-      app : {t₁ t₂ : Ty}  → ⟦ (c t₁) ↣ t₂ ⟧  → LamOp
+      var : {t : Ty}      → ⟦ c t ⟧ᵀ          → LamOp
+      app : {t₁ t₂ : Ty}  → ⟦ (c t₁) ↣ t₂ ⟧ᵀ  → LamOp
 
     Lam : ⦃ l : LamUniverse ⦄ → Effectᴴ
     Opᴴ    Lam              = LamOp
-    Fork  Lam (lam {t₁} {t₂})  =  record { Op = ⟦ c t₁ ⟧; Ret = λ _ → ⟦ t₂ ⟧ }
-    Retᴴ   Lam (lam {t₁} {t₂})  = ⟦ c t₁ ↣ t₂ ⟧
+    Fork  Lam (lam {t₁} {t₂})  =  record { Op = ⟦ c t₁ ⟧ᵀ; Ret = λ _ → ⟦ t₂ ⟧ᵀ }
+    Retᴴ   Lam (lam {t₁} {t₂})  = ⟦ c t₁ ↣ t₂ ⟧ᵀ
     Fork  Lam (var x)  =  Nil
-    Retᴴ   Lam (var {t} x)  = ⟦ t ⟧
-    Fork  Lam (app {t₁} {t₂} fun)  = record { Op = ⊤; Ret = λ _ → ⟦ t₁ ⟧ }
-    Retᴴ   Lam (app {t₁} {t₂} fun)  = ⟦ t₂ ⟧
+    Retᴴ   Lam (var {t} x)  = ⟦ t ⟧ᵀ
+    Fork  Lam (app {t₁} {t₂} fun)  = record { Op = ⊤; Ret = λ _ → ⟦ t₁ ⟧ᵀ }
+    Retᴴ   Lam (app {t₁} {t₂} fun)  = ⟦ t₂ ⟧ᵀ
 
     module _ ⦃ l : LamUniverse ⦄ ⦃ w : H ∼ Lam ▹ H′ ⦄ where
 \end{code}
 %
 \begin{code}
-      ‵lam  :  {t₁ t₂ : Ty}  → (⟦ c t₁ ⟧ → Hefty H ⟦ t₂ ⟧)       → Hefty H ⟦ (c t₁) ↣ t₂ ⟧
-      ‵var  :  {t : Ty}      → ⟦ c t ⟧                           → Hefty H ⟦ t ⟧
-      ‵app  :  {t₁ t₂ : Ty}  → ⟦ (c t₁) ↣ t₂ ⟧ → Hefty H ⟦ t₁ ⟧  → Hefty H ⟦ t₂ ⟧
+      ‵lam  :  {t₁ t₂ : Ty}  → (⟦ c t₁ ⟧ᵀ → Hefty H ⟦ t₂ ⟧ᵀ)       → Hefty H ⟦ (c t₁) ↣ t₂ ⟧ᵀ
+      ‵var  :  {t : Ty}      → ⟦ c t ⟧ᵀ                           → Hefty H ⟦ t ⟧ᵀ
+      ‵app  :  {t₁ t₂ : Ty}  → ⟦ (c t₁) ↣ t₂ ⟧ᵀ → Hefty H ⟦ t₁ ⟧ᵀ  → Hefty H ⟦ t₂ ⟧ᵀ
 \end{code}
 \begin{code}[hide]
       ‵lam {t₁} {t₂} b = impure (inj▹ₗ (lam {t₁} {t₂})) (proj-fork▹ₗ b) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
@@ -102,7 +102,7 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
       ‵app f m = impure (inj▹ₗ (app f)) (proj-fork▹ₗ (λ _ → m)) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
 \end{code}
 %
-Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧}).
+Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}).
 The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
 The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
 
@@ -120,9 +120,9 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
 \begin{code}[hide]
     module _ ⦃ l : LamUniverse ⦄
              ⦃ iso₁ : {t₁ t₂ : Ty}
-                    → ⟦ t₁ ↣ t₂ ⟧ ↔ (⟦ t₁ ⟧ → Free Δ ⟦ t₂ ⟧) ⦄
+                    → ⟦ t₁ ↣ t₂ ⟧ᵀ ↔ (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ) ⦄
              ⦃ iso₂ : {t : Ty}
-                    → ⟦ c t ⟧ ↔ ⟦ t ⟧  ⦄ where
+                    → ⟦ c t ⟧ᵀ ↔ ⟦ t ⟧ᵀ  ⦄ where
       open FreeModule using (_𝓑_; _>>_) 
       open ElabModule
 --      open Elab
@@ -132,8 +132,8 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
       private postulate
 \end{code}
 \begin{code}
-        iso₁⅋  : {t₁ t₂ : Ty}  → ⟦ t₁ ↣ t₂  ⟧   ↔   (⟦ t₁ ⟧ → Free Δ ⟦ t₂ ⟧)
-        iso₂⅋  : {t : Ty}      → ⟦ c t      ⟧   ↔   ⟦ t ⟧
+        iso₁⅋  : {t₁ t₂ : Ty}  → ⟦ t₁ ↣ t₂  ⟧ᵀ   ↔   (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)
+        iso₂⅋  : {t : Ty}      → ⟦ c t      ⟧ᵀ   ↔   ⟦ t ⟧ᵀ
 \end{code}
 %
 The first isomorphism says that a function value type corresponds to a function which accepts a value of type \ab{t₁} and produces a computation whose return type matches the function type.
@@ -155,16 +155,16 @@ Using these isomorphisms, the following defines a call-by-value elaboration of f
       --   orate eLamCBV′ = eLamCBV
 \end{code}
 %
-The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a value to the continuation, where the \aF{from} function mediates the sub-tree of type \aF{⟦~c}~\ab{t₁}~\aF{⟧}~\as{→}~\ad{Free}~\ab{Δ}~\aF{⟦}~\ab{t₂}~\aF{⟧} to a value type \aF{⟦}~\as{(}\aF{c}~\ab{t₁}\as{)}~\aF{↣}~\ab{t₂}~\aF{⟧}, using the isomorphism \af{iso₁}.
-The \ac{var} case uses the \aF{to} function to mediate a \aF{⟦~c}~\ab{t}~\aF{⟧} value to a \aF{⟦}~\ab{t}~\aF{⟧} value, using the isomorphism \af{iso₂}.
+The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a value to the continuation, where the \aF{from} function mediates the sub-tree of type \aF{⟦~c}~\ab{t₁}~\aF{⟧ᵀ}~\as{→}~\ad{Free}~\ab{Δ}~\aF{⟦}~\ab{t₂}~\aF{⟧ᵀ} to a value type \aF{⟦}~\as{(}\aF{c}~\ab{t₁}\as{)}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}, using the isomorphism \af{iso₁}.
+The \ac{var} case uses the \aF{to} function to mediate a \aF{⟦~c}~\ab{t}~\aF{⟧ᵀ} value to a \aF{⟦}~\ab{t}~\aF{⟧ᵀ} value, using the isomorphism \af{iso₂}.
 The \ac{app} case first eagerly evaluates the argument expression of the application (in the sub-tree \ab{ψ}) to an argument value, and then passes the resulting value to the function value of the application.
 The resulting value is passed to the continuation.
 
-Using the elaboration above, we can evaluate programs such as the following which uses both the higher-order lambda effect, the algebraic state effect, and assumes that our universe has a number type \aF{⟦}~\ab{num}~\aF{⟧}~\ad{↔}~\ad{ℕ}:
+Using the elaboration above, we can evaluate programs such as the following which uses both the higher-order lambda effect, the algebraic state effect, and assumes that our universe has a number type \aF{⟦}~\ab{num}~\aF{⟧ᵀ}~\ad{↔}~\ad{ℕ}:
 \begin{code}[hide]
     open import Data.Nat using (ℕ; _+_)
     module _ ⦃ u : LamUniverse ⦄ {num : Ty}
-             ⦃ iso₁ : ⟦ num ⟧ ↔ ℕ ⦄ where
+             ⦃ iso₁ : ⟦ num ⟧ᵀ ↔ ℕ ⦄ where
       open HeftyModule using (_𝓑_; _>>_)
 
 
@@ -204,17 +204,17 @@ Running the program produces \an{4} since the state increment expression is eage
       instance
         CBVUniverse : Universe
         Ty ⦃ CBVUniverse ⦄ = Type
-        ⟦_⟧ ⦃ CBVUniverse ⦄ (t ⟶ t₁)  = ⟦ t ⟧ → Free (State ⊕ Nil) ⟦ t₁ ⟧
-        ⟦_⟧ ⦃ CBVUniverse ⦄ num       = ℕ
+        ⟦_⟧ᵀ ⦃ CBVUniverse ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
+        ⟦_⟧ᵀ ⦃ CBVUniverse ⦄ num       = ℕ
 
-        iso-num : ℕ ↔ ⟦ num ⟧
+        iso-num : ℕ ↔ ⟦ num ⟧ᵀ
         iso-num = ↔-id _
 
         iso-fun : {t₁ t₂ : Type}
-                → (⟦ t₁ ⟧ → Free (State ⊕ Nil) ⟦ t₂ ⟧) ↔ ⟦ t₁ ⟶ t₂ ⟧
+                → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
         iso-fun = ↔-id _
 
-        iso-c : {t : Type} → ⟦ t ⟧ ↔ ⟦ id t ⟧
+        iso-c : {t : Type} → ⟦ t ⟧ᵀ ↔ ⟦ id t ⟧ᵀ
         iso-c = ↔-id _
 
         LamCBVUniverse : LamUniverse
@@ -237,9 +237,9 @@ That is, we assume that the following isomorphisms hold for value types:
 \begin{code}[hide]
     module _ ⦃ u : LamUniverse ⦄
              ⦃ iso₁ : {t₁ t₂ : Ty}
-                    → ⟦ t₁ ↣ t₂ ⟧ ↔ (⟦ t₁ ⟧ → Free Δ ⟦ t₂ ⟧)  ⦄
+                    → ⟦ t₁ ↣ t₂ ⟧ᵀ ↔ (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)  ⦄
              ⦃ iso₂ : {t : Ty}
-                    → ⟦ c t ⟧ ↔ Free Δ ⟦ t ⟧ ⦄ where
+                    → ⟦ c t ⟧ᵀ ↔ Free Δ ⟦ t ⟧ᵀ ⦄ where
       open FreeModule using (_𝓑_; _>>_) 
       open import Data.Nat using (ℕ)
       open ElabModule
@@ -248,8 +248,8 @@ That is, we assume that the following isomorphisms hold for value types:
       private postulate
 \end{code}
 \begin{code}
-        iso₁⅋  :  {t₁ t₂ : Ty}  → ⟦ t₁ ↣ t₂ ⟧  ↔  (⟦ t₁ ⟧ → Free Δ ⟦ t₂ ⟧)
-        iso₂⅋  :  {t : Ty}      → ⟦ c t ⟧      ↔  Free Δ ⟦ t ⟧
+        iso₁⅋  :  {t₁ t₂ : Ty}  → ⟦ t₁ ↣ t₂ ⟧ᵀ  ↔  (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)
+        iso₂⅋  :  {t : Ty}      → ⟦ c t ⟧ᵀ      ↔  Free Δ ⟦ t ⟧ᵀ
 \end{code}
 Using these isomorphisms, the following defines a call-by-name elaboration of functions:
 \begin{code}
@@ -286,19 +286,19 @@ The case for \ac{app} passes the argument sub-tree (\ab{ψ}) as an argument to t
       instance
         CBNUniverse : Universe
         Ty ⦃ CBNUniverse ⦄ = Type
-        ⟦_⟧ ⦃ CBNUniverse ⦄ (t ⟶ t₁)  = ⟦ t ⟧ → Free (State ⊕ Nil) ⟦ t₁ ⟧
-        ⟦_⟧ ⦃ CBNUniverse ⦄ num        = ℕ
-        ⟦_⟧ ⦃ CBNUniverse ⦄ (susp t)   = Free (State ⊕ Nil) ⟦ t ⟧
+        ⟦_⟧ᵀ ⦃ CBNUniverse ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
+        ⟦_⟧ᵀ ⦃ CBNUniverse ⦄ num        = ℕ
+        ⟦_⟧ᵀ ⦃ CBNUniverse ⦄ (susp t)   = Free (State ⊕ Nil) ⟦ t ⟧ᵀ
 
-        iso-num : ℕ ↔ ⟦ num ⟧
+        iso-num : ℕ ↔ ⟦ num ⟧ᵀ
         iso-num = ↔-id _
 
         iso-fun : {t₁ t₂ : Type}
-                → (⟦ t₁ ⟧ → Free (State ⊕ Nil) ⟦ t₂ ⟧) ↔ ⟦ t₁ ⟶ t₂ ⟧
+                → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
         iso-fun = ↔-id _
 
         iso-susp : {t : Ty}
-                 → Free (State ⊕ Nil) ⟦ t ⟧ ↔ ⟦ susp t ⟧
+                 → Free (State ⊕ Nil) ⟦ t ⟧ᵀ ↔ ⟦ susp t ⟧ᵀ
         iso-susp = ↔-id _
 
         LamCBNUniverse : LamUniverse
@@ -337,7 +337,7 @@ A classical example of effect interaction is the interaction between state and e
     ‵throwᴴ ⦃ w ⦄ = (↑ throw) 𝓑 ⊥-elim
       where open HeftyModule using (_𝓑_)
 
-    module _ ⦃ u : Universe ⦄ {unit : Ty} ⦃ iso : ⟦ unit ⟧ ↔ ⊤ ⦄ where
+    module _ ⦃ u : Universe ⦄ {unit : Ty} ⦃ iso : ⟦ unit ⟧ᵀ ↔ ⊤ ⦄ where
       open HeftyModule using (_𝓑_; _>>_)
 \end{code}    
 \begin{code}
@@ -376,28 +376,28 @@ The algebraic effects are summarized by the following smart constructors where \
 \begin{code}[hide]
     data CCOp ⦃ u : Universe ⦄ (Ref : Ty → Set) : Set where
       sub   : {t : Ty}                           →  CCOp Ref
-      jump  : {t : Ty} (ref : Ref t) (x : ⟦ t ⟧) →  CCOp Ref
+      jump  : {t : Ty} (ref : Ref t) (x : ⟦ t ⟧ᵀ) →  CCOp Ref
 
     CC : ⦃ u : Universe ⦄ (Ref : Ty → Set) → Effect
     Op  (CC Ref) = CCOp Ref
-    Ret (CC Ref) (sub {t})         = Ref t ⊎ ⟦ t ⟧
+    Ret (CC Ref) (sub {t})         = Ref t ⊎ ⟦ t ⟧ᵀ
     Ret (CC Ref) (jump ref x)  = ⊥
 
     module _ ⦃ u : Universe ⦄ {Ref : Ty → Set} {t : Ty} ⦃ w : Δ ∼ CC Ref ▸ Δ′ ⦄ where
 \end{code}
 \begin{code}
-      ‵sub   : ⦃ w : Δ ∼ CC Ref ▸ Δ′ ⦄ (b : Ref t → Free Δ A) (k : ⟦ t ⟧ → Free Δ A)  → Free Δ A
-      ‵jump  : ⦃ w : Δ ∼ CC Ref ▸ Δ′ ⦄ (ref : Ref t) (x : ⟦ t ⟧)                        → Free Δ B
+      ‵sub   : ⦃ w : Δ ∼ CC Ref ▸ Δ′ ⦄ (b : Ref t → Free Δ A) (k : ⟦ t ⟧ᵀ → Free Δ A)  → Free Δ A
+      ‵jump  : ⦃ w : Δ ∼ CC Ref ▸ Δ′ ⦄ (ref : Ref t) (x : ⟦ t ⟧ᵀ)                        → Free Δ B
 \end{code}
 \begin{code}[hide]
       ‵sub b k =
-        impure (inj▸ₗ ⦃ w ⦄ sub) ([ b , k ] ∘  proj-ret▸ₗ ⦃ w ⦄)
+        impure (inj▸ₗ ⦃ w ⦄ sub , [ b , k ] ∘  proj-ret▸ₗ ⦃ w ⦄)
       ‵jump ref x = impure
-        (inj▸ₗ (jump ref x))
-        (⊥-elim ∘ proj-ret▸ₗ ⦃ w ⦄)
+        (inj▸ₗ (jump ref x) ,
+        ⊥-elim ∘ proj-ret▸ₗ ⦃ w ⦄)
 \end{code}
 %
-An operation \af{‵sub}~\ab{f}~\ab{g} gives a computation \ab{f} access to the continuation \ab{g} via a reference value \ab{Ref}~\ab{t} which represents a continuation expecting a value of type \aF{⟦}~\ab{t}~\aF{⟧}.
+An operation \af{‵sub}~\ab{f}~\ab{g} gives a computation \ab{f} access to the continuation \ab{g} via a reference value \ab{Ref}~\ab{t} which represents a continuation expecting a value of type \aF{⟦}~\ab{t}~\aF{⟧ᵀ}.
 The \af{‵jump} operation invokes such continuations.
 The operations and their handler (abbreviated to \af{h}) satisfy the following laws:
 \begin{align*}
@@ -420,11 +420,11 @@ Thus, we encode \af{‵sub} and its handler as an algebraic effect.
     module _ ⦃ u : Universe ⦄ where
 \end{code}
 \begin{code}[hide]
-      hCC : ⟨ A ! (CC (λ t → ⟦ t ⟧ → Free Δ′ A)) ⇒ ⊤ ⇒ A ! Δ′ ⟩
+      hCC : ⟨ A ! (CC (λ t → ⟦ t ⟧ᵀ → Free Δ′ A)) ⇒ ⊤ ⇒ A ! Δ′ ⟩
       ret  hCC a _ = pure a
-      hdl  hCC sub           k p = let c = flip k p ∘ inj₂
+      hdl  hCC (sub     ,    k) p = let c = flip k p ∘ inj₂
         in k (inj₁ c) p
-      hdl  hCC (jump ref x)  k _ = ref x
+      hdl  hCC (jump ref x , k) _ = ref x
 \end{code}
 %
 \begin{code}[hide]
@@ -438,10 +438,10 @@ Thus, we encode \af{‵sub} and its handler as an algebraic effect.
       instance
         NumUniverse : Universe
         Ty   ⦃ NumUniverse ⦄      = Type
-        ⟦_⟧  ⦃ NumUniverse ⦄ num  = ℕ
+        ⟦_⟧ᵀ  ⦃ NumUniverse ⦄ num  = ℕ
 
       Cont : Effect → Set → Type → Set
-      Cont Δ A t = ⟦ t ⟧ → Free Δ A
+      Cont Δ A t = ⟦ t ⟧ᵀ → Free Δ A
 
       ex₀ : Free (CC (Cont Δ ℕ) ⊕ Δ) ℕ
       ex₀ = do
@@ -472,7 +472,7 @@ By using the \af{‵sub} and \af{‵jump} operations in our elaboration of \ad{c
     module _ ⦃ u : Universe ⦄
              {Ref : Ty → Set}
              {unit : Ty}
-             ⦃ iso : ⟦ unit ⟧ ↔ ⊤ ⦄
+             ⦃ iso : ⟦ unit ⟧ᵀ ↔ ⊤ ⦄
              where
       open FreeModule using (_𝓑_; _>>_)
       open ElabModule
@@ -507,7 +507,7 @@ Otherwise, if we run the sub/jump handler before the state handler, we get the g
                → ⦃ wₛ  : H  ∼  Lift State  ▹ H′ ⦄
                → ⦃ wₜ  : H  ∼  Lift Throw  ▹ H″ ⦄
                → ⦃ w   : H  ∼  Catch       ▹ H‴ ⦄
-               → {unit : Ty} ⦃ iso : ⊤ ↔ ⟦ unit ⟧ ⦄
+               → {unit : Ty} ⦃ iso : ⊤ ↔ ⟦ unit ⟧ᵀ ⦄
                → Hefty H ℕ
       transact {unit = unit} = do
         ↑ (put 1)
@@ -528,20 +528,20 @@ Otherwise, if we run the sub/jump handler before the state handler, we get the g
       instance
         CatchUniverse : Universe
         Ty   ⦃ CatchUniverse ⦄ = Type
-        ⟦_⟧ ⦃ CatchUniverse ⦄ unit   = ⊤
-        ⟦_⟧ ⦃ CatchUniverse ⦄ num = ℕ
+        ⟦_⟧ᵀ ⦃ CatchUniverse ⦄ unit   = ⊤
+        ⟦_⟧ᵀ ⦃ CatchUniverse ⦄ num = ℕ
 
-        iso-1 : ⊤ ↔ ⟦ unit ⟧
+        iso-1 : ⊤ ↔ ⟦ unit ⟧ᵀ
         iso-1 = ↔-id _
 
       transact-elab₂ : Elaboration
                          (Lift State ∔ Lift Throw ∔ Catch ∔ Lift Nil)
-                         (CC (λ t → ⟦ t ⟧ → Free Nil A) ⊕ State ⊕ Throw ⊕ Nil)
+                         (CC (λ t → ⟦ t ⟧ᵀ → Free Nil A) ⊕ State ⊕ Throw ⊕ Nil)
       transact-elab₂ = eLift ⋎ eLift ⋎ eCatchOT ⋎ eNil
 
       transact-elab₃ : Elaboration
                          (Lift State ∔ Lift Throw ∔ Catch ∔ Lift Nil)
-                         (CC (λ t → ⟦ t ⟧ → Free (State ⊕ Nil) A) ⊕ State ⊕ Throw ⊕ Nil)
+                         (CC (λ t → ⟦ t ⟧ᵀ → Free (State ⊕ Nil) A) ⊕ State ⊕ Throw ⊕ Nil)
       transact-elab₃ = eLift ⋎ eLift ⋎ eCatchOT ⋎ eNil
 \end{code}
 \begin{code}[hide]
@@ -648,7 +648,7 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \end{code}
 \begin{code}[hide]
     -- _‵or_ ⦃ w ⦄ m₁ m₂ = impure (inj▸ₗ or) ((if_then m₁ else m₂) ∘ proj-ret▸ₗ ⦃ w ⦄)
-    ‵fail ⦃ w ⦄ = impure (inj▸ₗ fail) (⊥-elim ∘ proj-ret▸ₗ ⦃ w ⦄)
+    ‵fail ⦃ w ⦄ = impure (inj▸ₗ fail , ⊥-elim ∘ proj-ret▸ₗ ⦃ w ⦄)
 \end{code}
 \begin{code}[hide]
     module _ where
@@ -659,11 +659,11 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 
       hChoice : ⟨ A ! Choice ⇒ ⊤ ⇒ List A ! Δ ⟩
       ret hChoice a _ = pure (a ∷ [])
-      hdl hChoice or k p = do
+      hdl hChoice (or , k) p = do
         l₁ ← k true   p
         l₂ ← k false  p
         pure (l₁ ++ l₂)
-      hdl hChoice fail k _ = pure []
+      hdl hChoice (fail , k) _ = pure []
 \end{code}
 \begin{code}[hide]
       data OnceOp ⦃ u : Universe ⦄ : Set where once : {t : Ty} → OnceOp
@@ -671,8 +671,8 @@ The smart constructors below are the lifted higher-order counterparts to the \af
       Once : ⦃ u : Universe ⦄ → Effectᴴ
       Opᴴ    Once          = OnceOp
       Fork   Once (once {t}) = record
-        { Op = ⊤; Ret = λ _ →  ⟦ t ⟧ }
-      Retᴴ   Once (once {t}) = ⟦ t ⟧
+        { Op = ⊤; Ret = λ _ →  ⟦ t ⟧ᵀ }
+      Retᴴ   Once (once {t}) = ⟦ t ⟧ᵀ
 \end{code}
 \begin{code}
       _‵orᴴ_  : ⦃ H ∼ Lift Choice ▹ H′ ⦄ → Hefty H A → Hefty H A  → Hefty H A
@@ -690,7 +690,7 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 A useful operator for cutting non-deterministic search short when a solution is found is the \af{‵once} operator.
 The \af{‵once} operator is not an algebraic effect, but a scoped (and thus higher-order) effect.
 \begin{code}
-        ‵once : ⦃ w : H ∼ Once ▹ H′ ⦄ {t : Ty} → Hefty H ⟦ t ⟧ → Hefty H ⟦ t ⟧
+        ‵once : ⦃ w : H ∼ Once ▹ H′ ⦄ {t : Ty} → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
 \end{code}
 \begin{code}[hide]
         ‵once ⦃ w ⦄ {t} b = impure (inj▹ₗ once) (proj-fork▹ₗ (λ _ → b)) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
@@ -733,8 +733,8 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
       private instance
         OnceUniverse : Universe
         Ty ⦃ OnceUniverse ⦄ = Type
-        ⟦_⟧ ⦃ OnceUniverse ⦄ num = ℕ
-        ⟦_⟧ ⦃ OnceUniverse ⦄ unit = ⊤
+        ⟦_⟧ᵀ ⦃ OnceUniverse ⦄ num = ℕ
+        ⟦_⟧ᵀ ⦃ OnceUniverse ⦄ unit = ⊤
 
       ex-0or1 : Hefty (Lift Choice ∔ Once ∔ Lift Nil) ℕ
       ex-0or1 = (pure 0) ‵orᴴ (pure 1)
@@ -767,8 +767,8 @@ We summarize our encoding and compare it with the resumption monad. The goal is 
     postulate
 \end{code}
 \begin{code}
-      ‵spawn⅋   : {t : Ty} → (m₁ m₂ : Hefty H ⟦ t ⟧)  → Hefty H ⟦ t ⟧
-      ‵atomic⅋  : {t : Ty} → Hefty H ⟦ t ⟧            → Hefty H ⟦ t ⟧
+      ‵spawn⅋   : {t : Ty} → (m₁ m₂ : Hefty H ⟦ t ⟧ᵀ)  → Hefty H ⟦ t ⟧ᵀ
+      ‵atomic⅋  : {t : Ty} → Hefty H ⟦ t ⟧ᵀ            → Hefty H ⟦ t ⟧ᵀ
 \end{code}
 %
 The operation \af{‵spawn}~\ab{m₁}~\ab{m₂} spawns two threads that run concurrently, and returns the value produced by \ab{m₁} after both have finished.
@@ -804,39 +804,39 @@ To this end, we use a dedicated function which interleaves the operations in two
       interleaveₗ (pure x) (pure _) = pure x
       interleaveₗ (pure x) m₂ = fmap (λ _ → x) m₂
       interleaveₗ m₁ (pure x) = m₁
-      interleaveₗ (impure (inj₁ (jump ref x)) _) m₂ = do
+      interleaveₗ (impure (inj₁ (jump ref x) , _)) m₂ = do
         m₂
         ‵jump ref x
-      interleaveₗ m₁ (impure (inj₁ (jump ref x)) _) = do
+      interleaveₗ m₁ (impure (inj₁ (jump ref x) , _)) = do
         m₁
         ‵jump ref x
-      interleaveₗ (impure (inj₁ sub) k₁) (impure (inj₁ sub) k₂) =
+      interleaveₗ (impure (inj₁ sub , k₁)) (impure (inj₁ sub , k₂)) =
         impure
-          (inj₁ sub)
+          (inj₁ sub , 
           (λ{ (inj₁ x) → k₁ (inj₁ x)
             ; (inj₂ y) →
               impure
-                (inj₁ sub)
+                (inj₁ sub , 
                 (λ{ (inj₁ x) → k₂ (inj₁ x) 𝓑 λ _ → k₁ (inj₂ y)
-                  ; (inj₂ z) → interleaveₗ (k₁ (inj₂ y)) (k₂ (inj₂ z)) }) })
-      interleaveₗ (impure (inj₁ sub) k₁) (impure (inj₂ op₂) k₂) = do
+                  ; (inj₂ z) → interleaveₗ (k₁ (inj₂ y)) (k₂ (inj₂ z)) })) }))
+      interleaveₗ (impure (inj₁ sub , k₁)) (impure (inj₂ op₂ , k₂)) = do
         impure
-          (inj₁ sub)
+          (inj₁ sub ,
           (λ{ (inj₁ x) → k₁ (inj₁ x)
             ; (inj₂ y) →
               impure
-                (inj₂ op₂)
-                (λ z → interleaveₗ (k₁ (inj₂ y)) (k₂ z)) })
-      interleaveₗ (impure (inj₂ op₁) k₁) (impure (inj₁ sub) k₂) =
+                (inj₂ op₂ , 
+                (λ z → interleaveₗ (k₁ (inj₂ y)) (k₂ z))) }))
+      interleaveₗ (impure (inj₂ op₁ , k₁)) (impure (inj₁ sub , k₂)) =
         impure
-          (inj₂ op₁)
+          (inj₂ op₁ , 
           (λ x →
             impure
-              (inj₁ sub)
+              (inj₁ sub , 
               (λ{ (inj₁ y) → k₂ (inj₁ y) 𝓑 λ _ → k₁ x
-                ; (inj₂ z) → interleaveₗ (k₁ x) (k₂ (inj₂ z)) }))
-      interleaveₗ (impure (inj₂ op₁) k₁) (impure (inj₂ op₂) k₂) =
-        impure (inj₂ op₁) (λ x₁ → impure (inj₂ op₂) (λ x₂ → interleaveₗ (k₁ x₁) (k₂ x₂)))
+                ; (inj₂ z) → interleaveₗ (k₁ x) (k₂ (inj₂ z)) }))))
+      interleaveₗ (impure (inj₂ op₁ , k₁)) (impure (inj₂ op₂ , k₂)) =
+        impure (inj₂ op₁ , λ x₁ → impure (inj₂ op₂ , λ x₂ → interleaveₗ (k₁ x₁) (k₂ x₂)))
 
 
       -- higher-order operation for concurrency that desugars into interleaving and atomic
@@ -849,22 +849,22 @@ To this end, we use a dedicated function which interleaves the operations in two
       Opᴴ Concur    = ConcurOp
       
       Fork Concur (spawn t) = record
-        { Op = Bool; Ret = λ _ → ⟦ t ⟧ }
-      Retᴴ Concur (spawn t) = ⟦ t ⟧
+        { Op = Bool; Ret = λ _ → ⟦ t ⟧ᵀ }
+      Retᴴ Concur (spawn t) = ⟦ t ⟧ᵀ
 
       Fork Concur (atomic t)   = record
-        { Op = ⊤; Ret = λ _ → ⟦ t ⟧ }
-      Retᴴ Concur (atomic t)    = ⟦ t ⟧
+        { Op = ⊤; Ret = λ _ → ⟦ t ⟧ᵀ }
+      Retᴴ Concur (atomic t)    = ⟦ t ⟧ᵀ
 
 
       module _ ⦃ u : Universe ⦄ where
         ‵spawn : ⦃ w : H ∼ Concur ▹ H′ ⦄ {t : Ty}
-               → Hefty H ⟦ t ⟧ → Hefty H ⟦ t ⟧ → Hefty H ⟦ t ⟧
+               → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
         ‵spawn ⦃ w = w ⦄ {t} m₁ m₂ =
           impure (inj▹ₗ (spawn t)) (proj-fork▹ₗ (λ b → if b then m₁ else m₂)) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
 
         ‵atomic : ⦃ w : H ∼ Concur ▹ H′ ⦄ {t : Ty}
-                 → Hefty H ⟦ t ⟧ → Hefty H ⟦ t ⟧
+                 → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
         ‵atomic ⦃ w = w ⦄ {t} m = impure (inj▹ₗ (atomic t)) (proj-fork▹ₗ (λ _ → m)) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
 \end{code}
 %
@@ -905,8 +905,8 @@ By using \af{‵sub} to explicitly delimit blocks that should not be interleaved
       instance
         ConcurUniverse : Universe
         Ty ⦃ ConcurUniverse ⦄ = Type
-        ⟦_⟧ ⦃ ConcurUniverse ⦄ unit = ⊤
-        ⟦_⟧ ⦃ ConcurUniverse ⦄ num = ℕ
+        ⟦_⟧ᵀ ⦃ ConcurUniverse ⦄ unit = ⊤
+        ⟦_⟧ᵀ ⦃ ConcurUniverse ⦄ num = ℕ
 \end{code}
 \begin{code}
       ex-01234 : Hefty (Lift Output ∔ Concur ∔ Lift Nil) ℕ
@@ -919,7 +919,7 @@ Since the \ad{Concur} effect is elaborated to interleave the effects of the two 
 \begin{code}[hide]
       concur-elab : Elaboration
                          (Lift Output ∔ Concur ∔ Lift Nil)
-                         (  CC (λ t → ⟦ t ⟧ → Free (Output ⊕ Nil) ℕ)
+                         (  CC (λ t → ⟦ t ⟧ᵀ → Free (Output ⊕ Nil) ℕ)
                          ⊕ Output
                          ⊕ Nil )
       concur-elab = eLift ⋎ eConcur ⋎ eNil
@@ -954,7 +954,7 @@ Inspecting the output, we see that the additional thread indeed computes atomica
       concur-elab′ : Elaboration
                          (Lift Output ∔ Concur ∔ Lift Nil)
                          (  Output
-                         ⊕ CC (λ t → ⟦ t ⟧ → Free Nil (ℕ × String))
+                         ⊕ CC (λ t → ⟦ t ⟧ᵀ → Free Nil (ℕ × String))
                          ⊕ Nil )
       concur-elab′ = eLift ⋎ eConcur ⋎ eNil
 
