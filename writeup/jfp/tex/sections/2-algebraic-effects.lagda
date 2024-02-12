@@ -686,7 +686,7 @@ not possible for, e.g., operations representing $\lambda$ abstraction.
 
 \begin{code}[hide]
 module Scoped where
-  open FreeModule   using (Effect; State; put; get; Δ; Δ₀; Δ′; _∼_▸_; case▸; inj▸ₗ; inj▸ᵣ; throw; Throw; proj-ret▸ₗ; _⊕_; sift; insert;  case▸≡; inj▸ₗ-ret≡; inj▸ᵣ-ret≡)
+  open FreeModule   using (Effect; State; put; get; Δ; Δ₀; Δ′; _∼_▸_; case▸; inj▸ₗ; inj▸ᵣ; throw; Throw; proj-ret▸ₗ; _⊕_; sift; insert;  case▸≡; inj▸ₗ-ret≡; inj▸ᵣ-ret≡ ; ⟦_⟧)
   open Effect
 
   private variable γ γ′ γ₀ : Effect
@@ -720,10 +720,10 @@ correspond to the \ac{pure} and \ac{impure} constructors of the free monad,
 whereas \ac{enter} is new:
 %
 \begin{code}
-  data Prog (Δ γ : Effect) (A : Set) : Set₁ where
-    return  : A                                                                        → Prog Δ γ A
-    call    : (op : Op Δ)                                (k : Ret Δ op  → Prog Δ γ A)  → Prog Δ γ A
-    enter   : (op : Op γ)  (sc : Ret γ op → Prog Δ γ B)  (k : B         → Prog Δ γ A)  → Prog Δ γ A
+  data Prog (Δ γ : Effect) (A : Set) : Set where
+    return  : A                              → Prog Δ γ A
+    call    : ⟦ Δ ⟧ (Prog Δ γ A)             → Prog Δ γ A
+    enter   : ⟦ γ ⟧ (Prog Δ γ (Prog Δ γ A))  → Prog Δ γ A
 \end{code}
 %
 The \ac{enter} constructor represents a higher-order operation which has as many
@@ -734,10 +734,17 @@ to the continuation, since the return type of each scope (\ab{B}) matches the
 parameter type of the continuation \ab{k} of \ac{enter}.
 
 \begin{code}[hide]
+  {-# TERMINATING #-} 
+  map-prog : (A → B) → Prog Δ γ A → Prog Δ γ B
+  map-prog f (return x) = return (f x)
+  map-prog f (call (op , k)) = call (op , (λ x → map-prog f (k x)))
+  map-prog f (enter (op , k)) = enter (op , λ x → map-prog (map-prog f) (k x))
+  
+  {-# TERMINATING #-} 
   _𝓑_ : Prog Δ γ A → (A → Prog Δ γ B) → Prog Δ γ B
   return x       𝓑 g = g x
-  call op k      𝓑 g = call op (λ x → k x 𝓑 g)
-  enter op sc k  𝓑 g = enter op sc (λ x → k x 𝓑 g)
+  call  (op , k) 𝓑 g = call  (op , (λ x → k x 𝓑 g))
+  enter (op , k) 𝓑 g = enter (op , (λ x → map-prog (λ t → t 𝓑 g) (k x)))
 \end{code}
 
 Using \ad{Prog}, the catch operation can be defined as a scoped operation:
@@ -762,18 +769,20 @@ has two inhabitants.
 %
 \begin{code}[hide]
   ‵catch : ⦃ γ ∼ Catch ▸ γ′ ⦄ → Prog Δ γ A → Prog Δ γ A → Prog Δ γ A
-  ‵catch ⦃ w ⦄ m₁ m₂ = enter (inj▸ₗ catch) (λ b → if (proj-ret▸ₗ ⦃ w ⦄ b) then m₁ else m₂) return
+  ‵catch ⦃ w ⦄ m₁ m₂ = enter (inj▸ₗ catch , λ b → if proj-ret▸ₗ ⦃ w ⦄ b then return m₁ else return m₂ ) 
 \end{code}
 %
 Following~\citet{YangPWBS22}, scoped operations are handled using a structure-preserving fold over \ad{Prog}:
 \\
 \begin{minipage}{0.325\linewidth}
 \begin{code}[hide]
-  CallAlg : (Δ : Effect) (G : Set → Set₁) → Set₁
-  CallAlg Δ G = {A : Set} (op : Op Δ) (k : Ret Δ op → G A) → G A
+  CallAlg : (Δ : Effect) (G : Set → Set) → Set₁
+  CallAlg Δ G = {A : Set} → ⟦ Δ ⟧ (G A) → G A 
+ 
+  EnterAlg : (γ : Effect) (G : Set → Set) → Set₁
+  EnterAlg γ G = {A : Set} → ⟦ γ ⟧ (G (G A)) → G A
 
-  EnterAlg : (γ : Effect) (G : Set → Set₁) → Set₁
-  EnterAlg γ G = {A B : Set} (op : Op γ) (k : Ret γ op → G B) → (B → G A) → G A
+  {-# TERMINATING #-} 
 \end{code}
 \begin{code}
   hcata  :  (∀ {X} → X → G X) 
@@ -782,22 +791,21 @@ Following~\citet{YangPWBS22}, scoped operations are handled using a structure-pr
          →  Prog Δ γ A → G A
 \end{code}
 \begin{code}[hide]
-  hcata g c e (return x)       = g x
-  hcata g c e (call op k)      = c op (hcata g c e ∘ k)
-  hcata g c e (enter op sc k)  = e op (hcata g c e ∘ sc) (hcata g c e ∘ k)
+  hcata gen f g (return x) = gen x
+  hcata gen f g (call (op , k)) = f (op , hcata gen f g ∘ k)
+  hcata gen f g (enter (op , k)) = g (op , hcata gen f g ∘ map-prog (hcata gen f g) ∘ k)
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
 \begin{minipage}{0.665\linewidth}
 \begin{code}
-  CallAlg⅋ : (Δ : Effect) (G : Set → Set₁) → Set₁
+  CallAlg⅋ : (Δ : Effect) (G : Set → Set) → Set₁
   CallAlg⅋ Δ G  =
-    {A : Set} (op : Op Δ) (k : Ret Δ op → G A) → G A
+    {A : Set} → ⟦ Δ ⟧ (G A) → G A
 
-  EnterAlg⅋ : (γ : Effect) (G : Set → Set₁) → Set₁
+  EnterAlg⅋ : (γ : Effect) (G : Set → Set) → Set₁
   EnterAlg⅋ γ G  =
-    {A B : Set} (op : Op γ) (sc : Ret γ op → G B) (k : B → G A)
-    → G A
+    {A B : Set} → ⟦ γ ⟧ (G (G A)) → G A 
 \end{code}
 \end{minipage}
 %
@@ -819,14 +827,15 @@ The following defines a type of parameterized scoped effect handlers:
 \begin{code}[hide]
   open ⟨∙!_!_⇒_⇒_∙!_!_⟩
 
+  {-# TERMINATING #-} 
   to-frontΔ : ⦃ w : Δ ∼ Δ₀ ▸ Δ′ ⦄ → Prog Δ γ A → Prog (Δ₀ ⊕ Δ′) γ A
   to-frontΔ {Δ₀ = Δ₀} ⦃ w ⦄ (return x) = return x
-  to-frontΔ {Δ₀ = Δ₀} ⦃ insert ⦄ (call op k) = call op (to-frontΔ ⦃ insert ⦄ ∘ k)
-  to-frontΔ {Δ₀ = Δ₀} ⦃ sift w ⦄ (call (inj₁ op) k) = call (inj₂ (inj₁ op)) (to-frontΔ ⦃ sift w ⦄ ∘ k)
-  to-frontΔ {Δ₀ = Δ₀} ⦃ sift {Δ = Δ} {Δ′ = Δ′} w ⦄ t@(call (inj₂ op) k) = case▸≡ ⦃ w ⦄ op
+  to-frontΔ {Δ₀ = Δ₀} ⦃ insert ⦄ (call (op , k)) = call (op , (to-frontΔ ⦃ insert ⦄ ∘ k))
+  to-frontΔ {Δ₀ = Δ₀} ⦃ sift w ⦄ (call ((inj₁ op) , k)) = call (inj₂ (inj₁ op) , to-frontΔ ⦃ sift w ⦄ ∘ k)
+  to-frontΔ {Δ₀ = Δ₀} ⦃ sift {Δ = Δ} {Δ′ = Δ′} w ⦄ t@(call ((inj₂ op) , k)) = case▸≡ ⦃ w ⦄ op
     (λ op′ eq →
       call
-        (inj₁ op′)
+        ((inj₁ op′) ,
         ( to-frontΔ ⦃ sift w ⦄
         ∘ k
         ∘ subst id (begin
@@ -835,9 +844,9 @@ The following defines a type of parameterized scoped effect handlers:
             Ret Δ (inj▸ₗ ⦃ w ⦄ op′)
           ≡⟨ sym $ cong (Ret Δ) eq ⟩
             Ret Δ op
-          ∎)))
+          ∎))))
     (λ op′ eq →
-      call (inj₂ (inj₂ op′))
+      call ((inj₂ (inj₂ op′)) ,
         ( to-frontΔ ⦃ sift w ⦄
         ∘ k
         ∘ subst id (begin
@@ -846,40 +855,37 @@ The following defines a type of parameterized scoped effect handlers:
             Ret Δ (inj▸ᵣ ⦃ w ⦄ op′)
           ≡⟨ (sym $ cong (Ret Δ) eq) ⟩
             Ret Δ op
-          ∎)))
-  to-frontΔ (enter op sc k) = enter op (to-frontΔ ∘ sc) (to-frontΔ ∘ k)
+          ∎))))
+  to-frontΔ (enter (op , k)) = enter (op , to-frontΔ ∘ map-prog to-frontΔ ∘ k) 
 
+  {-# TERMINATING #-} 
   to-frontγ : ⦃ w : γ ∼ γ₀ ▸ γ′ ⦄ → Prog Δ γ A → Prog Δ (γ₀ ⊕ γ′) A
   to-frontγ {γ₀ = γ₀} ⦃ w ⦄ (return x) = return x
-  to-frontγ (call op k) = call op (to-frontγ ∘ k)
-  to-frontγ {γ₀ = γ₀} ⦃ insert ⦄ (enter op sc k) = enter op (to-frontγ ⦃ insert ⦄ ∘ sc) (to-frontγ ⦃ insert ⦄ ∘ k)
-  to-frontγ {γ₀ = γ₀} ⦃ sift w ⦄ (enter (inj₁ op) sc k) = enter (inj₂ (inj₁ op)) (to-frontγ ⦃ sift w ⦄ ∘ sc) (to-frontγ ⦃ sift w ⦄ ∘ k)
-  to-frontγ {γ₀ = γ₀} ⦃ sift {Δ = γ} {Δ′ = γ′} w ⦄ t@(enter (inj₂ op) sc k) = case▸≡ ⦃ w ⦄ op
+  to-frontγ (call (op , k)) = call (op , (to-frontγ ∘ k))
+  to-frontγ {γ₀ = γ₀} ⦃ insert ⦄ (enter (op , k)) = enter (op , to-frontγ ⦃ insert ⦄ ∘ map-prog (to-frontγ ⦃ insert ⦄) ∘ k) 
+  to-frontγ {γ₀ = γ₀} ⦃ sift w ⦄ (enter ((inj₁ op) , k)) = enter (inj₂ (inj₁ op) , to-frontγ ⦃ sift w ⦄ ∘ map-prog (to-frontγ ⦃ sift w ⦄) ∘ k) 
+  to-frontγ {γ₀ = γ₀} ⦃ sift {Δ = γ} {Δ′ = γ′} w ⦄ t@(enter ((inj₂ op) , k)) = case▸≡ ⦃ w ⦄ op
     (λ op′ eq →
       enter
-        (inj₁ op′)
-        ( to-frontγ ⦃ sift w ⦄
-        ∘ sc
-        ∘ subst id (begin
-            Ret γ₀ op′
-          ≡⟨ sym (inj▸ₗ-ret≡ ⦃ w ⦄ op′) ⟩
-            Ret γ (inj▸ₗ ⦃ w ⦄ op′)
-          ≡⟨ sym $ cong (Ret γ) eq ⟩
-            Ret γ op
-          ∎))
-        (to-frontγ ⦃ sift w ⦄ ∘ k))
-    (λ op′ eq →
-      enter (inj₂ (inj₂ op′))
-        ( to-frontγ ⦃ sift w ⦄
-        ∘ sc
-        ∘ subst id (begin
-            Ret γ′ op′
-          ≡⟨ sym (inj▸ᵣ-ret≡ ⦃ w ⦄ op′) ⟩
-            Ret γ (inj▸ᵣ ⦃ w ⦄ op′)
-          ≡⟨ (sym $ cong (Ret γ) eq) ⟩
-            Ret γ op
-          ∎))
-        (to-frontγ ⦃ sift w ⦄ ∘ k))
+        ( inj₁ op′
+        , to-frontγ ⦃ sift w ⦄
+        ∘ map-prog (to-frontγ ⦃ sift w ⦄)
+        ∘ k
+        ∘ subst id (trans (sym (inj▸ₗ-ret≡ ⦃ w ⦄ op′)) (sym (cong (Ret γ) eq)))
+        ))
+        
+    λ op′ eq →
+      enter
+      ( inj₂ (inj₂ op′)
+      , to-frontγ ⦃ sift w ⦄
+      ∘ map-prog (to-frontγ ⦃ sift w ⦄)
+      ∘ k
+      ∘ subst id (trans (sym (inj▸ᵣ-ret≡ ⦃ w ⦄ op′)) (sym (cong (Ret γ) eq)))
+      )
+
+  ⊕[_,_] : (⟦ Δ ⟧ A → B) → (⟦ Δ₀ ⟧ A → B) → ⟦ Δ ⊕ Δ₀ ⟧ A → B
+  ⊕[ f , g ] (inj₁ op , k) = f (op , k)
+  ⊕[ f , g ] (inj₂ op , k) = g (op , k)
 \end{code}
 %
 A handler of type
@@ -905,12 +911,13 @@ the record type above are used to fold over \ad{Prog}:
   given_handle-scoped_  :  ⦃ w₁ : Δ ∼ Δ₀ ▸ Δ′ ⦄ ⦃ w₂ : γ ∼ γ₀ ▸ γ′ ⦄
                         →  ⟨∙! Δ₀ ! γ₀ ⇒ P ⇒ G ∙! Δ′ ! γ′ ⟩
                         →  Prog Δ γ A → P → Prog Δ′ γ′ (G A)
-  given h handle-scoped m = hcata
-    (ret h)
-    [  hcall h , (λ op k p → call op (λ x → k x p)) ]
-    [  henter h
-    ,  (λ op sc k p → enter op (λ x → sc x p) (λ x → glue h k x p)) ]
-    (to-frontΔ (to-frontγ m))
+  given h handle-scoped m = hcata (ret h)
+    ⊕[ hcall h
+     , (λ (op , k) p → call (op , flip k p))
+     ]
+    ⊕[ henter h
+     , (λ (op , k) p → enter (op , λ x → map-prog (λ y → glue h id y p) (k x p)))
+     ] (to-frontΔ (to-frontγ m))
 \end{code}
 %
 The second to last line above shows how \aF{glue} is used.  Because \af{hcata}
@@ -926,10 +933,11 @@ The scoped effect handler for exception catching is thus:\footnote{Here,
 \begin{code}
   hCatch  :  ⟨∙! Throw ! Catch ⇒ ⊤ ⇒ Maybe ∙! Δ′ ! γ′ ⟩
   ret     hCatch x _ = return (just x)
-  hcall   hCatch throw k _ = return nothing
-  henter  hCatch catch sc k p = let m₁ = sc true p; m₂ = sc false p; k = flip k p in
-    m₁ 𝓑 maybe k (m₂ 𝓑 maybe k (return nothing))
-  glue    hCatch k x p = maybe (flip k p) (return nothing) x
+  hcall   hCatch (throw , k) _ = return nothing
+  henter  hCatch (catch , k) _ = k true tt 𝓑 λ where
+    (just f)  → f tt
+    nothing   → k false tt 𝓑 maybe (_$ tt) (return nothing)
+  glue hCatch k x _ = maybe (flip k tt) (return nothing) x
 \end{code}
 %
 The \aF{henter} field for the \ac{catch} operation first runs \ab{m₁}.  If no
@@ -958,6 +966,8 @@ The \aF{app} field represents an operation that will apply the function value in
 the first parameter position to the argument computation in the second parameter
 position.  The \aF{app} operation has a computation as its second parameter so
 that it remains compatible with different evaluation strategies.
+
+\todo{Update discussion to new setup of scoped effects }
 
 To see why the operations summarized by the \ad{LambdaM} record above are not
 scoped operations, let us revisit the definition of scoped operations,
