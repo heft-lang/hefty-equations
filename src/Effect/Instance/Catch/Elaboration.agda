@@ -46,17 +46,51 @@ open Connectives
 ℋ⟦_⟧ ⦃ i ⦄ = ♯ ⦃ Abort , (union-comm $ i .proj₂) ⦄  ∘ handleAbort (i .proj₂)
 
 CatchElab : Elaboration Catch Abort
-CatchElab .elab = necessary λ i → CatchElabAlg ⦃ i ⦄
+CatchElab .Elaboration.elab = necessary λ i → CatchElabAlg ⦃ i ⦄
   where
     CatchElabAlg : ⦃ Abort ≲ ε ⦄ → Algebra (Catch ε) (Free ε)
     CatchElabAlg .α ⟪ `throw   , k , s ⟫ = abort
     CatchElabAlg .α ⟪ `catch A , k , s ⟫ = do
       v ← ℋ⟦ (s (inj₁ tt)) ⟧
       maybe′ k (s (inj₂ tt) >>= k) v
-
-
-ℰ⟦_⟧ : ⦃ Abort ≲ ε ⦄ → ∀[ Hefty (Catch ε) ⇒ Free ε ]  
-ℰ⟦_⟧ ⦃ i ⦄ = fold-hefty pure (□⟨ CatchElab .elab ⟩ i)
+CatchElab .Elaboration.coherent {ε′ = ε′} {c = `throw} {s = s} ⦃ i ⦄   k₁ k₂ =
+  begin
+    elab ⟪ `throw , (k₁ >=> k₂) , s ⟫
+  ≡⟨⟩
+    abort
+  ≡⟨⟩ 
+    impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩)
+  ≡⟨ cong (λ ○ → impure (inj ⟨ `abort , ○ ⟩)) (extensionality λ()) ⟩
+    impure (inj (fmap {F = ⟦ Abort ⟧ᶜ} (_>>= k₂) ⟨ `abort , ♯ ∘ ⊥-elim ⟩)) 
+  ≡⟨ cong impure (inj-natural .commute {f = _>>= k₂} _) ⟩ 
+    impure (fmap {F = ⟦ ε′ ⟧ᶜ} (_>>= k₂) (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩)) 
+  ≡⟨⟩ 
+    impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩) >>= k₂ 
+  ≡⟨⟩ 
+    abort >>= k₂ 
+  ≡⟨⟩ 
+    elab ⟪ `throw , k₁ , s ⟫ >>= k₂
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α 
+CatchElab .Elaboration.coherent {ε′ = ε′} {c = `catch t} {s = s} ⦃ i ⦄  k₁ k₂ =
+  begin
+    elab ⟪ `catch t , (k₁ >=> k₂) , s ⟫
+  ≡⟨⟩
+    ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (k₁ >=> k₂) (s (inj₂ tt) >>= (k₁ >=> k₂))
+  ≡⟨ cong (λ ○ → ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (k₁ >=> k₂) ○) (sym (>>=-assoc k₁ k₂ (s (inj₂ tt)))) ⟩ 
+    ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (k₁ >=> k₂) ((s (inj₂ tt) >>= k₁) >>= k₂) 
+  ≡⟨ cong (λ ○ → ℋ⟦ s (inj₁ tt) ⟧ >>= ○) (extensionality $ maybe (λ _ → refl) refl) ⟩
+    ℋ⟦ s (inj₁ tt) ⟧ >>= (maybe′ k₁ (s (inj₂ tt) >>= k₁) >=> k₂) 
+  ≡⟨ sym (>>=-assoc (maybe′ k₁ (s (inj₂ tt) >>= k₁)) k₂ ℋ⟦ s (inj₁ tt) ⟧) ⟩ 
+    (ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ k₁ (s (inj₂ tt) >>= k₁)) >>= k₂ 
+  ≡⟨⟩ 
+    elab ⟪ `catch t , k₁ , s ⟫ >>= k₂
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α
 
 -- TODO: explain why we need to disable the termination checker here, and why we
 -- think this is okay
@@ -65,6 +99,7 @@ CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
 CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub 
   where
     open ≈-Reasoning T′
+    open Elaboration CatchElab
     instance inst : proj₁ i ≲ ε′
     inst = _ , (union-comm $ proj₂ i)
 
@@ -72,8 +107,8 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
     go : ∀ {eq : Equationᴴ _}
          → eq ◃ᴴ CatchTheory
          → AbortTheory ⊆⟨ i ⟩ T′
-           -------------------------------------------------
-         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ CatchElab .elab ⟩ i) eq
+           --------------------------------------
+         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ elab ⟩ i) eq
 
     -- bind-throw 
     go (here refl) _ {γ = k} =
@@ -198,23 +233,3 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
           where
             f = maybe′ pure (abort >>= pure)
             
-  --   {- catch-catch -} 
-  --   go (there (there (there (there (here refl))))) sub {γ = m₁ , m₂ , k , m₃} =
-
-  --     begin
-  --       ℰ⟦ catch (catch m₁ m₂ >>= k) m₃ ⟧
-  --     ≈⟪⟫
-  --       ℋ⟦ ℰ⟦ catch m₁ m₂ >>= k ⟧ ⟧ >>= f
-  --     ≈⟪⟫ 
-  --       ℋ⟦ ℋ⟦ {!!} ⟧ >>= {!g!} ⟧ >>= f 
-  --     ≈⟪ {!!} ⟫
-  --       ℰ⟦ catch (m₁ >>= k) (catch (m₂ >>= k) m₃) ⟧
-  --     ∎
-
-  --     where
-  --       f = maybe′ pure (ℰ⟦ m₃ ⟧ >>= pure)
-  --       g = maybe′ {!!} {!!} 
-
-
-  -- -- local f ask >>= k = ask >>= k ∘ f
-  -- -- 
