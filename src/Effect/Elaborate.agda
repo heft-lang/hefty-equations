@@ -3,6 +3,7 @@ open import Relation.Unary
 open import Core.Functor
 open import Core.Container
 open import Core.Signature
+open import Core.Extensionality
 
 open import Effect.Syntax.Free
 open import Effect.Syntax.Hefty
@@ -13,13 +14,14 @@ open import Data.Product
 open import Data.Sum
 
 open import Effect.Separation
-open import Effect.Inclusion 
+open import Effect.Inclusion
 open import Effect.Logic as Logic
+open import Effect.Theory.FirstOrder
 
 open import Function hiding (_⇔_)
 
 open import Relation.Binary using (Preorder)
-open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; sym ; trans)
+open import Relation.Binary.PropositionalEquality
 
 open import Effect.Handle
 
@@ -33,26 +35,83 @@ open Logic.Connectives
 S : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} → (A → B → C) → (A → B) → A → C
 S = λ x y z → x z (y z) 
 
-record Elaboration (η : Effect → Effectᴴ) (ε : Effect) : Set₁ where
-  constructor e⟨_⟩
+record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   field
-    elab : □ (S (Algebra ∘ η) Free)  ε
+    elab : □ (S (Algebra ∘ ξ) Free)  ε
 
-  elaborate : ∀[ Hefty (η ε) ⇒ Free ε ]
+  elaborate : ∀[ Hefty (ξ ε) ⇒ Free ε ]
   elaborate = fold-hefty pure (□-extract elab)
 
-instance elab-monotone : Monotone (Elaboration ξ)
-elab-monotone .weaken i e⟨ elab ⟩ = e⟨ weaken i elab ⟩
+  elaborate′ : ⦃ ε ≲ ε′ ⦄ → ∀[ Hefty (ξ ε′) ⇒ Free ε′ ]
+  elaborate′ ⦃ i ⦄ = fold-hefty pure (□⟨ elab ⟩ i)
 
-open Elaboration public
+  ℰ⟦_⟧ = elaborate′
+
+  -- Map `Hefty` continuations to `Free` continuations.
+  --
+  -- This witnesses that (the fold of) an elaboration algebra characterized by
+  -- signatures `ξ` and `ε` defines a functor between the Kleisli categories of
+  -- respectively the monads `Hefty (ξ ε)` and `Free ε`.
+  ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (ξ ε′) B) → (A → Free ε′ B)
+  ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧ 
+ 
+
+  mutual
+    elab-∘′ : ∀ {B C : Set}
+              → ⦃ _ : ε ≲ ε′ ⦄
+              → (m :  Hefty (ξ ε′) B)
+              → (k : B → Hefty (ξ ε′) C)
+                ------------------------------------
+              → ℰ⟦ m >>= k ⟧ ≡ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫
+    elab-∘′ (pure x) k = refl
+    elab-∘′ ⦃ i ⦄ (impure ⟪ c , k′ , s ⟫) k =
+      begin
+        ℰ⟦ impure ⟪ c , k′ , s ⟫ >>= k ⟧
+      ≡⟨⟩ 
+        ℰ⟦ impure ⟪ c , (k′ >=> k) , (_>>= pure) ∘ s ⟫ ⟧
+      ≡⟨ cong (λ ○ → ℰ⟦ impure ⟪ c , (k′ >=> k) , ○ ⟫ ⟧) (extensionality $ λ ψ → >>=-idʳ (s ψ)) ⟩
+        ℰ⟦ impure ⟪ c , (k′ >=> k) , s ⟫ ⟧
+      ≡⟨⟩ 
+        fold-hefty pure (□⟨ elab ⟩ i) (impure ⟪ c , (k′ >=> k) , s ⟫)
+      ≡⟨⟩
+        (□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ k′ >=> k ⟫ , ℰ⟦_⟧ ∘ s  ⟫ 
+      ≡⟨ cong (λ ○ → (□⟨ elab ⟩ i) .α ⟪ c , ○ , ℰ⟦_⟧ ∘ s ⟫) (elab-∘ k′ k) ⟩
+        (□⟨ elab ⟩ i) .α ⟪ c , (ℰ⟪ k′ ⟫ >=> ℰ⟪ k ⟫) , ℰ⟦_⟧ ∘ s ⟫ 
+      ≡⟨ lemma ℰ⟪ k′ ⟫ ℰ⟪ k ⟫ ⟩ 
+        (□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ k′ ⟫ , ℰ⟦_⟧ ∘ s ⟫ >>= ℰ⟪ k ⟫ 
+      ≡⟨⟩ 
+        fold-hefty pure (□⟨ elab ⟩ i) (impure ⟪ c , k′ , s ⟫) >>= ℰ⟪ k ⟫ 
+      ≡⟨⟩ 
+        ℰ⟦ impure ⟪ c , k′ , s ⟫ ⟧ >>= ℰ⟪ k ⟫
+      ∎
+      where
+        open ≡-Reasoning
+        lemma : ∀ {c s} → ⦃ i : ε ≲ ε′ ⦄ → (k₁ : response (ξ _) c → Free ε′ A) (k₂ : A → Free ε′ B)
+              → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂ 
+        lemma = {!!} 
+
+    -- Elaboration 
+    elab-∘ : ∀ {A B C : Set}
+             → ⦃ _ : ε ≲ ε′ ⦄
+             → (k₁ : A → Hefty (ξ ε′) B)
+             → (k₂ : B → Hefty (ξ ε′) C)
+               ------------------------------------
+             → ℰ⟪ k₁ >=> k₂ ⟫ ≡ ℰ⟪ k₁ ⟫ >=> ℰ⟪ k₂ ⟫
+    elab-∘ ⦃ i ⦄ k₁ k₂ = extensionality λ x → elab-∘′ (k₁ x) k₂
+      
+
+open Elaboration
 
 open □
 open _✴_
 
+instance elab-monotone : Monotone (Elaboration ξ)
+elab-monotone .weaken i e .elab = weaken i (e .elab)
+
 -- "Homogeneous" composition of elaborations. Combines two elaborations that
 -- assume the *same* lower bound on the effects that they elaborate into
 _⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ₁ ·⊕ ξ₂) ]
-(e₁ ⟪⊕⟫ e₂) .elab = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
+(e₁ ⟪⊕⟫ e₂) .elab      = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
 
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate
@@ -71,5 +130,3 @@ compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫
 -- composition operation.
 extend-with : ∀[ Elaboration ξ₁ ⇒ (Elaboration ξ₂ ─✴ Elaboration (ξ₁ ·⊕ ξ₂)) ]
 extend-with = ✴-curry compose-elab
-
-
