@@ -41,21 +41,36 @@ open import Effect.Instance.Lambda.Syntax id (λ A ε B → A → Free ε B)
 open import Effect.Instance.Lambda.Theory id (λ A ε B → A → Free ε B) 
 
 LambdaElabCBV : Elaboration Lam ε
-LambdaElabCBV .elab = necessary ElabAlg 
+LambdaElabCBV .Elaboration.elab = necessary ElabAlg 
   where
     ElabAlg : ε ≲ ε′ → Algebra (Lam ε′) (Free ε′)
     ElabAlg i .α ⟪ `var x , k , _ ⟫ = k x
     ElabAlg i .α ⟪ `abs   , k , s ⟫ = k s
     ElabAlg i .α ⟪ `app f , k , s ⟫ = s tt >>= (f >=> k) 
-
-ℰ⟦_⟧ : ∀[ Hefty (Lam ε) ⇒ Free ε ]  
-ℰ⟦_⟧ = fold-hefty pure (□⟨ LambdaElabCBV .elab ⟩ ≲-refl)
+LambdaElabCBV .Elaboration.coherent {c = `var x} k₁ k₂ = refl
+LambdaElabCBV .Elaboration.coherent {c = `abs} k₁ k₂ = refl
+LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
+  begin
+    elab ⟪ `app f , (k₁ >=> k₂) , s ⟫
+  ≡⟨⟩
+    s tt >>= (f >=> (k₁ >=> k₂))
+  ≡⟨ cong (s tt >>=_) (extensionality λ x → sym $ >>=-assoc k₁ k₂ (f x)) ⟩
+    s tt >>= ((f >=> k₁) >=> k₂)
+  ≡⟨ sym $ >>=-assoc (f >=> k₁) k₂ (s tt) ⟩
+    (s tt >>= (f >=> k₁)) >>= k₂ 
+  ≡⟨⟩ 
+    elab ⟪ `app f , k₁ , s ⟫ >>= k₂
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
+    
 
 CBVCorrect : Correctᴴ LambdaTheory T LambdaElabCBV
 CBVCorrect (here refl) T′ sub {γ = f , m} =
   begin
     ℰ⟦ (abs f >>= λ f′ → app f′ m) ⟧
-  ≈⟪ {!!} ⟫
+  ≈⟪ ≡-to-≈ $ elab-∘′ (abs f) (λ f′ → app f′ m) ⟫
     ℰ⟦ abs f ⟧ >>= (λ f′ → ℰ⟦ app f′ m ⟧) 
   ≈⟪⟫
     pure (λ x → ℰ⟦ f x ⟧) >>= (λ f′ → ℰ⟦ app f′ m ⟧)
@@ -65,10 +80,12 @@ CBVCorrect (here refl) T′ sub {γ = f , m} =
     ℰ⟦ m ⟧ >>= ((ℰ⟦_⟧ ∘ f) >=> pure)
   ≈⟪ >>=-resp-≈ʳ {m = ℰ⟦ m ⟧} (λ x → >>=-idʳ-≈ ℰ⟦ f x ⟧) ⟫
     ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ f x ⟧)
-  ≈⟪ {!!} ⟫ 
+  ≈⟪ ≡-to-≈ (sym $ elab-∘′ m f) ⟫ 
     ℰ⟦ m >>= f ⟧
   ∎
-  where open ≈-Reasoning T′
+  where
+    open ≈-Reasoning T′
+    open Elaboration LambdaElabCBV
 
 CBVCorrect (there (here refl)) T′ sub {γ = f} =
   begin
@@ -82,4 +99,6 @@ CBVCorrect (there (here refl)) T′ sub {γ = f} =
   ≈⟪⟫ 
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
-  where open ≈-Reasoning T′ 
+  where
+    open ≈-Reasoning T′
+    open Elaboration LambdaElabCBV

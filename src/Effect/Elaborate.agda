@@ -53,9 +53,28 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   -- signatures `ξ` and `ε` defines a functor between the Kleisli categories of
   -- respectively the monads `Hefty (ξ ε)` and `Free ε`.
   ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (ξ ε′) B) → (A → Free ε′ B)
-  ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧ 
- 
+  ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧
 
+  -- Coherence property for elaboration algebras. We can think of this as saying that
+  -- elaboration algebras should respect monadic bind (or, Kleisli composition).
+  --
+  -- There may e a perspective here that elaboration algebras somehow define the
+  -- morphism action of a functor, and that the definition of coherence below is
+  -- an instance of the usual requirement that a functor's action on morphism
+  -- should respect composition. I haven't explored this yet. 
+  Coherent : Set₁
+  Coherent =
+    ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
+    → (k₁ : response (ξ _) c → Free ε′ A)
+    → (k₂ : A → Free ε′ B)
+      -------------------------------------------------------------------------------
+    → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
+    
+  field
+    coherent : Coherent
+    
+
+  -- Show that pointwise elaborations respect Kleisli composition 
   mutual
     elab-∘′ : ∀ {B C : Set}
               → ⦃ _ : ε ≲ ε′ ⦄
@@ -77,7 +96,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
         (□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ k′ >=> k ⟫ , ℰ⟦_⟧ ∘ s  ⟫ 
       ≡⟨ cong (λ ○ → (□⟨ elab ⟩ i) .α ⟪ c , ○ , ℰ⟦_⟧ ∘ s ⟫) (elab-∘ k′ k) ⟩
         (□⟨ elab ⟩ i) .α ⟪ c , (ℰ⟪ k′ ⟫ >=> ℰ⟪ k ⟫) , ℰ⟦_⟧ ∘ s ⟫ 
-      ≡⟨ lemma ℰ⟪ k′ ⟫ ℰ⟪ k ⟫ ⟩ 
+      ≡⟨ coherent ℰ⟪ k′ ⟫ ℰ⟪ k ⟫ ⟩ 
         (□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ k′ ⟫ , ℰ⟦_⟧ ∘ s ⟫ >>= ℰ⟪ k ⟫ 
       ≡⟨⟩ 
         fold-hefty pure (□⟨ elab ⟩ i) (impure ⟪ c , k′ , s ⟫) >>= ℰ⟪ k ⟫ 
@@ -86,9 +105,6 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
       ∎
       where
         open ≡-Reasoning
-        lemma : ∀ {c s} → ⦃ i : ε ≲ ε′ ⦄ → (k₁ : response (ξ _) c → Free ε′ A) (k₂ : A → Free ε′ B)
-              → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂ 
-        lemma = {!!} 
 
     -- Elaboration 
     elab-∘ : ∀ {A B C : Set}
@@ -107,11 +123,14 @@ open _✴_
 
 instance elab-monotone : Monotone (Elaboration ξ)
 elab-monotone .weaken i e .elab = weaken i (e .elab)
+elab-monotone .weaken i e .coherent ⦃ i′ ⦄ = λ k₁ k₂ → e .coherent ⦃ ≲-trans i i′ ⦄ k₁ k₂ 
 
 -- "Homogeneous" composition of elaborations. Combines two elaborations that
 -- assume the *same* lower bound on the effects that they elaborate into
 _⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ₁ ·⊕ ξ₂) ]
 (e₁ ⟪⊕⟫ e₂) .elab      = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
+(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₁ x} = e₁ .coherent
+(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₂ y} = e₂ .coherent
 
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate
