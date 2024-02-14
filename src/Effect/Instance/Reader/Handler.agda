@@ -44,5 +44,46 @@ module Properties where
   modular = handle-modular (ReaderHandler _)
   
   correct : ∀ {R} → Correct ReaderTheory (ReaderHandler R)
-  correct (here refl) = refl
+  correct (here refl)                                                 = refl
+  correct (there (here refl))                                         = refl 
+  correct (there (there (here refl))) {δ = δ} {γ = pure x , k} {k′}   = refl
+  correct (there (there (here refl))) {δ = δ} {γ = impure ⟨ `ask , k′′ ⟩ , k} {k′} = extensionality $ λ r → 
+    begin
+      handle' (impure ⟨ `ask , k′′ ⟩ >>= (λ x → ask >>= λ r → k x r)) r
+    ≡⟨⟩
+      handle' (impure ⟨ `ask , (λ v → k′′ v >>= λ x → ask >>= λ r → k x r) ⟩) r
+    ≡⟨⟩
+      handle' (k′′ r >>= λ x → ask >>= λ r → k x r) r
+    ≡⟨ handle-cong (k′′ r) (λ x → ask >>= λ r → k x r) (λ x → k x r) r refl ⟩
+      handle' (k′′ r >>= (λ x → k x r)) r 
+    ≡⟨⟩ 
+      handle' (impure ⟨ `ask , (λ v → k′′ v >>= λ x → k x r) ⟩) r 
+    ≡⟨⟩ 
+      handle' (ask >>= λ r → impure ⟨ `ask , k′′ ⟩ >>= λ x → k x r) r
+    ∎
+    where
+      open ≡-Reasoning 
+      instance inst : {R : Set} → Reader R ≲ Reader R
+      inst = ≲-refl
 
+      handle' = fold-free k′ (ReaderHandler _ .hdl) 
+
+      handle-cong :
+        ∀ (m : Free (Reader _) A) (k₁ k₂ : A → Free _ _) r
+        → (∀ {x} → handle' (k₁ x) r ≡ handle' (k₂ x) r)
+        → handle' (m >>= k₁) r ≡ handle' (m >>= k₂) r 
+      handle-cong (pure x)              k₁ k₂ r eq = eq {x}
+      handle-cong (impure ⟨ `ask , k ⟩) k₁ k₂ r eq =
+        begin
+          handle' (impure ⟨ `ask , k ⟩ >>= k₁) r
+        ≡⟨⟩ 
+          handle' (impure ⟨ `ask , (k >=> k₁) ⟩) r
+        ≡⟨⟩
+          handle' (k r >>= k₁) r 
+        ≡⟨ handle-cong (k r) k₁ k₂ r eq ⟩
+          handle' (k r >>= k₂) r 
+        ≡⟨⟩ 
+          handle' (impure ⟨ `ask , (k >=> k₂) ⟩) r 
+        ≡⟨⟩ 
+          handle' (impure ⟨ `ask , k ⟩ >>= k₂) r
+        ∎
