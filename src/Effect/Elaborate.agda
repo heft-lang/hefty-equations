@@ -72,7 +72,10 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     
   field
     coherent : Coherent
-    
+
+  -- Elaborations respect identities
+  elab-id : ⦃ _ : ε ≲ ε′ ⦄ → ℰ⟪ return {A = A} ⟫ ≡ return {F = Free ε′}
+  elab-id = refl
 
   -- Show that pointwise elaborations respect Kleisli composition 
   mutual
