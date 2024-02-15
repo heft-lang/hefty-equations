@@ -64,7 +64,6 @@ ask-ask = left ≗ᴴ right
 
 ask-bind : Equationᴴ (LocalReader)
 ask-bind = left ≗ᴴ right
-
   where
     ctx ret : Effect → TypeContext 2 → Set 
     ctx ε (A , B , _) = Hefty (LocalReader ε) A × (A → R → Hefty (LocalReader ε) B)
@@ -110,5 +109,15 @@ local-local = left ≗ᴴ right
     left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (LocalReader ε) ]
 
     left  _ (f , g , m) = local (f ∘ g) m
-    right _ (f , g , m) = local f (local g m) 
+    right _ (f , g , m) = local g (local f m) 
     
+
+LocalReaderTheory : Theoryᴴ LocalReader
+LocalReaderTheory =
+  ∥  ask-query
+  ∷ local-return
+  ∷ ask-bind
+  ∷ local-bind
+  ∷ local-ask
+  ∷ local-local
+  ∷ [] ∥ᴴ 
