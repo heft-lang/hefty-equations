@@ -87,3 +87,29 @@ module Properties where
         ≡⟨⟩ 
           handle' (impure ⟨ `ask , k ⟩ >>= k₂) r
         ∎
+
+  handle-ask : ∀ {R} {r} (σ : Reader R ∙ ε′ ≈ ε) → (k : R → Free ε A) → ♯ ⦃ _ , union-comm σ ⦄ (handleReader σ (ask ⦃ _ , σ ⦄) r) >>= k ≡ k r   
+  handle-ask {ε′ = ε′} {ε = ε} {r = r} σ k =
+    begin
+      ♯ (handleReader σ ask r) >>= k
+    ≡⟨⟩ 
+      ♯ (handleReader σ (impure (inj ⟨ (`ask , pure) ⟩)) r) >>= k
+    ≡⟨⟩
+      ♯ (handle′ (ReaderHandler _) r (fold-free pure (λ where .αᶜ → impure ∘ proj σ) (impure (inj ⟨ `ask , pure ⟩))) ) >>= k
+    ≡⟨⟩
+      ♯ (handle′ (ReaderHandler _) r (impure (proj σ (fmap (separate σ) (inj ⟨ (`ask , pure) ⟩))))) >>= k
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure (proj σ ○))) >>= k) (sym (inj-natural .commute {f = separate σ} _)) ⟩ 
+      ♯ (handle′ (ReaderHandler _) r (impure (proj σ (inj ( ⟨ `ask , separate σ ∘ pure ⟩))))) >>= k
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure ○)) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
+      ♯ (handle′ (ReaderHandler _) r (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , separate σ ∘ pure ⟩)))) >>= k
+    ≡⟨⟩
+      k r
+    ∎
+    where
+      open Union
+      open Inverse 
+      open ≡-Reasoning
+      instance inst : Reader _ ≲ _
+      inst = _ , σ
+      instance inst′ : ε′ ≲ ε
+      inst′ = _ , union-comm σ 
