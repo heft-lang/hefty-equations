@@ -49,6 +49,26 @@ open import Effect.Instance.LocalReader.Theory R
 ℋ⟦_⟧ : ⦃ Reader R ≲ ε ⦄ → ∀[ Free ε ⇒ const R ⇒ Free ε ]
 ℋ⟦_⟧ ⦃ i ⦄ m r = ♯ ⦃ Reader R , (union-comm $ i .proj₂) ⦄  (handleReader (i .proj₂) m r)
 
+-- TODO: we can (and should) prove this as a general lemma for all handlers 
+handle-merge : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) → (r r′ : R) → ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′ ≡ ℋ⟦ m ⟧ r
+handle-merge ⦃ px ⦄ m r r′ =
+  begin
+    ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′
+  ≡⟨⟩
+    ♯ʳ′ σ' (handle (ReaderHandler R) σ' r′ (♯ʳ′ σ' (handle (ReaderHandler R) σ' r m)))
+  ≡⟨ cong (♯ʳ′ σ') (handle-modular (ReaderHandler R) (handle (ReaderHandler R) σ' r m) σ' r′) ⟩
+    ♯ʳ′ σ' (fmap id (handle (ReaderHandler R) σ' r m)) 
+  ≡⟨ cong (♯ʳ′ σ') (fmap-id (handle (ReaderHandler R) σ' r m)) ⟩
+    ♯ʳ′ σ' (handle (ReaderHandler R) σ' r m) 
+  ≡⟨⟩ 
+   ℋ⟦ m ⟧ r
+  ∎
+
+  where
+    open ≡-Reasoning 
+    σ' = px .proj₂
+
+
 ReaderElab : Elaboration (LocalReader) (Reader R)
 ReaderElab .Elaboration.elab = necessary λ i → readerElab ⦃ i ⦄
   where
@@ -203,8 +223,8 @@ ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} �
   begin
     ℰ⟦ local (f ∘ g) m ⟧
   ≈⟪⟫ 
-    (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure) 
-  ≈⟪ {!!} ⟫ {- should follow from modularity of ℋ⟦-⟧ -} 
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym $ handle-merge ℰ⟦ m ⟧ (f (g r)) (g r)))) ⟫ 
     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) ⟧ (g r) >>= pure) 
   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (g r)) (sym $ >>=-idʳ (ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r))) )))) ⟫ 
     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure ⟧ (g r) >>= pure) 
