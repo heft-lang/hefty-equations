@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-} 
 
 open import Relation.Unary
 open import Function
@@ -11,9 +12,9 @@ open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; 
 
 module Effect.Syntax.Hefty where
 
-data Hefty (σ : Signature) : Set → Set where
-  pure   : ∀[ id              ⇒ Hefty σ ] 
-  impure : ∀[ ⟦ σ ⟧ (Hefty σ) ⇒ Hefty σ ]
+data Hefty (σ : Signature) (A : Set) : Set where
+  pure   : A                  → Hefty σ A 
+  impure : ⟦ σ ⟧ (Hefty σ) A  → Hefty σ A
 
 variable m m₁ m₂ m₃ m′ : Hefty σ A 
 
@@ -27,7 +28,7 @@ fold-hefty η y (pure x)                = η x
 fold-hefty η y (impure ⟪ c , r , s ⟫ ) = y .α ⟪ c , fold-hefty η y ∘ r , fold-hefty η y ∘ s ⟫ 
 
 rec-hefty : ⦃ Pointed F ⦄ → (A → F B) → Algebra σ F → Hefty σ A → F B
-rec-hefty k _ (pure x)               = (k x)
+rec-hefty k _ (pure x)               = k x
 rec-hefty k y (impure ⟪ c , r , s ⟫) = y .α ⟪ c , rec-hefty k y ∘ r , rec-hefty point y ∘ s ⟫
 
 map-hefty : (A → B) → Hefty σ A → Hefty σ B

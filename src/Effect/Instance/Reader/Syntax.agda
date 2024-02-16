@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Container
 
 open import Effect.Base
@@ -19,3 +21,4 @@ Reader R = record
 
 ask : ∀ {R} → ⦃ Reader R ≲ ε ⦄ → Free ε R
 ask = ♯ (impure ⟨ `ask , pure ⟩) 
+

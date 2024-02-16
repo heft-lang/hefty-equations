@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type #-}
+{-# OPTIONS --without-K #-}
 
 module Core.Extensionality where
 

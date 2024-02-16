@@ -1,3 +1,5 @@
+{-# OPTIONS --safe --without-K #-} 
+
 module Core.Functor where
 
 open import Relation.Unary

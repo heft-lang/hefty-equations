@@ -1,4 +1,5 @@
-open import Core.Extensionality
+{-# OPTIONS --safe --without-K #-} 
+
 open import Core.Functor
 
 open import Data.Product

@@ -1,3 +1,4 @@
+{-# OPTIONS --safe --without-K #-} 
 
 import Relation.Unary 
 

@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 module Effect.Syntax.Free where
 
 open import Core.Functor 
@@ -15,9 +17,9 @@ open import Relation.Binary.PropositionalEquality
 
 open Container 
 
-data Free (C : Container) : (A : Set) → Set where
+data Free (C : Container) (A : Set)  : Set where
   pure   : A → Free C A 
-  impure : ∀[ ⟦ C ⟧ᶜ ∘ Free C ⇒ Free C ]
+  impure : ⟦ C ⟧ᶜ (Free C A) → Free C A
 
 data Bound {C} : (m : Free C A) → Set₁ where
   leaf : ∀ {x : A} → Bound (pure x)

@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Relation.Unary
 open import Function 
 open import Data.Product 

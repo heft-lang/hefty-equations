@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type #-}
+{-# OPTIONS --without-K --type-in-type #-}
 
 open import Core.Functor
 open import Core.Signature 

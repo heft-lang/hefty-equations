@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 open import Core.Container
 open import Core.Extensionality

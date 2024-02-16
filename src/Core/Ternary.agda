@@ -1,3 +1,5 @@
+{-# OPTIONS --safe --without-K #-} 
+
 open import Data.Product 
 
 open import Relation.Unary

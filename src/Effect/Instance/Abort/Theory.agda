@@ -1,5 +1,6 @@
-open import Core.Functor
+{-# OPTIONS --without-K #-} 
 
+open import Core.Functor
 open import Relation.Unary
 
 open import Effect.Base

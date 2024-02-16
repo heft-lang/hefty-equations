@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 
 open import Effect.Base
@@ -70,19 +72,6 @@ catch-throw₂ = left ≗ᴴ right
 
     left  _ m = catch m throw 
     right _ m = m 
-
-
-catch-catch : Equationᴴ Catch 
-catch-catch = left ≗ᴴ right
-
-  where
-    ctx ret : Effect → TypeContext 2 → Set
-    ctx ε (A , B , _) = Hefty (Catch ε) A × Hefty (Catch ε) A × (A → Hefty (Catch ε) B) × Hefty (Catch ε) B
-    ret ε (A , B , _) = B 
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Catch ε) ]
-
-    left  _ (m₁ , m₂ , k , m₃) = catch (catch m₁ m₂ >>= k) m₃
-    right _ (m₁ , m₂ , k , m₃) = catch (m₁ >>= k) (catch (m₂ >>= k) m₃) 
 
 
 CatchTheory : Theoryᴴ Catch

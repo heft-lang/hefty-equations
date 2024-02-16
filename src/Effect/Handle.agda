@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Relation.Unary
 
 open import Core.Functor
@@ -65,7 +67,7 @@ Modular {ε₁ = ε₁} H =
   → (σ : ε₁ ∙ ε₂ ≈ ε)
   → (x : _)
     -------------------------------------------------------------
-  → handle′ H x (separate σ (♯ʳ′ σ m)) ≡ fmap (flip (H .gen) x) m
+  → handle H σ x (♯ʳ′ σ m) ≡ fmap (flip (H .gen) x) m
  
 open ≡-Reasoning 
 

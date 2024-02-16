@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 
 open import Effect.Base
@@ -35,7 +37,6 @@ beta = left ≗ᴴ right
 
     left  _ (f , m) = abs f >>= λ f′ → app f′ m
     right _ (f , m) = m >>= f ∘ point 
-
 
 
 eta : Equationᴴ Lam 

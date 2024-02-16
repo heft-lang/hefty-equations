@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 open import Core.Signature
 open import Core.Container
@@ -53,6 +55,7 @@ CatchElab .Elaboration.elab = necessary λ i → CatchElabAlg ⦃ i ⦄
     CatchElabAlg .α ⟪ `catch A , k , s ⟫ = do
       v ← ℋ⟦ (s (inj₁ tt)) ⟧
       maybe′ k (s (inj₂ tt) >>= k) v
+      
 CatchElab .Elaboration.coherent {ε′ = ε′} {c = `throw} {s = s} ⦃ i ⦄   k₁ k₂ =
   begin
     elab ⟪ `throw , (k₁ >=> k₂) , s ⟫
@@ -67,7 +70,7 @@ CatchElab .Elaboration.coherent {ε′ = ε′} {c = `throw} {s = s} ⦃ i ⦄  
   ≡⟨⟩ 
     impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩) >>= k₂ 
   ≡⟨⟩ 
-    abort >>= k₂ 
+    abort >>= k₂
   ≡⟨⟩ 
     elab ⟪ `throw , k₁ , s ⟫ >>= k₂
   ∎
@@ -143,7 +146,7 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
         ℋ⟦ ℰ⟦ throw ⟧ ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- -} 
         ℋ⟦ abort ⟧ >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
-      ≈⟪ >>=-resp-≈ˡ (≡-to-≈ ℋ-lemma) ⟫
+      ≈⟪ >>=-resp-≈ˡ _ (≡-to-≈ ℋ-lemma) ⟫
         pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
       ≈⟪⟫ {- Definition of >>= and maybe′ -} 
         ℰ⟦ m ⟧ >>= pure 

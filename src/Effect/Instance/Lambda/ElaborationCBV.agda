@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type #-} 
+{-# OPTIONS --type-in-type --without-K #-} 
 
 open import Core.Functor
 open import Core.Signature
@@ -47,8 +47,8 @@ LambdaElabCBV .Elaboration.elab = necessary ElabAlg
     ElabAlg i .α ⟪ `var x , k , _ ⟫ = k x
     ElabAlg i .α ⟪ `abs   , k , s ⟫ = k s
     ElabAlg i .α ⟪ `app f , k , s ⟫ = s tt >>= (f >=> k) 
-LambdaElabCBV .Elaboration.coherent {c = `var x} k₁ k₂ = refl
-LambdaElabCBV .Elaboration.coherent {c = `abs} k₁ k₂ = refl
+LambdaElabCBV .Elaboration.coherent {c = `var x}              k₁ k₂ = refl
+LambdaElabCBV .Elaboration.coherent {c = `abs}                k₁ k₂ = refl
 LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
   begin
     elab ⟪ `app f , (k₁ >=> k₂) , s ⟫
@@ -65,7 +65,6 @@ LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
     open ≡-Reasoning
     elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
     
-
 CBVCorrect : Correctᴴ LambdaTheory T LambdaElabCBV
 CBVCorrect (here refl) T′ sub {γ = f , m} =
   begin
@@ -78,7 +77,7 @@ CBVCorrect (here refl) T′ sub {γ = f , m} =
     ℰ⟦ app (ℰ⟦_⟧ ∘ f) m ⟧
   ≈⟪⟫
     ℰ⟦ m ⟧ >>= ((ℰ⟦_⟧ ∘ f) >=> pure)
-  ≈⟪ >>=-resp-≈ʳ {m = ℰ⟦ m ⟧} (λ x → >>=-idʳ-≈ ℰ⟦ f x ⟧) ⟫
+  ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → >>=-idʳ-≈ ℰ⟦ f x ⟧) ⟫
     ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ f x ⟧)
   ≈⟪ ≡-to-≈ (sym $ elab-∘′ m f) ⟫ 
     ℰ⟦ m >>= f ⟧
@@ -102,3 +101,4 @@ CBVCorrect (there (here refl)) T′ sub {γ = f} =
   where
     open ≈-Reasoning T′
     open Elaboration LambdaElabCBV
+

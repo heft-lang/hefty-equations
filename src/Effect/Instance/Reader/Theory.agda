@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 
 open import Effect.Base
@@ -68,4 +70,3 @@ ReaderTheory =
   ∷ ask-ask
   ∷ ask-bind 
   ∷ [] ∥ 
-

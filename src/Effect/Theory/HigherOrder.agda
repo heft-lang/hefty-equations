@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Core.Functor
 open import Core.Signature
 open import Core.Extensionality
@@ -34,6 +36,9 @@ module Effect.Theory.HigherOrder where
 
 open Connectives
 
+--
+-- TODO: this notion of equation seems to be too weak!!!!!!
+-- 
 record Equationᴴ (ξ : Effect → Effectᴴ) : Set₁ where
   constructor _≗ᴴ_
   field
@@ -131,8 +136,10 @@ data _≅⟨_⟩_ {ε} {ξ} : (m₁ : Hefty (ξ ε) A) → Theoryᴴ ξ → (m�
           → eq .rhsᴴ δ γ >>= k ≅⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
 
 
-{- Correctness of elaborations -} 
 
+
+{- Correctness of elaborations -} 
+open Elaboration 
 
 -- We say that an elaboration is correct with respect to some higher-order
 -- effect theory of its higher-order effect, and some first-order effect theory
@@ -313,3 +320,4 @@ compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e�
         ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
         ( ⟨⊆⟩-compose-right T₁ T₂ σ)
       c₂ ) 
+

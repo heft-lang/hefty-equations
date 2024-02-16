@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 -- Defines a modal separation logic for predicates over effects, based on the
 -- ternary effect separation predicate defined in Effect.Separation 
 
