@@ -66,16 +66,14 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   -- morphism action of a functor, and that the definition of coherence below is
   -- an instance of the usual requirement that a functor's action on morphism
   -- should respect composition. I haven't explored this yet. 
-  Coherence : Set₁
-  Coherence =
-    ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
-    → (k₁ : response (ξ _) c → Free ε′ A)
-    → (k₂ : A → Free ε′ B)
-      -------------------------------------------------------------------------------
-    → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
-    
+   
   field
-    coherent : Coherence
+    coherent :
+      ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
+      → (k₁ : response (ξ _) c → Free ε′ A)
+      → (k₂ : A → Free ε′ B)
+        -------------------------------------------------------------------------------
+      → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
 
   -- Elaborations respect identities
   elab-id : ⦃ _ : ε ≲ ε′ ⦄ → ℰ⟪ return {A = A} ⟫ ≡ return {F = Free ε′}
@@ -120,8 +118,16 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
              → (k₂ : B → Hefty (ξ ε′) C)
                ------------------------------------
              → ℰ⟪ k₁ >=> k₂ ⟫ ≡ ℰ⟪ k₁ ⟫ >=> ℰ⟪ k₂ ⟫
-    elab-∘ ⦃ i ⦄ k₁ k₂ = extensionality λ x → elab-∘′ (k₁ x) k₂
-      
+    elab-∘ ⦃ i ⦄ k₁ k₂ = extensionality λ x → elab-∘′ (k₁ x) k₂     
+
+    -- Elaborations are a monad morphism between Hefty trees and the Free monad
+    elab-mm : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → MonadMorphism (Hefty (ξ ε′)) (Free ε′)
+    elab-mm = record
+      { Ψ                       = elaborate′
+      ; Ψ-natural               = {!!}
+      ; respects-unit           = elab-id
+      ; respects-multiplication = elab-∘
+      }
 
 open Elaboration
 
