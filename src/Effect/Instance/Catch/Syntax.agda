@@ -41,17 +41,21 @@ catch {ε} {η = η}{A} m₁ m₂ = impure
   , catch-subs 
   ⟫
   where
+    f = subst id (sym $ fork-stable {c = `catch A})
+
     catch-subs : (ψ : fork η (injᴴ-c (`catch A))) → Hefty η (returns η ψ) 
     catch-subs ψ
-      with subst id (sym fork-stable) ψ
-         | inspect (subst id (sym fork-stable)) ψ
-    ... | inj₁ tt | ≡[ eq ]
+      with f ψ | inspect f ψ
+    ... | inj₁ tt | ≡[ eq ] 
       = subst (Hefty η)
           ( trans
               ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
-              types-stable ) m₁
+              types-stable ) m₁ 
     ... | inj₂ tt | ≡[ eq ]
       = subst (Hefty η)
           ( trans
             ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
             types-stable ) m₂
+
+
+    

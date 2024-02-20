@@ -328,22 +328,6 @@ Adequate {ε₁} {A} H T =
     ---------------------------------
   → m₁ ≈⟨ T′ ⟩ m₂
 
-
-
-postulate sep-adequate : (H : Handler ε₁ A F) → Π[ Adequate′ H ⇒ Adequate H ]
--- sep-adequate {ε₁} H T adq {ε₂ = ε₂} {ε} a m₁ m₂ σ {T′} T⊆T′ eq
---   with adq a (separate σ m₁) (separate σ m₂) {T′ = T′′} {!!} eq 
---   where
---     eq′ : ε ⇿ (ε₁ ⊕ᶜ ε₂) 
---     eq′ = (⇿-sym (∙-to-⇿ σ)) 
---   
---     T′′ : Theory (ε₁ ⊕ᶜ ε₂)
---     T′′ = theory-resp-⇿ eq′ T′
--- 
--- ... | eqv = {!!} 
--- 
--- 
-
 module ≈-Reasoning (T : Theory ε) where
 
   infix 3 _≈_
@@ -424,9 +408,8 @@ impure-injectiveˡ :
   ∀ {ε} {c₁ c₂ : ε .shape} {k₁ : ε .position c₁ → Free ε A} {k₂ : ε .position c₂ → Free ε A}
   → impure ⟨ c₁ , k₁ ⟩ ≡ impure ⟨ c₂ , k₂ ⟩ → c₁ ≡ c₂
 impure-injectiveˡ refl = refl
-
-
--- impure-injectiveʳ :
---   ∀ {ε} {c : ε .shape} {k₁ k₂ : ε .position c → Free ε A}
---   → impure ⟨ c , k₁ ⟩ ≡ impure ⟨ c , k₂ ⟩ → k₁ ≡ k₂ 
--- impure-injectiveʳ eq rewrite eq = {!!}
+ 
+impure-injectiveʳ :
+  ∀ {ε} {c₁ c₂ : ε .shape} {k₁ : ε .position c₁ → Free ε A} {k₂ : ε .position c₂ → Free ε A}
+  → (eq : impure ⟨ c₁ , k₁ ⟩ ≡ impure ⟨ c₂ , k₂ ⟩) → subst _ (impure-injectiveˡ eq) k₁ ≡ k₂
+impure-injectiveʳ refl = refl

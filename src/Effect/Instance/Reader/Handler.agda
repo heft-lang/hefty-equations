@@ -100,7 +100,7 @@ module Properties where
       ♯ (handle′ (ReaderHandler _) r (fold-free pure (λ where .αᶜ → impure ∘ proj σ) (impure (inj ⟨ `ask , pure ⟩))) ) >>= k
     ≡⟨⟩
       ♯ (handle′ (ReaderHandler _) r (impure (proj σ (fmap (separate σ) (inj ⟨ (`ask , pure) ⟩))))) >>= k
-    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure (proj σ ○))) >>= k) (sym (inj-natural .commute {f = separate σ} _)) ⟩ 
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure (proj σ ○))) >>= k) (sym (inj-natural .commute {f = separate σ} ⟨ (`ask , pure) ⟩)) ⟩ 
       ♯ (handle′ (ReaderHandler _) r (impure (proj σ (inj ( ⟨ `ask , separate σ ∘ pure ⟩))))) >>= k
     ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure ○)) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
       ♯ (handle′ (ReaderHandler _) r (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , separate σ ∘ pure ⟩)))) >>= k

@@ -63,7 +63,6 @@ handle-merge ⦃ px ⦄ m r r′ =
   ≡⟨⟩ 
    ℋ⟦ m ⟧ r
   ∎
-
   where
     open ≡-Reasoning 
     σ' = px .proj₂
