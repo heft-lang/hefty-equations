@@ -2,7 +2,9 @@
 
 module Effect.Syntax.Free where
 
-open import Core.Functor 
+open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.Container
 open import Core.Extensionality
 

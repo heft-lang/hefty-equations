@@ -5,6 +5,8 @@ open import Function
 open import Data.Product 
 
 open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.Signature
 open import Core.Extensionality
 

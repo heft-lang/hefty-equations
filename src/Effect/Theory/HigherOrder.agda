@@ -1,6 +1,8 @@
 {-# OPTIONS --without-K #-} 
 
 open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.Signature
 open import Core.Extensionality
 open import Core.MonotonePredicate 

@@ -3,6 +3,9 @@
 open import Data.Product 
 
 open import Core.Functor 
+open import Core.Functor.NaturalTransformation
+open import Core.Functor.Monad
+
 open import Core.Container
 open import Core.Ternary 
 open import Core.Extensionality

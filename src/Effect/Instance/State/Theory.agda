@@ -1,6 +1,7 @@
 {-# OPTIONS --without-K #-} 
 
 open import Core.Functor
+open import Core.Functor.Monad
 
 open import Effect.Base
 open import Effect.Syntax.Free

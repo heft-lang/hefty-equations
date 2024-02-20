@@ -1,6 +1,7 @@
 {-# OPTIONS --safe --without-K #-} 
 
 open import Core.Functor
+open import Core.Functor.NaturalTransformation
 
 open import Data.Product
 open import Data.Sum

@@ -3,6 +3,8 @@
 open import Relation.Unary
 
 open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.Container
 open import Core.Signature
 open import Core.Extensionality

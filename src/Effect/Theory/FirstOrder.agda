@@ -25,8 +25,9 @@ open import Relation.Binary using (Preorder)
 open import Relation.Binary.PropositionalEquality hiding (_≗_)
 open import Data.Empty
 
-
 open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.Container
 open import Core.MonotonePredicate Effect _≲_ (≲-preorder .Preorder.isPreorder)
 open import Core.Extensionality
@@ -36,8 +37,6 @@ open import Function.Construct.Symmetry using (↔-sym)
 open import Function.Construct.Composition using (_↔-∘_)
 open import Level
 
-{- Most stuff in this module is adapted from "Reasoning about Effect Interaction
-   by Fusion, Zhixuan Yang and Nicholas Wu" -}
 module Effect.Theory.FirstOrder where
 
 open Connectives
@@ -45,10 +44,8 @@ open Connectives
 variable c c₁ c₂ c₃ : Free ε A
 
 -- We define type contexts as a product by induction over the length rather than
--- a vector, because this gives us some η-equalities that come in handy when
--- defining effect theories since they save us from having to pattern match on
--- the type context in order to make the goal type of the lhs and rhs of
--- equations compute.
+-- a vector. This gives us some useful η-eqalities that save some pattern
+-- matches when defining theories.
 TypeContext : ℕ → Set₁
 TypeContext zero    = Lift _ ⊤
 TypeContext (suc n) = Set × TypeContext n
@@ -66,7 +63,6 @@ open Equation public
 
 variable Δ Δ₁ Δ₂ : ℕ 
          Γ Γ₁ Γ₂ R : Vec Set Δ → Set 
-
 
 instance eq-monotone : Monotone Equation
 eq-monotone .weaken i eq = (♯ ⦃ i ⦄ ∘₂ eq .lhs) ≗ (♯ ⦃ i ⦄ ∘₂ eq .rhs) 

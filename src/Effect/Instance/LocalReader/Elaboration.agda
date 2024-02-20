@@ -1,9 +1,11 @@
 {-# OPTIONS --type-in-type --without-K #-}
 
+open import Core.Functor
+open import Core.Functor.Monad
+
 open import Core.MonotonePredicate 
 open import Core.Signature
 open import Core.Container
-open import Core.Functor
 open import Core.Extensionality
 
 open import Effect.Base

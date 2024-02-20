@@ -6,6 +6,8 @@ open import Data.Product
 open import Data.Sum
 
 open import Core.Functor
+open import Core.Functor.NaturalTransformation
+open import Core.Functor.HigherOrder
 open import Core.Extensionality
 
 import Relation.Binary.PropositionalEquality as ≡
