@@ -5,6 +5,7 @@ open import Data.Product
 open import Core.Functor 
 open import Core.Container
 open import Core.Ternary 
+open import Core.Extensionality
 
 open import Effect.Base 
 open import Effect.Syntax.Free 
@@ -15,6 +16,7 @@ open import Relation.Binary hiding (_⇒_)
 open import Relation.Binary.PropositionalEquality
 
 open import Data.Sum 
+open import Data.Product
 
 open import Function
 open import Level
@@ -81,3 +83,27 @@ module _ where
 
   ♯ʳ′ : (σ : ε₁ ∙ ε₂ ≈ ε) → ∀[ Free ε₂ ⇒ Free ε ]
   ♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄
+
+
+  ♯-coherent :
+    ∀ ⦃ i : ε ≲ ε′ ⦄
+    → (m : Free ε A)
+    → (k : A → Free ε B)
+      ---------------------------------
+    → ♯ (m >>= k) ≡ ♯ ⦃ i ⦄ m >>= ♯ ∘ k
+  ♯-coherent (pure x)   k = refl
+  ♯-coherent (impure ⟨ c , k′ ⟩ ) k =
+    begin
+      ♯ (impure ⟨ c , k′ ⟩ >>= k)
+    ≡⟨⟩ 
+      ♯ (impure ⟨ c , k′ >=> k ⟩)
+    ≡⟨⟩ 
+      impure (inj ⟨ c , ♯ ∘ (k′ >=> k) ⟩)
+    ≡⟨ cong (λ ○ → impure (inj ⟨ (c , ○) ⟩)) (extensionality λ x → ♯-coherent (k′ x) k) ⟩
+      impure (inj ⟨ c , (λ x → ♯ (k′ x) >>= ♯ ∘ k) ⟩)
+    ≡⟨ cong impure (inj-natural .commute {f = _>>= ♯ ∘ k} ⟨ (c , ♯ ∘ k′) ⟩) ⟩
+      impure (fmap {F = ⟦ _ ⟧ᶜ } (_>>= (♯ ∘ k)) (inj ⟨ c , ♯ ∘ k′ ⟩))
+    ≡⟨⟩
+      ♯ (impure ⟨ c , k′ ⟩) >>= ♯ ∘ k
+    ∎
+    where open ≡-Reasoning 

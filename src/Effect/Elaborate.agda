@@ -64,8 +64,8 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   -- morphism action of a functor, and that the definition of coherence below is
   -- an instance of the usual requirement that a functor's action on morphism
   -- should respect composition. I haven't explored this yet. 
-  Coherent : Set₁
-  Coherent =
+  Coherence : Set₁
+  Coherence =
     ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
     → (k₁ : response (ξ _) c → Free ε′ A)
     → (k₂ : A → Free ε′ B)
@@ -73,7 +73,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
     
   field
-    coherent : Coherent
+    coherent : Coherence
 
   -- Elaborations respect identities
   elab-id : ⦃ _ : ε ≲ ε′ ⦄ → ℰ⟪ return {A = A} ⟫ ≡ return {F = Free ε′}

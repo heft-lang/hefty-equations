@@ -56,4 +56,4 @@ open import Effect.Instance.Lambda.ElaborationCBV
 -- Reader w/ local
 open import Effect.Instance.LocalReader.Syntax
 open import Effect.Instance.LocalReader.Theory
---open import Effect.Instance.LocalReader.Elaboration
+open import Effect.Instance.LocalReader.Elaboration

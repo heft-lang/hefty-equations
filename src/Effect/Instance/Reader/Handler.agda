@@ -114,4 +114,22 @@ module Properties where
       instance inst : Reader _ ≲ _
       inst = _ , σ
       instance inst′ : ε′ ≲ ε
-      inst′ = _ , union-comm σ 
+      inst′ = _ , union-comm σ
+
+  coherent′ : ∀ {R} → Coherent′ (ReaderHandler R)
+  coherent′ (pure x)                    k r = refl
+  coherent′ (impure ⟨ inj₁ `ask , k′ ⟩) k r = coherent′ (k′ r) k r
+  coherent′ (impure ⟨ inj₂ c    , k′ ⟩) k r =
+    begin
+      handle′ (ReaderHandler _) r (impure ⟨ inj₂ c , (k′ >=> k) ⟩)
+    ≡⟨ handle-modular′′ (ReaderHandler _) c (k′ >=> k) r ⟩
+      impure ⟨ c , handle′ (ReaderHandler _) r ∘ (k′ >=> k) ⟩
+    ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ x → coherent′ (k′ x) k r) ⟩
+      impure ⟨ c , (λ z → (handle′ (ReaderHandler _) r (k′ z)) >>= (handle′ (ReaderHandler _) r ∘ k)) ⟩ 
+    ≡⟨⟩ 
+      handle′ (ReaderHandler _) r (impure ⟨ inj₂ c , k′ ⟩) >>= handle′ (ReaderHandler _) r ∘ k
+    ∎
+    where open ≡-Reasoning 
+
+  coherent : ∀ {R} → Coherent (ReaderHandler R)
+  coherent = sep-coherent (ReaderHandler _) coherent′

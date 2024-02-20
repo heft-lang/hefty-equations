@@ -63,8 +63,8 @@ sig-hmap θ ⟪ c , r , s ⟫ = ⟪ c , θ ∘ r , θ ∘ s  ⟫
 instance
   sig-functor : ⦃ Functor F ⦄ → Functor (⟦ σ ⟧ F)
   sig-functor .fmap f  ⟪ c , r , s ⟫ = ⟪ c , fmap f ∘ r , s ⟫
-  sig-functor .fmap-id ⟪ c , r , s ⟫
-    = ≡.cong (λ ○ → ⟪ c , ○ , s ⟫) $ extensionality (fmap-id ∘ r)
+  sig-functor {F = F} .fmap-id ⟪ c , r , s ⟫
+    = ≡.cong (λ ○ → ⟪ c , ○ , s ⟫) $ extensionality (fmap-id {F = F} ∘ r)
   sig-functor .fmap-∘  f g ⟪ c , r , s ⟫ =
     ≡.cong (λ ○ → ⟪ c , ○ , s ⟫) $ extensionality (fmap-∘ f g ∘ r) 
 instance 
