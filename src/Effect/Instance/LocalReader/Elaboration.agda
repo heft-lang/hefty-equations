@@ -46,20 +46,18 @@ open Connectives
 open import Effect.Instance.LocalReader.Syntax R
 open import Effect.Instance.LocalReader.Theory R
 
-
-ℋ⟦_⟧ : ⦃ Reader R ≲ ε ⦄ → ∀[ Free ε ⇒ const R ⇒ Free ε ]
-ℋ⟦_⟧ ⦃ i ⦄ m r = ♯ ⦃ Reader R , (union-comm $ i .proj₂) ⦄  (handleReader (i .proj₂) m r)
+open Handler (ReaderHandler R)
 
 coherence : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) (k : A → Free ε B) (r : R) → ℋ⟦ m >>= k ⟧ r ≡ ℋ⟦ m ⟧ r >>= λ x → ℋ⟦ k x ⟧ r
 coherence {ε = ε} ⦃ i ⦄ m k r =
   begin
     ℋ⟦ m >>= k ⟧ r
   ≡⟨⟩
-    ♯ ⦃ inst ⦄ (handle (ReaderHandler _) (i .proj₂) r (m >>= k)) 
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) r (m >>= k)) 
   ≡⟨ cong (♯ ⦃ inst ⦄) (Properties.coherent (i .proj₂) m k r) ⟩
-    ♯ ⦃ inst ⦄ (handle (ReaderHandler _) (i .proj₂) r m >>= λ x → handle (ReaderHandler _ ) (i .proj₂) r (k x))  
-  ≡⟨ ♯-coherent ⦃ inst ⦄ (handle (ReaderHandler _) (i .proj₂) r m) (λ x → handle (ReaderHandler _) (i .proj₂) r (k x)) ⟩
-    ♯ ⦃ inst ⦄ (handle (ReaderHandler _) (i .proj₂) r m ) >>= (λ x → ♯ ⦃ inst ⦄ (handle (ReaderHandler _) (i .proj₂) r (k x))) 
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) r m >>= λ x → handle (i .proj₂) r (k x))  
+  ≡⟨ ♯-coherent ⦃ inst ⦄ (handle (i .proj₂) r m) (λ x → handle (i .proj₂) r (k x)) ⟩
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) r m ) >>= (λ x → ♯ ⦃ inst ⦄ (handle (i .proj₂) r (k x))) 
   ≡⟨⟩ 
     ℋ⟦ m ⟧ r >>= (λ x → ℋ⟦ k x ⟧ r)
   ∎
@@ -75,11 +73,11 @@ handle-merge ⦃ px ⦄ m r r′ =
   begin
     ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′
   ≡⟨⟩
-    ♯ʳ′ σ' (handle (ReaderHandler R) σ' r′ (♯ʳ′ σ' (handle (ReaderHandler R) σ' r m)))
-  ≡⟨ cong (♯ʳ′ σ') (handle-modular (ReaderHandler R) (handle (ReaderHandler R) σ' r m) σ' r′) ⟩
-    ♯ʳ′ σ' (fmap {F = Free (proj₁ px)} id (handle (ReaderHandler R) σ' r m)) 
-  ≡⟨ cong (♯ʳ′ σ') (fmap-id {F = Free (proj₁ px)} (handle (ReaderHandler R) σ' r m)) ⟩
-    ♯ʳ′ σ' (handle (ReaderHandler R) σ' r m) 
+    ♯ʳ′ σ' (handle σ' r′ (♯ʳ′ σ' (handle σ' r m)))
+  ≡⟨ cong (♯ʳ′ σ') (handle-modular (ReaderHandler R) (handle σ' r m) σ' r′) ⟩
+    ♯ʳ′ σ' (fmap {F = Free (proj₁ px)} id (handle σ' r m)) 
+  ≡⟨ cong (♯ʳ′ σ') (fmap-id {F = Free (proj₁ px)} (handle σ' r m)) ⟩
+    ♯ʳ′ σ' (handle σ' r m) 
   ≡⟨⟩ 
    ℋ⟦ m ⟧ r
   ∎

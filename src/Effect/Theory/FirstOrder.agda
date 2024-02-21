@@ -280,7 +280,9 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
 >>=-assoc-≈ : ∀ {D : Set} (k₁ : A → Free ε B) (k₂ : B → Free ε D) (m : Free ε A)
              → flip (free-monad Monad.∗) (flip (free-monad Monad.∗) m k₁) k₂ ≈⟨ T ⟩ m >>= (k₁ >=> k₂)
 >>=-assoc-≈ k₁ k₂ m = ≡-to-≈ (>>=-assoc k₁ k₂ m)
-             
+
+
+open Handler
 
 -- Below we define the key correctness property of handlers 
 -- 
@@ -308,7 +310,7 @@ Adequate′ {ε₁} {A} H T =
   → (m₁ m₂ : Free (ε₁ ⊕ᶜ ε₂) B)
   → ∀ {T′} 
   → weaken (≲-⊕ᶜ-left ε₂) T ⊆ T′ 
-  → handle′ {ε₂ = ε₂} H x m₁ ≡ handle′ H x m₂
+  → handle′ H {ε₂ = ε₂} x m₁ ≡ handle′ H x m₂
     -----------------------------------------
   → m₁ ≈⟨ T′ ⟩ m₂
 

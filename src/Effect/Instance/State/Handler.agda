@@ -35,6 +35,8 @@ StateHandler = record
     }
   } 
 
+open Handler
+
 handleState : State S ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
 handleState σ m s = handle StateHandler σ s m 
 

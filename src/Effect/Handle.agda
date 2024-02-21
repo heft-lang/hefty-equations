@@ -31,28 +31,32 @@ module Effect.Handle where
 {- Semantics for 1st order effects -}
 
 
+fwd : {P : Set} → Algebraᶜ C (P → Free C A)
+fwd .αᶜ ⟨ c , p ⟩ v = impure ⟨ c , flip p v ⟩
+       
+separate : ε₁ ∙ ε₂ ≈ ε′ → ∀[ Free ε′ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
+separate σ = hmap-free (Union.proj σ)
+
 -- Handers of an effect are algebras over its signatures
 record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
   field
     gen   : ∀[ id ⇒ const P ⇒ F ] 
-    hdl   : ∀ {ε′} → Algebraᶜ ε (P → Free ε′ (F A))      
+    hdl   : ∀ {ε′} → Algebraᶜ ε (P → Free ε′ (F A)) 
 
-open Handler public 
+  handle′ : P → ∀[ Free (ε ⊕ᶜ ε₂) ⇒ F ⊢ Free ε₂ ]
+  handle′ x m = fold-free (pure ∘₂ gen) (hdl ⟨⊕⟩ᶜ fwd) m x 
 
-fwd : {P : Set} → Algebraᶜ C (P → Free C A)
-fwd .αᶜ ⟨ c , p ⟩ v = impure ⟨ c , flip p v ⟩
+  handle : ε ∙ ε₂ ≈ ε′ → P → ∀[ Free ε′ ⇒ F ⊢ Free ε₂ ] 
+  handle σ x m = handle′ x (separate σ m)
+
+  ℋ⟦_⟧ : ⦃ ε ≲ ε′ ⦄ → ∀[ Free ε′ ⇒ const P ⇒ F ⊢ Free ε′ ]
+  ℋ⟦_⟧ ⦃ i ⦄ m p = ♯ ⦃ _ , union-comm (i .proj₂) ⦄ (handle (i .proj₂) p m) 
+
+open Handler 
+
 
 open Inverse
 open Union
-
-separate : ε₁ ∙ ε₂ ≈ ε → ∀[ Free ε ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
-separate σ = hmap-free (Union.proj σ) 
-
-handle′ : Handler ε₁ A F → A → ∀[ Free (ε₁ ⊕ᶜ ε₂) ⇒ F ⊢ Free ε₂ ]
-handle′ H x m = fold-free (pure ∘₂ H .gen) (H .hdl ⟨⊕⟩ᶜ fwd) m x 
-
-handle : Handler ε₁ A F → ε₁ ∙ ε₂ ≈ ε → A → ∀[ Free ε ⇒ F ⊢ Free ε₂ ] 
-handle H σ x m = handle′ H x (separate σ m)
 
 
 Modular′′ : (H : Handler ε₁ A F) → Set₁
@@ -60,7 +64,7 @@ Modular′′ {ε₁} H =
   ∀ {B ε₂} (c : ε₂ .shape)
   → (k : (ε₁ ⊕ᶜ ε₂) .position (inj₂ c) → Free (ε₁ ⊕ᶜ ε₂) B)
   → (x : _) 
-  → handle′ {ε₂ = ε₂} H x (impure ⟨ inj₂ c , k ⟩) ≡ impure ⟨ c , handle′ H x ∘ k ⟩ 
+  → handle′ H {ε₂ = ε₂} x (impure ⟨ inj₂ c , k ⟩) ≡ impure ⟨ c , handle′ H x ∘ k ⟩ 
 
 Modular′ : (H : Handler ε₁ A F) → Set₁
 Modular′ {ε₁ = ε₁} H =
@@ -77,7 +81,7 @@ Modular {ε₁ = ε₁} H =
   → (σ : ε₁ ∙ ε₂ ≈ ε)
   → (x : _)
     -------------------------------------------------------------
-  → handle H σ x (♯ʳ′ σ m) ≡ fmap (flip (H .gen) x) m
+  → handle H {ε₂ = ε₂} σ x (♯ʳ′ σ m) ≡ fmap (flip (H .gen) x) m
 
 
 
@@ -87,7 +91,7 @@ Coherent′ {ε₁ = ε₁} H =
   → (m : Free (ε₁ ⊕ᶜ ε₂) B) (k : B → Free (ε₁ ⊕ᶜ ε₂) C)
   → (x : _)
     ---------------------------------------------------------------------------
-  → handle′ {ε₂ = ε₂} H x (m >>= k) ≡ handle′ H x m >>= λ y → handle′ H x (k y)
+  → handle′ H {ε₂ = ε₂} x (m >>= k) ≡ handle′ H x m >>= λ y → handle′ H x (k y)
 
 
 Coherent : (H : Handler ε₁ A id) → Set₁
@@ -97,7 +101,7 @@ Coherent {ε₁ = ε₁} H =
   → (m : Free ε B) (k : B → Free ε C)
   → (x : _)
     ------------------------------------------------------------------------------
-  → handle {ε₂ = ε₂} H σ x (m >>= k) ≡ handle H σ x m >>= λ y → handle H σ x (k y)
+  → handle H σ x (m >>= k) ≡ handle H σ x m >>= λ y → handle H σ x (k y)
 
 
 

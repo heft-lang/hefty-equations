@@ -46,6 +46,8 @@ AbortHandler = record
     }
   } 
 
+open Handler
+
 handleAbort : Abort ∙ ε ≈ ε′ → Free ε′ A → Free ε (Maybe A)
 handleAbort σ = handle AbortHandler σ tt
 

@@ -39,6 +39,8 @@ ReaderHandler _ = record
   ; hdl = record { αᶜ = λ where ⟨ `ask , k ⟩ r → k r r }
   }
 
+open Handler
+
 handleReader : ∀ {R} → Reader R ∙ ε ≈ ε′ → Free ε′ A → R → Free ε A 
 handleReader σ t r = handle (ReaderHandler _) σ r t
 
