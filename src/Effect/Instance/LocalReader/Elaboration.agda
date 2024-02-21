@@ -148,146 +148,146 @@ ReaderElab .Elaboration.coherent {c = `local t f} {s = s} ⦃ i ⦄ k₁ k₂ =
 
 
 
--- ReaderElabCorrect : Correctᴴ LocalReaderTheory RT.ReaderTheory ReaderElab
+ReaderElabCorrect : Correctᴴ LocalReaderTheory RT.ReaderTheory ReaderElab
 
--- -- ask-query
--- ReaderElabCorrect (here refl) {ε′} ⦃ i ⦄ T′ ζ {γ = m} =
---   begin
---     ℰ⟦ askl >> m ⟧
---   ≈⟪⟫  
---     ℰ⟦ impure ⟪ `ask , pure , (λ())  ⟫ >> m ⟧
---   ≈⟪⟫
---     ℰ⟦ impure ⟪ `ask , (λ x → pure x >> m) , (λ()) ⟫ ⟧
---   ≈⟪⟫
---     ask >>= (λ x → pure x >> ℰ⟦ m ⟧)
---   ≈⟪ ≈-sym $ >>=-assoc-≈ pure (λ _ → ℰ⟦ m ⟧) ask ⟫ 
---     (ask >>= pure) >> ℰ⟦ m ⟧ 
---   ≈⟪ >>=-resp-≈ˡ (λ _ → ℰ⟦ m ⟧) (>>=-idʳ-≈ ask) ⟫
---     ask >> ℰ⟦ m ⟧
---   ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
---     ℰ⟦ m ⟧
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
+-- ask-query
+ReaderElabCorrect (here refl) {ε′} ⦃ i ⦄ T′ ζ {γ = m} =
+  begin
+    ℰ⟦ askl >> m ⟧
+  ≈⟪⟫  
+    ℰ⟦ impure ⟪ `ask , pure , (λ())  ⟫ >> m ⟧
+  ≈⟪⟫
+    ℰ⟦ impure ⟪ `ask , (λ x → pure x >> m) , (λ()) ⟫ ⟧
+  ≈⟪⟫
+    ask >>= (λ x → pure x >> ℰ⟦ m ⟧)
+  ≈⟪ ≈-sym $ >>=-assoc-≈ pure (λ _ → ℰ⟦ m ⟧) ask ⟫ 
+    (ask >>= pure) >> ℰ⟦ m ⟧ 
+  ≈⟪ >>=-resp-≈ˡ (λ _ → ℰ⟦ m ⟧) (>>=-idʳ-≈ ask) ⟫
+    ask >> ℰ⟦ m ⟧
+  ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
+    ℰ⟦ m ⟧
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
 
--- -- local-return 
--- ReaderElabCorrect (there (here refl)) {ε′} ⦃ i ⦄ T′ ζ {γ = f , x} =
---   begin
---     ℰ⟦ local f (return x) ⟧
---   ≈⟪⟫
---     ask >>= (λ r → ℋ⟦ return x ⟧ (f r))
---   ≈⟪⟫ 
---     ask >> return x 
---   ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
---     return x
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
-
-
--- -- ask-bind 
--- ReaderElabCorrect (there (there (here refl))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k} =
---   begin
---     ℰ⟦ m >>= (λ x → askl >>= λ r → k x r) ⟧
---   ≈⟪ ≡-to-≈ $ elab-∘′ m (λ x → askl >>= λ r → k x r) ⟫
---     ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ (askl >>= λ r → k x r) ⟧)
---   ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → ≡-to-≈ $ elab-∘′ askl (k x)) ⟫
---     ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ askl ⟧ >>= λ r → ℰ⟦ k x r ⟧ )
---   ≈⟪⟫
---     ℰ⟦ m ⟧ >>= (λ x → (ask >>= pure) >>= λ r → ℰ⟦ k x r ⟧)
---   ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → >>=-resp-≈ˡ (λ r → ℰ⟦ k x r ⟧) ( >>=-idʳ-≈ ask)) ⟫ 
---     ℰ⟦ m ⟧ >>= (λ x → ask >>= λ r → ℰ⟦ k x r ⟧)
---   ≈⟪ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℰ⟦ m ⟧ , _}  ⟫
---     ask >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
---   ≈⟪ >>=-resp-≈ˡ (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) (≈-sym $ >>=-idʳ-≈ ask) ⟫ 
---     (ask >>= pure) >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
---   ≈⟪⟫ 
---     ℰ⟦ askl ⟧ >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧ )  
---   ≈⟪ >>=-resp-≈ʳ ℰ⟦ askl ⟧ (λ r → ≈-sym (≡-to-≈ (elab-∘′ m λ x → k x r))) ⟫ 
---     ℰ⟦ askl ⟧ >>= (λ r → ℰ⟦ (m >>= λ x → k x r) ⟧) 
---   ≈⟪ ≈-sym (≡-to-≈ (elab-∘′ askl λ r → m >>= λ x → k x r)) ⟫ 
---     ℰ⟦ (askl >>= λ r → m >>= λ x → k x r) ⟧
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
+-- local-return 
+ReaderElabCorrect (there (here refl)) {ε′} ⦃ i ⦄ T′ ζ {γ = f , x} =
+  begin
+    ℰ⟦ local f (return x) ⟧
+  ≈⟪⟫
+    ask >>= (λ r → ℋ⟦ return x ⟧ (f r))
+  ≈⟪⟫ 
+    ask >> return x 
+  ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
+    return x
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
 
 
--- -- local-bind 
--- ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k , f} =
---   begin
---     ℰ⟦ local f (m >>= k) ⟧
---   ≈⟪⟫
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r) >>= pure)
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-idʳ-≈ (ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r))) ⟫
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r) ) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (f r)) (elab-∘′ m k))) ⟫
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫ ⟧ (f r))
---   ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ○) (extensionality λ r → coherence ℰ⟦ m ⟧ ℰ⟪ k ⟫ (f r)) ) ⟫ 
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r))
---   ≈⟪ ≈-sym $ ≈-eq′ (weaken i RT.ask-ask) (ζ .sub (there (here refl))) ⟫ 
---     ask >>= (λ r → ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → ≈-sym $ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) , _}) ⟫
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ask >>= λ r → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r)) 
---   ≈⟪ ≈-sym $ >>=-assoc-≈ (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) ask ⟫ 
---     (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) >>= (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
---   ≈⟪ >>=-resp-≈ʳ ((ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r))) (λ x → >>=-resp-≈ʳ ask λ r → ≈-sym (>>=-idʳ-≈ (ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r)))) ⟫ 
---     (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) >>= ((λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′) >>= pure)) 
---   ≈⟪ >>=-resp-≈ˡ ((λ x → ask >>= λ r → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r) >>= pure)) (>>=-resp-≈ʳ ask λ r → ≈-sym $ >>=-idʳ-≈ (ℋ⟦ ℰ⟦ m ⟧ ⟧ ((f r)))) ⟫ 
---     ((ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= pure)) >>= (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′) >>= pure)
---   ≈⟪⟫ 
---     (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= pure) >>= (λ x → ℰ⟦ local f (k x) ⟧) 
---   ≈⟪⟫ 
---     ℰ⟦ local f m ⟧ >>= (λ x → ℰ⟦ local f (k x) ⟧) 
---   ≈⟪ ≈-sym $ ≡-to-≈ (elab-∘′ (local f m) λ x → local f (k x)) ⟫
---     ℰ⟦ local f m >>= (λ x → local f (k x)) ⟧
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
+-- ask-bind 
+ReaderElabCorrect (there (there (here refl))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k} =
+  begin
+    ℰ⟦ m >>= (λ x → askl >>= λ r → k x r) ⟧
+  ≈⟪ ≡-to-≈ $ elab-∘′ m (λ x → askl >>= λ r → k x r) ⟫
+    ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ (askl >>= λ r → k x r) ⟧)
+  ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → ≡-to-≈ $ elab-∘′ askl (k x)) ⟫
+    ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ askl ⟧ >>= λ r → ℰ⟦ k x r ⟧ )
+  ≈⟪⟫
+    ℰ⟦ m ⟧ >>= (λ x → (ask >>= pure) >>= λ r → ℰ⟦ k x r ⟧)
+  ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → >>=-resp-≈ˡ (λ r → ℰ⟦ k x r ⟧) ( >>=-idʳ-≈ ask)) ⟫ 
+    ℰ⟦ m ⟧ >>= (λ x → ask >>= λ r → ℰ⟦ k x r ⟧)
+  ≈⟪ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℰ⟦ m ⟧ , _}  ⟫
+    ask >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
+  ≈⟪ >>=-resp-≈ˡ (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) (≈-sym $ >>=-idʳ-≈ ask) ⟫ 
+    (ask >>= pure) >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
+  ≈⟪⟫ 
+    ℰ⟦ askl ⟧ >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧ )  
+  ≈⟪ >>=-resp-≈ʳ ℰ⟦ askl ⟧ (λ r → ≈-sym (≡-to-≈ (elab-∘′ m λ x → k x r))) ⟫ 
+    ℰ⟦ askl ⟧ >>= (λ r → ℰ⟦ (m >>= λ x → k x r) ⟧) 
+  ≈⟪ ≈-sym (≡-to-≈ (elab-∘′ askl λ r → m >>= λ x → k x r)) ⟫ 
+    ℰ⟦ (askl >>= λ r → m >>= λ x → k x r) ⟧
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
 
--- -- local-ask 
--- ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f} =
---   begin
---     ℰ⟦ local f askl ⟧
---   ≈⟪⟫
---     ask >>= (λ r → ℋ⟦ ask >>= pure ⟧ (f r) >>= pure)
---   ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → coherence ask pure (f r))) ⟫ 
---     (ask >>= λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) >>= pure) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-idʳ-≈ ((ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)))) ⟫ 
---     ask >>= (λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) )
---   ≈⟪⟫
---     ask >>= (λ r → ℋ⟦ ask ⟧ (f r) >>= return )
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (Properties.handle-ask (i .proj₂) return)) ⟫
---     ask >>= return ∘ f 
---   ≈⟪⟫ 
---     ℰ⟦ askl >>= return ∘ f ⟧
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
 
--- -- local-local 
--- ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f , g , m} =
---   begin
---     ℰ⟦ local (f ∘ g) m ⟧
---   ≈⟪⟫ 
---     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym $ handle-merge ℰ⟦ m ⟧ (f (g r)) (g r)))) ⟫ 
---     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) ⟧ (g r) >>= pure) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (g r)) (sym $ >>=-idʳ (ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r))) )))) ⟫ 
---     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure ⟧ (g r) >>= pure) 
---   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym (Properties.handle-ask (i .proj₂) _)))) ⟫ 
---     (ask >>= λ r → (ℋ⟦ ask ⟧ (g r) >>= (λ r′ → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ⟧ (g r))) >>= pure)
---   ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → sym $ coherence ask (λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure) (g r))) ⟫ 
---     ask >>= (λ r → ℋ⟦ (ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ) ⟧ (g r) >>= pure) 
---   ≈⟪⟫ 
---     ask >>= (λ r → ℋ⟦ ℰ⟦ local f m ⟧ ⟧ (g r) >>= pure)
---   ≈⟪⟫ 
---     ℰ⟦ local g (local f m) ⟧
---   ∎
---   where
---     open ≈-Reasoning T′
---     open Elaboration ReaderElab
+-- local-bind 
+ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k , f} =
+  begin
+    ℰ⟦ local f (m >>= k) ⟧
+  ≈⟪⟫
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r) >>= pure)
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-idʳ-≈ (ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r))) ⟫
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r) ) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (f r)) (elab-∘′ m k))) ⟫
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫ ⟧ (f r))
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ○) (extensionality λ r → coherence ℰ⟦ m ⟧ ℰ⟪ k ⟫ (f r)) ) ⟫ 
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r))
+  ≈⟪ ≈-sym $ ≈-eq′ (weaken i RT.ask-ask) (ζ .sub (there (here refl))) ⟫ 
+    ask >>= (λ r → ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≈-sym $ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) , _}) ⟫
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ask >>= λ r → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r)) 
+  ≈⟪ ≈-sym $ >>=-assoc-≈ (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) ask ⟫ 
+    (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) >>= (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
+  ≈⟪ >>=-resp-≈ʳ ((ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r))) (λ x → >>=-resp-≈ʳ ask λ r → ≈-sym (>>=-idʳ-≈ (ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r)))) ⟫ 
+    (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) >>= ((λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′) >>= pure)) 
+  ≈⟪ >>=-resp-≈ˡ ((λ x → ask >>= λ r → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r) >>= pure)) (>>=-resp-≈ʳ ask λ r → ≈-sym $ >>=-idʳ-≈ (ℋ⟦ ℰ⟦ m ⟧ ⟧ ((f r)))) ⟫ 
+    ((ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= pure)) >>= (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′) >>= pure)
+  ≈⟪⟫ 
+    (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= pure) >>= (λ x → ℰ⟦ local f (k x) ⟧) 
+  ≈⟪⟫ 
+    ℰ⟦ local f m ⟧ >>= (λ x → ℰ⟦ local f (k x) ⟧) 
+  ≈⟪ ≈-sym $ ≡-to-≈ (elab-∘′ (local f m) λ x → local f (k x)) ⟫
+    ℰ⟦ local f m >>= (λ x → local f (k x)) ⟧
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
+
+-- local-ask 
+ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f} =
+  begin
+    ℰ⟦ local f askl ⟧
+  ≈⟪⟫
+    ask >>= (λ r → ℋ⟦ ask >>= pure ⟧ (f r) >>= pure)
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → coherence ask pure (f r))) ⟫ 
+    (ask >>= λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) >>= pure) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-idʳ-≈ ((ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)))) ⟫ 
+    ask >>= (λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) )
+  ≈⟪⟫
+    ask >>= (λ r → ℋ⟦ ask ⟧ (f r) >>= return )
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (Properties.handle-ask (i .proj₂) return)) ⟫
+    ask >>= return ∘ f 
+  ≈⟪⟫ 
+    ℰ⟦ askl >>= return ∘ f ⟧
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
+
+-- local-local 
+ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f , g , m} =
+  begin
+    ℰ⟦ local (f ∘ g) m ⟧
+  ≈⟪⟫ 
+    ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym $ handle-merge ℰ⟦ m ⟧ (f (g r)) (g r)))) ⟫ 
+    ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) ⟧ (g r) >>= pure) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (g r)) (sym $ >>=-idʳ (ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r))) )))) ⟫ 
+    ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure ⟧ (g r) >>= pure) 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym (Properties.handle-ask (i .proj₂) _)))) ⟫ 
+    (ask >>= λ r → (ℋ⟦ ask ⟧ (g r) >>= (λ r′ → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ⟧ (g r))) >>= pure)
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → sym $ coherence ask (λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure) (g r))) ⟫ 
+    ask >>= (λ r → ℋ⟦ (ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ) ⟧ (g r) >>= pure) 
+  ≈⟪⟫ 
+    ask >>= (λ r → ℋ⟦ ℰ⟦ local f m ⟧ ⟧ (g r) >>= pure)
+  ≈⟪⟫ 
+    ℰ⟦ local g (local f m) ⟧
+  ∎
+  where
+    open ≈-Reasoning T′
+    open Elaboration ReaderElab
