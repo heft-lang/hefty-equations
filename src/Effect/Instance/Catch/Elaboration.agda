@@ -58,6 +58,48 @@ CatchElab .Elaboration.elab = necessary λ i → CatchElabAlg ⦃ i ⦄
     CatchElabAlg .α ⟪ `catch A , k , s ⟫ = do
       v ← ℋ⟦ (s (inj₁ tt)) ⟧
       maybe′ k (s (inj₂ tt) >>= k) v
+
+CatchElab .Elaboration.commutes {f = f} ⟪ `throw   , k , s ⟫ ⦃ i ⦄ = 
+  begin
+    abort 
+  ≡⟨⟩
+    impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩)
+  ≡⟨ cong (λ ○ → impure (inj ⟨ `abort , ○ ⟩)) (extensionality λ()) ⟩
+    impure (inj ⟨ `abort , fmap (fmap {F = Free _} f) ∘ ♯ ∘ ⊥-elim ⟩) 
+  ≡⟨ (cong impure $ inj-natural .commute {f = fmap f} ⟨ `abort , ♯ ∘ ⊥-elim ⟩) ⟩ 
+    impure (fmap (fmap {F = Free _} f) (inj ⟨ (`abort , ♯ ∘ ⊥-elim) ⟩))
+  ≡⟨⟩ 
+    fmap f (impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩)) 
+  ≡⟨⟩ 
+    fmap f abort
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α 
+
+CatchElab .Elaboration.commutes {f = f} ⟪ `catch t , k , s ⟫ ⦃ i ⦄ =
+  begin
+    elab ⟪ `catch t , fmap f ∘ k , s ⟫
+  ≡⟨⟩ 
+    ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (fmap f ∘ k) (s (inj₂ tt) >>= fmap f ∘ k) 
+  ≡⟨ cong (λ ○ → ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (fmap f ∘ k) ○) (sym (fmap->>= f (s (inj₂ tt)) k)) ⟩
+    ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ (fmap f ∘ k) (fmap f (s (inj₂ tt) >>= k)) 
+  ≡⟨ cong (ℋ⟦ s (inj₁ tt) ⟧ >>=_) (extensionality $ sym ∘ fmap-maybe k (s (inj₂ tt) >>= k)) ⟩ 
+    ℋ⟦ s (inj₁ tt) ⟧ >>= fmap f ∘ maybe′ k (s (inj₂ tt) >>= k) 
+  ≡⟨ sym (fmap->>= f ℋ⟦ s (inj₁ tt) ⟧ (maybe′ k (s (inj₂ tt) >>= k))) ⟩ 
+    fmap f (ℋ⟦ s (inj₁ tt) ⟧ >>= maybe′ k (s (inj₂ tt) >>= k)) 
+  ≡⟨⟩ 
+    fmap f (elab ⟪ `catch t , k , s ⟫)
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α
+
+    fmap-maybe :
+      ∀ (j : A → Free ε _) (n : Free ε _) x
+      → fmap f (maybe′ j n x) ≡ maybe′ (fmap f ∘ j) (fmap f n) x
+    fmap-maybe j n (just x) = refl
+    fmap-maybe j n nothing  = refl
       
 CatchElab .Elaboration.coherent {ε′ = ε′} {c = `throw} {s = s} ⦃ i ⦄   k₁ k₂ =
   begin

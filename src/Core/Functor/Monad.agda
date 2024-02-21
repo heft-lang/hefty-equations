@@ -39,7 +39,7 @@ record Monad (F : Set → Set) : Set₁ where
                   -------------------------------------------
                 → (m >>= k₁) >>= k₂ ≡ m >>= (k₁ >=> k₂)  
 
-open Monad ⦃...⦄ public 
+open Monad ⦃...⦄ public
 
 -- A monad morphism between monads M and N. We define it by requiring the
 -- existence of a natural transformation θ from `M` to `N`, such that θ is a

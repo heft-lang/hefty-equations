@@ -94,3 +94,24 @@ identity-fold-lemma : ∀ {c : Free C A} → fold-free pure impure′ c ≡ c
 identity-fold-lemma {C} {A} {pure _} = refl
 identity-fold-lemma {C} {A} {impure ⟨ s , p ⟩} =
   cong (λ ○ → impure ⟨ s , ○ ⟩) (extensionality λ x → identity-fold-lemma)
+
+fmap->>= :
+  ∀ {ε} {A B C : Set}
+  → (f : B → C) (m : Free ε A)
+  → (k : A → Free ε B)
+    -----------------------------------
+  → fmap f (m >>= k) ≡ m >>= fmap f ∘ k 
+fmap->>= f (pure _) _ = refl
+fmap->>= f (impure ⟨ c , k′ ⟩) k =
+  begin
+    fmap f (impure ⟨ c , k′ ⟩ >>= k)
+  ≡⟨⟩ 
+    fmap f (impure ⟨ c , k′ >=> k ⟩)
+  ≡⟨⟩ 
+    impure ⟨ c , fmap f ∘ (k′ >=> k) ⟩
+  ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ x → fmap->>= f (k′ x) k) ⟩
+    impure ⟨ c , k′ >=> (fmap f ∘ k) ⟩ 
+  ≡⟨⟩ 
+    impure ⟨ c , k′ ⟩ >>= fmap f ∘ k
+  ∎
+  where open ≡-Reasoning

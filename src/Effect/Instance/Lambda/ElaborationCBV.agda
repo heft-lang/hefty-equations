@@ -43,12 +43,32 @@ open import Effect.Instance.Lambda.Syntax id (λ A ε B → A → Free ε B)
 open import Effect.Instance.Lambda.Theory id (λ A ε B → A → Free ε B) 
 
 LambdaElabCBV : Elaboration Lam ε
+
 LambdaElabCBV .Elaboration.elab = necessary ElabAlg 
   where
     ElabAlg : ε ≲ ε′ → Algebra (Lam ε′) (Free ε′)
     ElabAlg i .α ⟪ `var x , k , _ ⟫ = k x
     ElabAlg i .α ⟪ `abs   , k , s ⟫ = k s
-    ElabAlg i .α ⟪ `app f , k , s ⟫ = s tt >>= (f >=> k) 
+    ElabAlg i .α ⟪ `app f , k , s ⟫ = s tt >>= (f >=> k)
+
+LambdaElabCBV .Elaboration.commutes ⟪ `var x , k , s ⟫      = refl
+LambdaElabCBV .Elaboration.commutes ⟪ `abs   , k , s ⟫      = refl
+LambdaElabCBV .Elaboration.commutes {f = f} ⟪ `app g , k , s ⟫ ⦃ i ⦄ =
+  begin
+   elab ⟪ `app g , fmap f ∘ k , s ⟫
+  ≡⟨⟩ 
+    s tt >>= (g >=> (fmap f ∘ k)) 
+  ≡⟨ cong (s tt >>=_) (extensionality λ x → sym $ fmap->>= f (g x) k) ⟩ 
+    s tt >>= fmap f ∘ (g >=> k)
+  ≡⟨ sym (fmap->>= f (s tt) (g >=> k)) ⟩ 
+    fmap f (s tt >>= (g >=> k)) 
+  ≡⟨⟩ 
+    fmap f (elab ⟪ `app g , k , s ⟫)
+  ∎
+  where
+    open ≡-Reasoning
+    elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
+
 LambdaElabCBV .Elaboration.coherent {c = `var x}              k₁ k₂ = refl
 LambdaElabCBV .Elaboration.coherent {c = `abs}                k₁ k₂ = refl
 LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
@@ -66,7 +86,9 @@ LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
   where
     open ≡-Reasoning
     elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
-    
+
+
+
 CBVCorrect : Correctᴴ LambdaTheory T LambdaElabCBV
 CBVCorrect (here refl) T′ sub {γ = f , m} =
   begin

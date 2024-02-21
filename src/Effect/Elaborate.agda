@@ -3,6 +3,7 @@
 open import Relation.Unary
 
 open import Core.Functor
+open import Core.Functor.NaturalTransformation
 open import Core.Functor.Monad
 
 open import Core.Container
@@ -59,15 +60,22 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (ξ ε′) B) → (A → Free ε′ B)
   ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧
 
-  -- Coherence property for elaboration algebras. We can think of this as saying that
-  -- elaboration algebras should respect monadic bind (or, Kleisli composition).
-  --
-  -- There may e a perspective here that elaboration algebras somehow define the
-  -- morphism action of a functor, and that the definition of coherence below is
-  -- an instance of the usual requirement that a functor's action on morphism
-  -- should respect composition. I haven't explored this yet. 
+  
    
   field
+    -- Establishes that elaboration algebras commute with fmap in a suitable
+    -- way. This allows us to show that elaborations are natural
+    -- transformations.
+    commutes :
+      ∀ {A B : Set} {f : A → B}
+      → (x : ⟦ ξ ε′ ⟧ (Free ε′) A)
+        --------------------------------------------------------------------------
+      → ⦃ i : ε ≲ ε′ ⦄ → (□⟨ elab ⟩ i) .α (fmap f x) ≡ fmap f ((□⟨ elab ⟩ i) .α x) 
+
+    -- Coherence property for elaboration algebras, establishing that
+    -- elaboration algebras distribute over Kleisli composition in a suitable
+    -- way. From this notion of coherence we can derive that elaborations are
+    -- monad morhpisms between Hefty trees and the free monad.
     coherent :
       ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
       → (k₁ : response (ξ _) c → Free ε′ A)
@@ -75,6 +83,33 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
         -------------------------------------------------------------------------------
       → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
 
+    
+
+
+  elab-natural : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → Natural ℰ⟦_⟧ 
+  elab-natural ⦃ i ⦄ .commute = commute-elab
+    where
+      open ≡-Reasoning
+
+      commute-elab :  ∀ {X Y} {f : X → Y} → (x : Hefty (ξ _) X) → ℰ⟦ (fmap f x) ⟧ ≡  fmap f ℰ⟦ x ⟧ 
+      commute-elab (pure x) = refl
+      commute-elab {f = f} (impure ⟪ c , k , s ⟫) =
+        begin
+          ℰ⟦ fmap f (impure ⟪ c , k , s ⟫) ⟧
+        ≡⟨⟩
+          ℰ⟦ impure ⟪ c , fmap f ∘ k  , s ⟫ ⟧
+        ≡⟨⟩
+          (□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ fmap f ∘ k ⟫ , ℰ⟦_⟧ ∘ s ⟫
+        ≡⟨ cong (λ ○ → (□⟨ elab ⟩ i) .α ⟪ c , ○ , ℰ⟦_⟧ ∘ s ⟫) (extensionality λ x → commute-elab (k x)) ⟩
+          (□⟨ elab ⟩ i) .α ⟪ c , fmap f ∘ ℰ⟪ k ⟫ , ℰ⟦_⟧ ∘ s ⟫ 
+        ≡⟨⟩
+          (□⟨ elab ⟩ i) .α (fmap f ⟪ c , ℰ⟪ k ⟫ , ℰ⟦_⟧ ∘ s ⟫)
+        ≡⟨ commutes ⟪ c , ℰ⟪ k ⟫ , ℰ⟦_⟧ ∘ s ⟫ ⟩ 
+          fmap f ((□⟨ elab ⟩ i) .α ⟪ c , ℰ⟪ k ⟫ , ℰ⟦_⟧ ∘ s ⟫) 
+        ≡⟨⟩
+          fmap f ℰ⟦ impure ⟪ c , k , s ⟫ ⟧
+        ∎
+  
   -- Elaborations respect identities
   elab-id : ⦃ _ : ε ≲ ε′ ⦄ → ℰ⟪ return {A = A} ⟫ ≡ return {F = Free ε′}
   elab-id = refl
@@ -124,7 +159,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     elab-mm : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → MonadMorphism (Hefty (ξ ε′)) (Free ε′)
     elab-mm = record
       { Ψ                       = elaborate′
-      ; Ψ-natural               = {!!}
+      ; Ψ-natural               = elab-natural
       ; respects-unit           = elab-id
       ; respects-multiplication = elab-∘
       }
@@ -135,15 +170,18 @@ open □
 open _✴_
 
 instance elab-monotone : Monotone (Elaboration ξ)
-elab-monotone .weaken i e .elab = weaken i (e .elab)
-elab-monotone .weaken i e .coherent ⦃ i′ ⦄ = λ k₁ k₂ → e .coherent ⦃ ≲-trans i i′ ⦄ k₁ k₂ 
+elab-monotone .weaken i e .elab             = weaken i (e .elab)
+elab-monotone .weaken i e .commutes x ⦃ i′ ⦄ = e .commutes x ⦃ ≲-trans i i′ ⦄ 
+elab-monotone .weaken i e .coherent   ⦃ i′ ⦄ = λ k₁ k₂ → e .coherent ⦃ ≲-trans i i′ ⦄ k₁ k₂ 
 
 -- "Homogeneous" composition of elaborations. Combines two elaborations that
 -- assume the *same* lower bound on the effects that they elaborate into
 _⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ₁ ·⊕ ξ₂) ]
-(e₁ ⟪⊕⟫ e₂) .elab      = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
-(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₁ x} = e₁ .coherent
-(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₂ y} = e₂ .coherent
+(e₁ ⟪⊕⟫ e₂) .elab                        = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
+(e₁ ⟪⊕⟫ e₂) .commutes ⟪ inj₁ c , k , s ⟫ = e₁ .commutes ⟪ c , k , s ⟫
+(e₁ ⟪⊕⟫ e₂) .commutes ⟪ inj₂ c , k , s ⟫ = e₂ .commutes ⟪ c , k , s ⟫
+(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₁ x}       = e₁ .coherent
+(e₁ ⟪⊕⟫ e₂) .coherent {c = inj₂ y}       = e₂ .coherent
 
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate
