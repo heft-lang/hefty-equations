@@ -301,31 +301,6 @@ Correct T h =
     --------------------------------------
   → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
 
-
--- Restricted version of adequacy that presupposes that the effect to be handled
--- is at the front of the tree's signature
-Adequate′ : Handler ε₁ A F → Theory ε₁ → Set₁
-Adequate′ {ε₁} {A} H T =
-  ∀ {B ε₂} (x : A)
-  → (m₁ m₂ : Free (ε₁ ⊕ᶜ ε₂) B)
-  → ∀ {T′} 
-  → weaken (≲-⊕ᶜ-left ε₂) T ⊆ T′ 
-  → handle′ H {ε₂ = ε₂} x m₁ ≡ handle′ H x m₂
-    -----------------------------------------
-  → m₁ ≈⟨ T′ ⟩ m₂
-
--- Adequacy of a Handler w.r.t. a given theory of the effect it handles 
-Adequate : Handler ε₁ A F → Theory ε₁ → Set₁
-Adequate {ε₁} {A} H T =
-  ∀ {B ε₂ ε} (x : A)
-  → (m₁ m₂ : Free ε B)
-  → (σ : ε₁ ∙ ε₂ ≈ ε)
-  → ∀ {T′}
-  → weaken (≲-∙-left σ) T ⊆ T′ 
-  → handle H σ x m₁ ≡ handle H σ x m₂
-    ---------------------------------
-  → m₁ ≈⟨ T′ ⟩ m₂
-
 module ≈-Reasoning (T : Theory ε) where
 
   infix 3 _≈_
@@ -347,7 +322,6 @@ module ≈-Reasoning (T : Theory ε) where
   infix 1 begin_
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix 3 _∎
-
 
 -- Equivalence following from equations of the theory, specialized to empty continuations
 ≈-eq′ : (eq : □ Equation ε)

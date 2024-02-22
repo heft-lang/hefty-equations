@@ -26,6 +26,7 @@ open import Effect.Instance.Reader.Theory
 
 open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
+open import Relation.Unary
 
 open import Core.MonotonePredicate Effect _≲_
 
@@ -42,8 +43,16 @@ ReaderHandler _ = record
 open Handler
 
 handleReader : ∀ {R} → Reader R ∙ ε ≈ ε′ → Free ε′ A → R → Free ε A 
-handleReader σ t r = handle (ReaderHandler _) σ r t
+handleReader σ t r = handle (ReaderHandler _) σ t r
 
+instance reader-monad : ∀ {ε R} → Monad (const R ⇒ Free ε)
+reader-monad = record
+  { return    = const ∘ return
+  ; _∗        = λ f g r → g r >>= λ x → f x r
+  ; >>=-idˡ   = λ x k → refl
+  ; >>=-idʳ   = λ f → extensionality λ r → >>=-idʳ (f r)
+  ; >>=-assoc = λ k₁ k₂ m → extensionality λ r → >>=-assoc (flip k₁ r) (flip k₂ r) (m r)
+  } 
 
 module Properties where
 
@@ -102,13 +111,13 @@ module Properties where
     ≡⟨⟩ 
       ♯ (handleReader σ (impure (inj ⟨ (`ask , pure) ⟩)) r) >>= k
     ≡⟨⟩
-      ♯ (handle′ (ReaderHandler _) r (fold-free pure (λ where .αᶜ → impure ∘ proj σ) (impure (inj ⟨ `ask , pure ⟩))) ) >>= k
+      ♯ (handle′ (ReaderHandler _) (fold-free pure (λ where .αᶜ → impure ∘ proj σ) (impure (inj ⟨ `ask , pure ⟩))) r ) >>= k
     ≡⟨⟩
-      ♯ (handle′ (ReaderHandler _) r (impure (proj σ (fmap (separate σ) (inj ⟨ (`ask , pure) ⟩))))) >>= k
-    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure (proj σ ○))) >>= k) (sym (inj-natural .commute {f = separate σ} ⟨ (`ask , pure) ⟩)) ⟩ 
-      ♯ (handle′ (ReaderHandler _) r (impure (proj σ (inj ( ⟨ `ask , separate σ ∘ pure ⟩))))) >>= k
-    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) r (impure ○)) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
-      ♯ (handle′ (ReaderHandler _) r (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , separate σ ∘ pure ⟩)))) >>= k
+      ♯ (handle′ (ReaderHandler _) (impure (proj σ (fmap (separate σ) (inj ⟨ (`ask , pure) ⟩)))) r) >>= k
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) (impure (proj σ ○)) r) >>= k) (sym (inj-natural .commute {f = separate σ} ⟨ (`ask , pure) ⟩)) ⟩ 
+      ♯ (handle′ (ReaderHandler _) (impure (proj σ (inj ( ⟨ `ask , separate σ ∘ pure ⟩)))) r) >>= k
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) (impure ○) r) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
+      ♯ (handle′ (ReaderHandler _) (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , separate σ ∘ pure ⟩))) r) >>= k
     ≡⟨⟩
       k r
     ∎
@@ -121,20 +130,32 @@ module Properties where
       instance inst′ : ε′ ≲ ε
       inst′ = _ , union-comm σ
 
+  open ≡-Reasoning 
+
   coherent′ : ∀ {R} → Coherent′ (ReaderHandler R)
-  coherent′ (pure x)                    k r = refl
-  coherent′ (impure ⟨ inj₁ `ask , k′ ⟩) k r = coherent′ (k′ r) k r
-  coherent′ (impure ⟨ inj₂ c    , k′ ⟩) k r =
+  coherent′ (pure x)                    k = refl
+  coherent′ (impure ⟨ inj₁ `ask , k′ ⟩) k = extensionality λ r →
     begin
-      handle′ (ReaderHandler _) r (impure ⟨ inj₂ c , (k′ >=> k) ⟩)
-    ≡⟨ handle-modular′′ (ReaderHandler _) c (k′ >=> k) r ⟩
-      impure ⟨ c , handle′ (ReaderHandler _) r ∘ (k′ >=> k) ⟩
-    ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ x → coherent′ (k′ x) k r) ⟩
-      impure ⟨ c , (λ z → (handle′ (ReaderHandler _) r (k′ z)) >>= (handle′ (ReaderHandler _) r ∘ k)) ⟩ 
+      handle′ (ReaderHandler _) (impure ⟨ inj₁ `ask , (k′ >=> k) ⟩) r
+    ≡⟨⟩
+      handle′ (ReaderHandler _) (k′ r >>= k) r 
+    ≡⟨ (cong (_$ r) $ coherent′ (k′ r) k) ⟩
+      handle′ (ReaderHandler _) (k′ r) r >>= flip (handle′ (ReaderHandler _)) r ∘ k 
     ≡⟨⟩ 
-      handle′ (ReaderHandler _) r (impure ⟨ inj₂ c , k′ ⟩) >>= handle′ (ReaderHandler _) r ∘ k
+      handle′ (ReaderHandler _) (impure ⟨ inj₁ `ask , k′ ⟩) r >>= flip (handle′ (ReaderHandler _)) r ∘ k
+    ∎ 
+  coherent′ (impure ⟨ inj₂ c    , k′ ⟩) k = extensionality λ r → 
+    begin
+      h (impure ⟨ inj₂ c , k′ >=> k ⟩) r
+    ≡⟨⟩
+      impure ⟨ c , flip h r ∘ (k′ >=> k) ⟩ 
+    ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ x → cong (_$ r) $ coherent′ (k′ x) k) ⟩ 
+      impure ⟨ c , flip h r ∘  k′ ⟩ >>= flip h r ∘ k 
+    ≡⟨⟩ 
+      h (impure ⟨ inj₂ c , k′ ⟩) r >>= flip h r ∘ k
     ∎
-    where open ≡-Reasoning 
+    where
+      h = handle′ (ReaderHandler _)
 
   coherent : ∀ {R} → Coherent (ReaderHandler R)
-  coherent = sep-coherent (ReaderHandler _) coherent′
+  coherent = sep-coherent (ReaderHandler _) coherent′ 

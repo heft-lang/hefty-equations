@@ -43,18 +43,16 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
     gen   : ∀[ id ⇒ const P ⇒ F ] 
     hdl   : ∀ {ε′} → Algebraᶜ ε (P → Free ε′ (F A)) 
 
-  handle′ : P → ∀[ Free (ε ⊕ᶜ ε₂) ⇒ F ⊢ Free ε₂ ]
-  handle′ x m = fold-free (pure ∘₂ gen) (hdl ⟨⊕⟩ᶜ fwd) m x 
+  handle′ : ∀[ Free (ε ⊕ᶜ ε₂) ⇒ const P ⇒ F ⊢ Free ε₂ ]
+  handle′ m x = fold-free (pure ∘₂ gen) (hdl ⟨⊕⟩ᶜ fwd) m x 
 
-  handle : ε ∙ ε₂ ≈ ε′ → P → ∀[ Free ε′ ⇒ F ⊢ Free ε₂ ] 
-  handle σ x m = handle′ x (separate σ m)
+  handle : ε ∙ ε₂ ≈ ε′ → ∀[ Free ε′ ⇒ const P ⇒ F ⊢ Free ε₂ ] 
+  handle σ m x = handle′ (separate σ m) x
 
   ℋ⟦_⟧ : ⦃ ε ≲ ε′ ⦄ → ∀[ Free ε′ ⇒ const P ⇒ F ⊢ Free ε′ ]
-  ℋ⟦_⟧ ⦃ i ⦄ m p = ♯ ⦃ _ , union-comm (i .proj₂) ⦄ (handle (i .proj₂) p m) 
+  ℋ⟦_⟧ ⦃ i ⦄ m p = ♯ ⦃ _ , union-comm (i .proj₂) ⦄ (handle (i .proj₂) m p) 
 
 open Handler 
-
-
 open Inverse
 open Union
 
@@ -64,14 +62,14 @@ Modular′′ {ε₁} H =
   ∀ {B ε₂} (c : ε₂ .shape)
   → (k : (ε₁ ⊕ᶜ ε₂) .position (inj₂ c) → Free (ε₁ ⊕ᶜ ε₂) B)
   → (x : _) 
-  → handle′ H {ε₂ = ε₂} x (impure ⟨ inj₂ c , k ⟩) ≡ impure ⟨ c , handle′ H x ∘ k ⟩ 
+  → handle′ H {ε₂ = ε₂} (impure ⟨ inj₂ c , k ⟩) x ≡ impure ⟨ c , flip (handle′ H) x ∘ k ⟩ 
 
 Modular′ : (H : Handler ε₁ A F) → Set₁
 Modular′ {ε₁ = ε₁} H =
   ∀ {B ε₂} (m : Free ε₂ B)
   → (x : _)
     ------------------------------------------------
-  → handle′ H x (♯ʳ ε₁ m) ≡ fmap (flip (H .gen) x) m 
+  → handle′ H (♯ʳ ε₁ m) x ≡ fmap (flip (H .gen) x) m 
 
 -- Defines "modular handlers", that asserts that a handler leaves alone nodes in
 -- the tree containing commands of other effects than the effect it handles. 
@@ -81,29 +79,24 @@ Modular {ε₁ = ε₁} H =
   → (σ : ε₁ ∙ ε₂ ≈ ε)
   → (x : _)
     -------------------------------------------------------------
-  → handle H {ε₂ = ε₂} σ x (♯ʳ′ σ m) ≡ fmap (flip (H .gen) x) m
+  → handle H {ε₂ = ε₂} σ (♯ʳ′ σ m) x ≡ fmap (flip (H .gen) x) m
 
 
-
-Coherent′ : (H : Handler ε₁ A id) → Set₁
-Coherent′ {ε₁ = ε₁} H =
+Coherent′ : {P : Set} → ⦃ ∀ {ε} → Monad (const P ⇒ F ⊢ Free ε) ⦄ → (H : Handler ε₁ P F) → Set₁
+Coherent′ {ε₁ = ε₁} ⦃ p ⦄ H =
   ∀ {B C ε₂}
   → (m : Free (ε₁ ⊕ᶜ ε₂) B) (k : B → Free (ε₁ ⊕ᶜ ε₂) C)
-  → (x : _)
-    ---------------------------------------------------------------------------
-  → handle′ H {ε₂ = ε₂} x (m >>= k) ≡ handle′ H x m >>= λ y → handle′ H x (k y)
+    --------------------------------------------------------------
+  → handle′ H {ε₂ = ε₂} (m >>= k) ≡ (handle′ H m) >>= (handle′ H ∘ k)
 
 
-Coherent : (H : Handler ε₁ A id) → Set₁
+Coherent : {P : Set}  → ⦃ ∀ {ε} → Monad (const P ⇒ F ⊢ Free ε) ⦄ → (H : Handler ε₁ P F) → Set₁
 Coherent {ε₁ = ε₁} H =
   ∀ {B C ε₂ ε}
   → (σ : ε₁ ∙ ε₂ ≈ ε)
   → (m : Free ε B) (k : B → Free ε C)
-  → (x : _)
-    ------------------------------------------------------------------------------
-  → handle H σ x (m >>= k) ≡ handle H σ x m >>= λ y → handle H σ x (k y)
-
-
+    ------------------------------------------------------
+  → handle H σ (m >>= k) ≡ handle H σ m >>= handle H σ ∘ k
 
 
 open ≡-Reasoning 
@@ -128,12 +121,13 @@ weaken-lemma {ε₁} {ε₂} {ε} σ (impure ⟨ c , r ⟩) =
   ∎
 
 sep-modular : (H : Handler ε₁ A F) → Modular′ H → Modular H
-sep-modular {ε₁} H mod m σ a = begin
-    handle′ H a (separate σ (♯ʳ′ σ m))
-  ≡⟨ cong (λ ○ → handle′ H a ○) (weaken-lemma σ m) ⟩
-    handle′ H a (♯ʳ ε₁ m) 
-  ≡⟨ mod m a ⟩ 
-    fmap (flip (H .gen) a) m
+sep-modular {ε₁} H mod m σ p =
+  begin
+    handle′ H (separate σ (♯ʳ′ σ m)) p
+  ≡⟨ cong (λ ○ → handle′ H ○ p) (weaken-lemma σ m) ⟩
+    handle′ H (♯ʳ ε₁ m) p 
+  ≡⟨ mod m p ⟩ 
+    fmap (flip (H .gen) p) m
   ∎
 
 separate-coherent :
@@ -156,18 +150,16 @@ separate-coherent {ε₁ = ε₁} {ε₂ = ε₂} (impure ⟨ c , r ⟩) k σ =
     separate σ (impure ⟨ c , r ⟩) >>= separate σ ∘ k
   ∎
 
-sep-coherent : (H : Handler ε₁ A id) → Coherent′ H → Coherent H
-sep-coherent H C σ m k x =
+sep-coherent : ⦃ _ : ∀ {ε} → Monad (const A ⇒ F ⊢ Free ε) ⦄ → (H : Handler ε₁ A F) → Coherent′ H → Coherent H
+sep-coherent H C σ m k = 
   begin
-    handle H σ x (m >>= k)
-  ≡⟨⟩
-    handle′ H x (separate σ (m >>= k)) 
-  ≡⟨ cong (handle′ H x) (separate-coherent m k σ) ⟩
-    handle′ H x (separate σ m >>= separate σ ∘ k)
-  ≡⟨ C (separate σ m) (separate σ ∘ k) x ⟩
-    handle′ H x (separate σ m) >>= handle′ H x ∘ separate σ ∘ k 
+    handle H σ (m >>= k)
   ≡⟨⟩ 
-    handle H σ x m >>= handle H σ x ∘ k
+    handle′ H (separate σ (m >>= k))
+  ≡⟨ cong (handle′ H) (separate-coherent m k σ) ⟩ 
+    handle′ H (separate σ m >>= separate σ ∘ k)
+  ≡⟨ C (separate σ m) (separate σ ∘ k) ⟩ 
+    handle H σ m >>= handle H σ ∘ k
   ∎
 
 handle-modular′′ : (H : Handler ε A F) → Modular′′ H
@@ -178,10 +170,12 @@ handle-modular′′ H c k x = refl
 handle-modular′ : (H : Handler ε A F) → Modular′ H
 handle-modular′     H (pure x)           a = refl
 handle-modular′ {ε} H (impure ⟨ c , r ⟩) a = begin
-    impure ⟨ c , (handle′ H a ∘ ♯ʳ ε) ∘ r ⟩
+    impure ⟨ c , (flip (handle′ H) a ∘ ♯ʳ ε) ∘ r ⟩
   ≡⟨ cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality λ p → handle-modular′ H (r p) a) ⟩
     impure ⟨ c , fmap (flip (H .gen) a) ∘ r ⟩
   ∎
 
 handle-modular : (H : Handler ε A F) → Modular H
 handle-modular H = sep-modular H (handle-modular′ H)
+
+
