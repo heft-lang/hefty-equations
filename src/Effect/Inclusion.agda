@@ -88,13 +88,46 @@ module _ where
   ♯ʳ′ σ = ♯ ⦃ ≲-∙-right σ ⦄
 
 
+-- Properties of weakening
+module _ where 
+
+  ♯-id :
+    ∀ ⦃ i : ε ≲ ε′ ⦄
+    → (x : A)
+      -------------------
+    → ♯ (pure x) ≡ pure x
+  ♯-id x = refl
+
+  ♯-natural : ⦃ _ : ε ≲ ε′ ⦄ → Natural ♯
+  ♯-natural {ε = ε} .commute {X = X} {Y = Y} {f = f} = ♯-impure-commute  
+    where
+      open ≡-Reasoning
+      ♯-impure-commute :  (m : Free ε X) → ♯ (fmap f m) ≡ fmap f (♯ m)
+      ♯-impure-commute (pure _)           = refl
+      ♯-impure-commute (impure ⟨ c , k ⟩) = 
+        begin
+          ♯ (fmap f (impure ⟨ c , k ⟩))
+        ≡⟨⟩
+          ♯ (impure ⟨ c , fmap f ∘ k ⟩)
+        ≡⟨⟩
+          impure (inj ⟨ c , ♯ ∘ fmap f ∘ k ⟩)
+        ≡⟨ cong (λ ○ → impure (inj ⟨ c , ○ ⟩)) (extensionality λ x → ♯-impure-commute (k x)) ⟩ 
+          impure (inj ⟨ c , fmap f ∘ ♯ ∘ k ⟩)
+        ≡⟨⟩ 
+          impure (inj (fmap {F = ⟦ _ ⟧ᶜ} (fmap {F = Free _} f) ⟨ c , ♯ ∘ k ⟩))
+        ≡⟨ cong impure (inj-natural .commute {f = fmap f} ⟨ c , ♯ ∘ k ⟩) ⟩ 
+          impure (fmap {F = ⟦ _ ⟧ᶜ} (fmap f) (inj ⟨ c , ♯ ∘ k ⟩)) 
+        ≡⟨⟩ 
+          fmap f (♯ (impure ⟨ c , k ⟩))
+        ∎ 
+
   ♯-coherent :
     ∀ ⦃ i : ε ≲ ε′ ⦄
     → (m : Free ε A)
     → (k : A → Free ε B)
       ---------------------------------
     → ♯ (m >>= k) ≡ ♯ ⦃ i ⦄ m >>= ♯ ∘ k
-  ♯-coherent (pure x)   k = refl
+  ♯-coherent (pure x)             k = refl
   ♯-coherent (impure ⟨ c , k′ ⟩ ) k =
     begin
       ♯ (impure ⟨ c , k′ ⟩ >>= k)
@@ -110,3 +143,18 @@ module _ where
       ♯ (impure ⟨ c , k′ ⟩) >>= ♯ ∘ k
     ∎
     where open ≡-Reasoning 
+
+  -- Weakening is a monad morphism
+  --
+  -- Or, another perspective is to say that weakening defines a functor between
+  -- the category of containers and the category of monad morhpisms, that sends
+  -- containers to their respective free monad, and container morphisms to
+  -- weakenings
+  ♯-mm : ⦃ ε ≲ ε′ ⦄ → MonadMorphism (Free ε) (Free ε′)
+  ♯-mm = record
+    { Ψ         = ♯
+    ; Ψ-natural = ♯-natural
+    ; resp-unit = extensionality ♯-id
+    ; resp-join = λ f g → extensionality λ x → ♯-coherent (f x) g
+    } 
+  
