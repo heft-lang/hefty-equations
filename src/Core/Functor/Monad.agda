@@ -69,3 +69,41 @@ record MonadMorphism (M N : Set → Set)
 
 
 open MonadMorphism public 
+
+id-mm : ∀ {M} → ⦃ _ :  Functor M ⦄ → ⦃ _ : Monad M ⦄ → MonadMorphism M M 
+id-mm = record
+  { Ψ                       = id
+  ; Ψ-natural               = λ where .commute x → refl
+  ; respects-unit           = refl
+  ; respects-multiplication = λ _ _ → refl
+  } 
+
+∘-mm : ∀ {M₁ M₂ M₃ : Set → Set}
+       → ⦃ _ :  Functor M₁ ⦄ → ⦃ _ : Monad M₁ ⦄
+       → ⦃ _ : Functor M₂ ⦄ → ⦃ _ : Monad M₂ ⦄
+       → ⦃ _ : Functor M₃ ⦄ → ⦃ _ : Monad M₃ ⦄ 
+       → MonadMorphism M₁ M₂
+       → MonadMorphism M₂ M₃
+       → MonadMorphism M₁ M₃ 
+∘-mm {M₁} {M₂} {M₃} φ θ = record
+  { Ψ                       = θ .Ψ ∘ φ .Ψ
+  ; Ψ-natural               = ∘-natural (φ .Ψ) (θ .Ψ) (φ .Ψ-natural) (θ .Ψ-natural)
+  ; respects-unit           = trans (cong (θ .Ψ ∘_) (φ .respects-unit)) (θ .respects-unit)
+  ; respects-multiplication = resp-join
+  }
+  where
+    resp-join :
+      ∀ {A B C : Set}
+      → (f : A → M₁ B) (g : B → M₁ C)
+        ---------------------------------------------------------------------
+      → (θ .Ψ ∘ φ .Ψ) ∘ (f >=> g) ≡ ((θ .Ψ ∘ φ .Ψ ∘ f) >=> (θ .Ψ ∘ φ .Ψ ∘ g))
+    resp-join f g =
+      begin
+        (θ .Ψ ∘ φ .Ψ) ∘ (f >=> g)
+      ≡⟨ cong (θ .Ψ ∘_) (φ .respects-multiplication f g) ⟩
+        θ .Ψ ∘ ((φ .Ψ ∘ f) >=> (φ .Ψ ∘ g))
+      ≡⟨ θ .respects-multiplication (φ .Ψ ∘ f) (φ .Ψ ∘ g) ⟩
+        ((θ .Ψ ∘ φ .Ψ ∘ f) >=> (θ .Ψ ∘ φ .Ψ ∘ g))
+      ∎
+      where
+        open ≡-Reasoning
