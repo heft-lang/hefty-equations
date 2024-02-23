@@ -58,24 +58,24 @@ record MonadMorphism (M N : Set → Set)
   ℱ[_] = Ψ ∘_ 
 
   field 
-    respects-unit           : ∀ {A : Set}
-                              -----------------------------
-                            → ℱ[ return {A = A} ] ≡ return
+    resp-unit : ∀ {A : Set}
+                  -----------------------------
+                → ℱ[ return {A = A} ] ≡ return
                             
-    respects-multiplication : ∀ {A B C : Set}
-                            → (f : A → M B) (g : B → M C)
-                              ---------------------------------
-                            → ℱ[ f >=> g ] ≡ ℱ[ f ] >=> ℱ[ g ]  
+    resp-join : ∀ {A B C : Set}
+                → (f : A → M B) (g : B → M C)
+                   ---------------------------------
+                → ℱ[ f >=> g ] ≡ ℱ[ f ] >=> ℱ[ g ]  
 
 
 open MonadMorphism public 
 
 id-mm : ∀ {M} → ⦃ _ :  Functor M ⦄ → ⦃ _ : Monad M ⦄ → MonadMorphism M M 
 id-mm = record
-  { Ψ                       = id
-  ; Ψ-natural               = λ where .commute x → refl
-  ; respects-unit           = refl
-  ; respects-multiplication = λ _ _ → refl
+  { Ψ         = id
+  ; Ψ-natural = λ where .commute x → refl
+  ; resp-unit = refl
+  ; resp-join = λ _ _ → refl
   } 
 
 ∘-mm : ∀ {M₁ M₂ M₃ : Set → Set}
@@ -86,24 +86,25 @@ id-mm = record
        → MonadMorphism M₂ M₃
        → MonadMorphism M₁ M₃ 
 ∘-mm {M₁} {M₂} {M₃} φ θ = record
-  { Ψ                       = θ .Ψ ∘ φ .Ψ
-  ; Ψ-natural               = ∘-natural (φ .Ψ) (θ .Ψ) (φ .Ψ-natural) (θ .Ψ-natural)
-  ; respects-unit           = trans (cong (θ .Ψ ∘_) (φ .respects-unit)) (θ .respects-unit)
-  ; respects-multiplication = resp-join
+  { Ψ         = θ .Ψ ∘ φ .Ψ
+  ; Ψ-natural = ∘-natural (φ .Ψ) (θ .Ψ) (φ .Ψ-natural) (θ .Ψ-natural)
+  ; resp-unit = trans (cong (θ .Ψ ∘_) (φ .resp-unit)) (θ .resp-unit)
+  ; resp-join = ∘-resp-join
   }
   where
-    resp-join :
+    ∘-resp-join :
       ∀ {A B C : Set}
       → (f : A → M₁ B) (g : B → M₁ C)
         ---------------------------------------------------------------------
       → (θ .Ψ ∘ φ .Ψ) ∘ (f >=> g) ≡ ((θ .Ψ ∘ φ .Ψ ∘ f) >=> (θ .Ψ ∘ φ .Ψ ∘ g))
-    resp-join f g =
+    ∘-resp-join f g =
       begin
         (θ .Ψ ∘ φ .Ψ) ∘ (f >=> g)
-      ≡⟨ cong (θ .Ψ ∘_) (φ .respects-multiplication f g) ⟩
+      ≡⟨ cong (θ .Ψ ∘_) (φ .resp-join f g) ⟩
         θ .Ψ ∘ ((φ .Ψ ∘ f) >=> (φ .Ψ ∘ g))
-      ≡⟨ θ .respects-multiplication (φ .Ψ ∘ f) (φ .Ψ ∘ g) ⟩
+      ≡⟨ θ .resp-join (φ .Ψ ∘ f) (φ .Ψ ∘ g) ⟩
         ((θ .Ψ ∘ φ .Ψ ∘ f) >=> (θ .Ψ ∘ φ .Ψ ∘ g))
       ∎
       where
         open ≡-Reasoning
+
