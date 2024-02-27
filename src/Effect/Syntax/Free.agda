@@ -3,6 +3,7 @@
 module Effect.Syntax.Free where
 
 open import Core.Functor
+open import Core.Functor.NaturalTransformation
 open import Core.Functor.Monad
 
 open import Core.Container
@@ -66,17 +67,18 @@ instance
   free-functor : Functor (Free C)
   free-functor = record
     { fmap    = map-free
-    ; fmap-id = map-free-id
-    ; fmap-∘  = map-free-∘
+    ; fmap-id = extensionality map-free-id
+    ; fmap-∘  = λ f g → extensionality λ m → sym (map-free-∘ f g m)
     } 
 
   free-monad : Monad (Free C)
   free-monad = record
-    { return    = pure
-    ; _∗        = λ k → fold-free k impure′
-    ; >>=-idˡ   = λ _ _ → refl
-    ; >>=-idʳ   = right-identity
-    ; >>=-assoc = assoc
+    { return         = pure
+    ; _∗             = λ k → fold-free k impure′
+    ; >>=-idˡ        = λ _ _ → refl
+    ; >>=-idʳ        = right-identity
+    ; >>=-assoc      = assoc
+    ; return-natural = pure-natty 
     }
     where
       right-identity : ∀ (m : Free C A) → flip (λ k → fold-free k impure′) m pure ≡ m
@@ -89,6 +91,11 @@ instance
             ≡ flip (λ k → fold-free k impure′) m (λ x → flip (λ k → fold-free k impure′) (k₁ x) k₂)
       assoc k₁ k₂ (pure x)           = refl
       assoc k₁ k₂ (impure ⟨ c , k ⟩) = cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality $ assoc k₁ k₂ ∘ k)
+
+      pure-natty : Natural pure
+      pure-natty = λ where .commute x → refl 
+
+
 
 identity-fold-lemma : ∀ {c : Free C A} → fold-free pure impure′ c ≡ c  
 identity-fold-lemma {C} {A} {pure _} = refl
@@ -115,3 +122,26 @@ fmap->>= f (impure ⟨ c , k′ ⟩) k =
     impure ⟨ c , k′ ⟩ >>= fmap f ∘ k
   ∎
   where open ≡-Reasoning
+
+-- applying a natural transformation to a tree's signature yields a natural transformation between trees
+hmap-natural : ∀ {ε₁ ε₂} → (θ : ε₁ ↦ ε₂) → Natural θ → Natural (hmap-free θ)
+hmap-natural θ N .commute {f = f} = hmap-commute 
+  where
+    open ≡-Reasoning
+
+    hmap-commute : ∀ m → hmap-free θ (fmap f m) ≡ fmap f (hmap-free θ m)
+    hmap-commute (pure x)           = refl
+    hmap-commute (impure ⟨ c , k ⟩) =
+      begin
+        hmap-free θ (fmap f (impure ⟨ c , k ⟩))
+      ≡⟨⟩ 
+        impure (θ ⟨ c , hmap-free θ ∘ fmap f ∘ k ⟩)
+      ≡⟨ cong (λ ○ → impure (θ ⟨ c , ○ ⟩)) (extensionality λ x → hmap-commute (k x)) ⟩ 
+        impure (θ ⟨ c , fmap f ∘ hmap-free θ ∘ k ⟩)
+      ≡⟨⟩
+        impure (θ (fmap (fmap {F = Free _} f) ⟨ c , hmap-free θ ∘ k ⟩)) 
+      ≡⟨ cong impure (N .commute {f = fmap f} ⟨ c , hmap-free θ ∘ k ⟩) ⟩ 
+        impure (fmap (fmap {F = Free _} f) (θ ⟨ c , hmap-free θ ∘ k ⟩)) 
+      ≡⟨⟩
+        fmap f (hmap-free θ (impure ⟨ c , k ⟩))
+      ∎
