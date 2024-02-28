@@ -82,7 +82,7 @@ Respects : Algebraᶜ ε A → □ Equation ε → Set₁
 Respects alg eq =
   ∀ {δ γ k} → fold-free k alg (□-extract eq .lhs δ γ) ≡ fold-free k alg (□-extract eq .rhs δ γ) 
 
--- A theory of an effect `ε` is simply a collection of equations
+-- A theory of an effect `ε` is simply a collection of equations∘ 
 record Theory (ε : Effect) : Set₁ where
   no-eta-equality
   constructor ∥_∥

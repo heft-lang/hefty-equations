@@ -73,7 +73,7 @@ module _ where
   inject .αᶜ = impure ∘ inj
 
   ♯ : ⦃ ε₁ ≲ ε₂ ⦄ → ∀[ Free ε₁ ⇒ Free ε₂ ]
-  ♯ = fold-free pure inject 
+  ♯ = hmap-free inj
   
   ♯ˡ : ∀ ε₂ → ∀[ Free ε₁ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
   ♯ˡ ε₂ = ♯ ⦃ ≲-⊕ᶜ-left ε₂ ⦄
@@ -91,6 +91,7 @@ module _ where
 -- Properties of weakening
 module _ where 
 
+  -- Weakenings respect identities
   ♯-id :
     ∀ ⦃ i : ε ≲ ε′ ⦄
     → (x : A)
@@ -98,29 +99,11 @@ module _ where
     → ♯ (pure x) ≡ pure x
   ♯-id x = refl
 
+  -- Weakenings are natural transformations 
   ♯-natural : ⦃ _ : ε ≲ ε′ ⦄ → Natural ♯
-  ♯-natural {ε = ε} .commute {X = X} {Y = Y} {f = f} = ♯-impure-commute  
-    where
-      open ≡-Reasoning
-      ♯-impure-commute :  (m : Free ε X) → ♯ (fmap f m) ≡ fmap f (♯ m)
-      ♯-impure-commute (pure _)           = refl
-      ♯-impure-commute (impure ⟨ c , k ⟩) = 
-        begin
-          ♯ (fmap f (impure ⟨ c , k ⟩))
-        ≡⟨⟩
-          ♯ (impure ⟨ c , fmap f ∘ k ⟩)
-        ≡⟨⟩
-          impure (inj ⟨ c , ♯ ∘ fmap f ∘ k ⟩)
-        ≡⟨ cong (λ ○ → impure (inj ⟨ c , ○ ⟩)) (extensionality λ x → ♯-impure-commute (k x)) ⟩ 
-          impure (inj ⟨ c , fmap f ∘ ♯ ∘ k ⟩)
-        ≡⟨⟩ 
-          impure (inj (fmap {F = ⟦ _ ⟧ᶜ} (fmap {F = Free _} f) ⟨ c , ♯ ∘ k ⟩))
-        ≡⟨ cong impure (inj-natural .commute {f = fmap f} ⟨ c , ♯ ∘ k ⟩) ⟩ 
-          impure (fmap {F = ⟦ _ ⟧ᶜ} (fmap f) (inj ⟨ c , ♯ ∘ k ⟩)) 
-        ≡⟨⟩ 
-          fmap f (♯ (impure ⟨ c , k ⟩))
-        ∎ 
+  ♯-natural = hmap-natural inj inj-natural 
 
+  -- Weakening respects monadic bind 
   ♯-coherent :
     ∀ ⦃ i : ε ≲ ε′ ⦄
     → (m : Free ε A)
@@ -157,4 +140,5 @@ module _ where
     ; resp-unit = extensionality ♯-id
     ; resp-join = λ f g → extensionality λ x → ♯-coherent (f x) g
     } 
+
   

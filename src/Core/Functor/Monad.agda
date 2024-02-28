@@ -13,6 +13,8 @@ module Core.Functor.Monad where
 -- Monads on Set 
 record Monad (F : Set → Set) : Set₁ where
   field
+    {{ F-functor }} : Functor F
+
     return : A → F A
     _∗     : (A → F B) → (F A → F B)
 
@@ -26,7 +28,8 @@ record Monad (F : Set → Set) : Set₁ where
   _>>_ : F A → F B → F B
   x >> y = x >>= λ _ → y
 
-  field
+  -- The "usual" monad laws (for Kleisli triples)
+  field 
     >>=-idˡ : ∀ (x : A) (k : A → F B)
                 ---------------------
               → return x >>= k ≡ k x
@@ -39,6 +42,14 @@ record Monad (F : Set → Set) : Set₁ where
                   -------------------------------------------
                 → (m >>= k₁) >>= k₂ ≡ m >>= (k₁ >=> k₂)  
 
+  -- Naturality of return 
+  field
+    return-natural : Natural return
+
+  is-functor : Functor F
+  is-functor = F-functor 
+
+
 open Monad ⦃...⦄ public
 
 -- A monad morphism between monads M and N. We define it by requiring the
@@ -46,8 +57,6 @@ open Monad ⦃...⦄ public
 -- monad morhpism if the induced functor on the respective Kleisli categories of
 -- M and N is lawful
 record MonadMorphism (M N : Set → Set)
-  ⦃ _ : Functor M ⦄
-  ⦃ _ : Functor N ⦄
   ⦃ _ : Monad M ⦄
   ⦃ _ : Monad N ⦄ : Set₁ where
   field
@@ -79,9 +88,9 @@ id-mm = record
   } 
 
 ∘-mm : ∀ {M₁ M₂ M₃ : Set → Set}
-       → ⦃ _ :  Functor M₁ ⦄ → ⦃ _ : Monad M₁ ⦄
-       → ⦃ _ : Functor M₂ ⦄ → ⦃ _ : Monad M₂ ⦄
-       → ⦃ _ : Functor M₃ ⦄ → ⦃ _ : Monad M₃ ⦄ 
+       → ⦃ _ : Monad M₁ ⦄
+       → ⦃ _ : Monad M₂ ⦄
+       → ⦃ _ : Monad M₃ ⦄ 
        → MonadMorphism M₁ M₂
        → MonadMorphism M₂ M₃
        → MonadMorphism M₁ M₃ 

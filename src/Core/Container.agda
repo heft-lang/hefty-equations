@@ -57,8 +57,8 @@ con-map f ⟨ s , p ⟩ = ⟨ s , f ∘ p ⟩
 instance
   con-functor : Functor ⟦ C ⟧ᶜ
   con-functor .fmap                 = con-map
-  con-functor .fmap-id ⟨ s , p ⟩    = refl
-  con-functor .fmap-∘ f g ⟨ s , p ⟩ = refl 
+  con-functor .fmap-id              = refl
+  con-functor .fmap-∘ f g           = refl 
 
 
 open Inverse 

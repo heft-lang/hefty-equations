@@ -5,6 +5,7 @@ open import Function
 open import Data.Product 
 
 open import Core.Functor
+open import Core.Functor.NaturalTransformation
 open import Core.Functor.Monad
 
 open import Core.Signature
@@ -58,18 +59,19 @@ instance
   hefty-functor : Functor (Hefty σ)
   hefty-functor = record
     { fmap    = map-hefty
-    ; fmap-id = map-hefty-id
-    ; fmap-∘  = map-hefty-∘
+    ; fmap-id = extensionality map-hefty-id
+    ; fmap-∘  = λ f g → extensionality λ m → sym (map-hefty-∘ f g m)
     }
 
 
   hefty-monad : Monad (Hefty σ)
   hefty-monad = record
-    { return    = point
-    ; _∗        = flip bind-hefty
-    ; >>=-idˡ   = λ _ _ → refl
-    ; >>=-idʳ   = right-identity
-    ; >>=-assoc = assoc 
+    { return         = point
+    ; _∗             = flip bind-hefty
+    ; >>=-idˡ        = λ _ _ → refl
+    ; >>=-idʳ        = right-identity
+    ; >>=-assoc      = assoc
+    ; return-natural = λ where .commute _ → refl
     }
     where 
       open import Relation.Binary.PropositionalEquality

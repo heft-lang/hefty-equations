@@ -53,11 +53,11 @@ coherence {ε = ε} ⦃ i ⦄ m k r =
   begin
     ℋ⟦ m >>= k ⟧ r
   ≡⟨⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) r (m >>= k)) 
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) (m >>= k) r) 
   ≡⟨ cong (♯ ⦃ inst ⦄) (Properties.coherent (i .proj₂) m k r) ⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) r m >>= λ x → handle (i .proj₂) r (k x))  
-  ≡⟨ ♯-coherent ⦃ inst ⦄ (handle (i .proj₂) r m) (λ x → handle (i .proj₂) r (k x)) ⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) r m ) >>= (λ x → ♯ ⦃ inst ⦄ (handle (i .proj₂) r (k x))) 
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) m r >>= λ x → handle (i .proj₂) (k x) r)  
+  ≡⟨ ♯-coherent ⦃ inst ⦄ (handle (i .proj₂) m r) (λ x → handle (i .proj₂) (k x) r) ⟩
+    ♯ ⦃ inst ⦄ (handle (i .proj₂) m r ) >>= (λ x → ♯ ⦃ inst ⦄ (handle (i .proj₂) (k x) r)) 
   ≡⟨⟩ 
     ℋ⟦ m ⟧ r >>= (λ x → ℋ⟦ k x ⟧ r)
   ∎
