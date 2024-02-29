@@ -48,43 +48,45 @@ open import Effect.Instance.LocalReader.Theory R
 
 open Handler (ReaderHandler R)
 
-coherence : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) (k : A → Free ε B) (r : R) → ℋ⟦ m >>= k ⟧ r ≡ ℋ⟦ m ⟧ r >>= λ x → ℋ⟦ k x ⟧ r
-coherence {ε = ε} ⦃ i ⦄ m k r =
+coherence : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) (k : A → Free ε B) → ℋ⟦ m >>= k ⟧ ≡ ℋ⟦ m ⟧ >>= ℋ⟪ k ⟫
+coherence {ε = ε} ⦃ i ⦄ m k =
   begin
-    ℋ⟦ m >>= k ⟧ r
-  ≡⟨⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) (m >>= k) r) 
-  ≡⟨ cong (♯ ⦃ inst ⦄) (Properties.coherent (i .proj₂) m k r) ⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) m r >>= λ x → handle (i .proj₂) (k x) r)  
-  ≡⟨ ♯-coherent ⦃ inst ⦄ (handle (i .proj₂) m r) (λ x → handle (i .proj₂) (k x) r) ⟩
-    ♯ ⦃ inst ⦄ (handle (i .proj₂) m r ) >>= (λ x → ♯ ⦃ inst ⦄ (handle (i .proj₂) (k x) r)) 
+    ℋ⟦ m >>= k ⟧
   ≡⟨⟩ 
-    ℋ⟦ m ⟧ r >>= (λ x → ℋ⟦ k x ⟧ r)
+    ♯ ∘ handle (i .proj₂) (m >>= k)
+  ≡⟨ cong (♯ ∘_) (Properties.coherent (i .proj₂) m k) ⟩ 
+    ♯ ∘ (handle (i .proj₂) m >>= (λ x → handle (i .proj₂) (k x))) 
+  ≡⟨ extensionality (λ r → ♯-coherent (handle (i .proj₂) m r) λ x → handle (i .proj₂) (k x) r) ⟩
+    ♯ ∘ handle (i .proj₂) m >>= (λ x → ♯ ∘ handle (i .proj₂) (k x)) 
+  ≡⟨⟩ 
+    ℋ⟦ m ⟧ >>= ℋ⟪ k ⟫
   ∎
-
   where
     open ≡-Reasoning
-    inst : proj₁ i ≲ ε
+    instance inst : proj₁ i ≲ ε
     inst = Reader R , (union-comm $ i .proj₂)
+
 
 -- TODO: we can (and should) prove this as a general lemma for all handlers 
 handle-merge : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) → (r r′ : R) → ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′ ≡ ℋ⟦ m ⟧ r
-handle-merge ⦃ px ⦄ m r r′ =
+handle-merge ⦃ i ⦄ m r r′ =
   begin
     ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′
   ≡⟨⟩
-    ♯ʳ′ σ' (handle σ' r′ (♯ʳ′ σ' (handle σ' r m)))
-  ≡⟨ cong (♯ʳ′ σ') (handle-modular (ReaderHandler R) (handle σ' r m) σ' r′) ⟩
-    ♯ʳ′ σ' (fmap {F = Free (proj₁ px)} id (handle σ' r m)) 
-  ≡⟨ cong (♯ʳ′ σ') (fmap-id {F = Free (proj₁ px)} (handle σ' r m)) ⟩
-    ♯ʳ′ σ' (handle σ' r m) 
+    ♯ (handle (i .proj₂) (♯ (handle (i .proj₂) m r)) r′)
+  ≡⟨ cong ♯ (cong (_$ r′) $ handle-modular (handle (i .proj₂) m r) (i .proj₂)) ⟩ 
+    ♯ ((⇑ handle (i .proj₂) m r) r′)
   ≡⟨⟩ 
-   ℋ⟦ m ⟧ r
+    ♯ (handle (i .proj₂) m r >>= flip return r′)
+  ≡⟨ cong ♯ (>>=-idʳ (handle (i .proj₂) m r)) ⟩ 
+    ♯ (handle (i .proj₂) m r) 
+  ≡⟨⟩
+    ℋ⟦ m ⟧ r
   ∎
   where
-    open ≡-Reasoning 
-    σ' = px .proj₂
-
+    open ≡-Reasoning
+    instance inst : proj₁ i ≲ _
+    inst = Reader _ , union-comm (i .proj₂) 
 
 ReaderElab : Elaboration (LocalReader) (Reader R)
 ReaderElab .Elaboration.elab = necessary λ i → readerElab ⦃ i ⦄
@@ -223,7 +225,7 @@ ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ 
     ask >>= (λ r → ℋ⟦ ℰ⟦ m >>= k ⟧ ⟧ (f r) ) 
   ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (f r)) (elab-∘′ m k))) ⟫
     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫ ⟧ (f r))
-  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ○) (extensionality λ r → coherence ℰ⟦ m ⟧ ℰ⟪ k ⟫ (f r)) ) ⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ○ ∘ f) (coherence ℰ⟦ m ⟧ ℰ⟪ k ⟫) ) ⟫ 
     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r))
   ≈⟪ ≈-sym $ ≈-eq′ (weaken i RT.ask-ask) (ζ .sub (there (here refl))) ⟫ 
     ask >>= (λ r → ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
@@ -252,7 +254,7 @@ ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ 
     ℰ⟦ local f askl ⟧
   ≈⟪⟫
     ask >>= (λ r → ℋ⟦ ask >>= pure ⟧ (f r) >>= pure)
-  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → coherence ask pure (f r))) ⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ((○ ∘ f) >=> pure)) (coherence ask pure)) ⟫ 
     (ask >>= λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) >>= pure) 
   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-idʳ-≈ ((ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)))) ⟫ 
     ask >>= (λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) )
@@ -267,6 +269,7 @@ ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ 
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
+
 -- local-local 
 ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f , g , m} =
   begin
@@ -279,7 +282,7 @@ ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} �
     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure ⟧ (g r) >>= pure) 
   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym (Properties.handle-ask (i .proj₂) _)))) ⟫ 
     (ask >>= λ r → (ℋ⟦ ask ⟧ (g r) >>= (λ r′ → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ⟧ (g r))) >>= pure)
-  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= (○ >=> pure)) (extensionality λ r → sym $ coherence ask (λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure) (g r))) ⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ((○ ∘ g) >=> pure)) (sym $ coherence ask λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure)) ⟫ 
     ask >>= (λ r → ℋ⟦ (ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ) ⟧ (g r) >>= pure) 
   ≈⟪⟫ 
     ask >>= (λ r → ℋ⟦ ℰ⟦ local f m ⟧ ⟧ (g r) >>= pure)
