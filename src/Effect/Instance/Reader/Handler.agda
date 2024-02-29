@@ -34,25 +34,48 @@ module Effect.Instance.Reader.Handler where
 
 open Connectives hiding (_⟨_⟩_)
 
-ReaderHandler : ∀ R → Handler (Reader R) R id
-ReaderHandler _ = record
-  { gen = const
-  ; hdl = record { αᶜ = λ where ⟨ `ask , k ⟩ r → k r r }
-  }
+module _ where 
+
+  instance readerT-functor : ∀ {R : Set} → Functor (const R ⇒ Free ε)
+  readerT-functor = record
+    { fmap    = λ f g r → fmap f (g r)
+    ; fmap-id = extensionality
+        λ g → cong (λ ○ → λ r → ○ (g r)) $ fmap-id {F = Free _ }
+    ; fmap-∘  = λ f g → extensionality
+        λ h → cong (λ ○ → λ r → ○ (h r)) (fmap-∘ {F = Free _ } f g)
+    }
+
+  instance readerT-monad : ∀ {ε R} → Monad (const R ⇒ id ⊢ Free ε)
+  readerT-monad = record
+    { F-functor      = readerT-functor 
+    ; return         = λ x r → pure x
+    ; _∗             = λ f g r → g r >>= λ x → f x r
+    ; >>=-idˡ        = λ _ _ → refl
+    ; >>=-idʳ        =
+        λ f → extensionality λ r → >>=-idʳ (f r)
+    ; >>=-assoc      =
+        λ k₁ k₂ m
+          → extensionality λ r → >>=-assoc (flip k₁ r) (flip k₂ r) (m r)
+    ; return-natural =
+        λ where
+          .commute {f = f} x
+            → extensionality λ r → return-natural .commute {f = f} x
+    } 
+  
+  ReaderHandler : ∀ R → Handler (Reader R) R id
+  Handler.F-functor (ReaderHandler _) = id-functor
+  Handler.M-monad   (ReaderHandler _) = readerT-monad 
+
+  Handler.hdl (ReaderHandler _) .αᶜ ⟨ `ask , k ⟩ r = k r r
+
+  Handler.M-apply     (ReaderHandler _)                = refl
+  Handler.hdl-commute (ReaderHandler _) f ⟨ `ask , k ⟩ = refl
+  
 
 open Handler
 
 handleReader : ∀ {R} → Reader R ∙ ε ≈ ε′ → Free ε′ A → R → Free ε A 
 handleReader σ t r = handle (ReaderHandler _) σ t r
-
-instance reader-monad : ∀ {ε R} → Monad (const R ⇒ Free ε)
-reader-monad = record
-  { return    = const ∘ return
-  ; _∗        = λ f g r → g r >>= λ x → f x r
-  ; >>=-idˡ   = λ x k → refl
-  ; >>=-idʳ   = λ f → extensionality λ r → >>=-idʳ (f r)
-  ; >>=-assoc = λ k₁ k₂ m → extensionality λ r → >>=-assoc (flip k₁ r) (flip k₂ r) (m r)
-  } 
 
 module Properties where
 
@@ -60,9 +83,9 @@ module Properties where
   modular = handle-modular (ReaderHandler _)
   
   correct : ∀ {R} → Correct ReaderTheory (ReaderHandler R)
-  correct (here refl)                                                 = refl
-  correct (there (here refl))                                         = refl 
-  correct (there (there (here refl))) {δ = δ} {γ = pure x , k} {k′}   = refl
+  correct (here refl)                                                              = refl
+  correct (there (here refl))                                                      = refl 
+  correct (there (there (here refl))) {δ = δ} {γ = pure x , k} {k′}                = refl
   correct (there (there (here refl))) {δ = δ} {γ = impure ⟨ `ask , k′′ ⟩ , k} {k′} = extensionality $ λ r → 
     begin
       handle' (impure ⟨ `ask , k′′ ⟩ >>= (λ x → ask >>= λ r → k x r)) r
@@ -113,11 +136,11 @@ module Properties where
     ≡⟨⟩
       ♯ (handle′ (ReaderHandler _) (fold-free pure (λ where .αᶜ → impure ∘ proj σ) (impure (inj ⟨ `ask , pure ⟩))) r ) >>= k
     ≡⟨⟩
-      ♯ (handle′ (ReaderHandler _) (impure (proj σ (fmap (separate σ) (inj ⟨ (`ask , pure) ⟩)))) r) >>= k
-    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) (impure (proj σ ○)) r) >>= k) (sym (inj-natural .commute {f = separate σ} ⟨ (`ask , pure) ⟩)) ⟩ 
-      ♯ (handle′ (ReaderHandler _) (impure (proj σ (inj ( ⟨ `ask , separate σ ∘ pure ⟩)))) r) >>= k
+      ♯ (handle′ (ReaderHandler _) (impure (proj σ (fmap (reorder σ) (inj ⟨ (`ask , pure) ⟩)))) r) >>= k
+    ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) (impure (proj σ ○)) r) >>= k) (sym (inj-natural .commute {f = reorder σ} ⟨ (`ask , pure) ⟩)) ⟩ 
+      ♯ (handle′ (ReaderHandler _) (impure (proj σ (inj ( ⟨ `ask , reorder σ ∘ pure ⟩)))) r) >>= k
     ≡⟨ cong (λ ○ → ♯ (handle′ (ReaderHandler _) (impure ○) r) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
-      ♯ (handle′ (ReaderHandler _) (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , separate σ ∘ pure ⟩))) r) >>= k
+      ♯ (handle′ (ReaderHandler _) (impure (injˡ {C₁ = Reader _} ε′ ( ⟨ `ask , reorder σ ∘ pure ⟩))) r) >>= k
     ≡⟨⟩
       k r
     ∎
@@ -158,4 +181,4 @@ module Properties where
       h = handle′ (ReaderHandler _)
 
   coherent : ∀ {R} → Coherent (ReaderHandler R)
-  coherent = sep-coherent (ReaderHandler _) coherent′ 
+  coherent = reordering-preserves-coherence (ReaderHandler _) coherent′ 
