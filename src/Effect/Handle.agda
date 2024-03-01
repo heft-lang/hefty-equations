@@ -42,6 +42,24 @@ module _ where
   reorder : ε₁ ∙ ε₂ ≈ ε′ → ∀[ Free ε′ ⇒ Free (ε₁ ⊕ᶜ ε₂) ]
   reorder σ = hmap-free (Union.proj σ)
 
+  reorder⁻¹ : ε₁ ∙ ε₂ ≈ ε′ → ∀[ Free (ε₁ ⊕ᶜ ε₂) ⇒ Free ε′ ]
+  reorder⁻¹ σ = hmap-free (Union.proj⁻¹ σ)
+
+  reorder-inv : (σ : ε₁ ∙ ε₂ ≈ ε′) → (m : Free ε′ A) → reorder⁻¹ σ (reorder σ m) ≡ m
+  reorder-inv {ε₁ = ε₁} {ε₂ = ε₂} {A = A} σ m =
+    begin
+      reorder⁻¹ σ (reorder σ m)
+    ≡⟨⟩ 
+      hmap-free (Union.proj⁻¹ σ) (hmap-free (Union.proj σ) m)
+    ≡⟨ sym $ hmap-∘ {B = ⟦ ε₁ ⟧ᶜ A} {D = ⟦ ε₂ ⟧ᶜ A} m (Union.proj σ) (Union.proj⁻¹ σ) (proj-natural σ) ⟩ 
+      hmap-free (Union.proj⁻¹ σ ∘ Union.proj σ ) m
+    ≡⟨ cong (λ ○ → hmap-free (λ {A} → ○ A) m ) (pfext _ _ λ X → extensionality λ x → Union.union σ .equivalence X .inverse .proj₁ x) ⟩ 
+      hmap-free id m
+    ≡⟨ hmap-id m ⟩
+      m
+    ∎
+    where open ≡-Reasoning
+
   reorder-coherent :
     ∀ (m : Free ε A) (k : A → Free ε B)
     → (σ : ε₁ ∙ ε₂ ≈ ε)
@@ -129,7 +147,7 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
 
   fwd-commute :
      ∀ {X Y : Set} (f : X → Y) (x : ⟦ ε′ ⟧ᶜ (M ε′ X))
-      ---------------------------------------------------------------------------------
+      -----------------------------------------------------------
     → fwd .αᶜ (fmap {F = ⟦ _ ⟧ᶜ} (fmap f) x) ≡ fmap f (fwd .αᶜ x)
   fwd-commute f ⟨ c , k ⟩ = extensionality λ p →
     begin
@@ -165,9 +183,11 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
   ℋ⟦_⟧ : ⦃ ε ≲ ε′ ⦄ → ∀[ Free ε′ ⇒ const P ⇒ F ⊢ Free ε′ ]
   ℋ⟦_⟧ ⦃ i ⦄ m = ♯ ⦃ _ , union-comm (i .proj₂) ⦄ ∘ handle (i .proj₂) m
 
-  ⇑_ : ∀ {ε} → ∀[ Free ε ⇒ M ε ]
-  (⇑ m) p = fmap ⦃ free-functor ⦄ (flip return p) m >>= id
+  ℋ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Free ε′ B) → (A → P → Free ε′ (F B)) 
+  ℋ⟪ k ⟫ x = ℋ⟦ k x ⟧ 
 
+  ⇑_ : ∀ {ε} → ∀[ Free ε ⇒ M ε ]
+  (⇑ m) p = m >>= flip return p
 
   {- Below we define some properties of handlers, which are necessary for
   writing proofs about elaborations that handle effects in sub-computations. -} 
@@ -187,8 +207,8 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
   -- the tree containing commands of other effects than the effect it handles. 
   Modular : Set₁
   Modular =
-    ∀ {B ε₂} (m : Free ε₂ B)
-    → (σ : ε ∙ ε₂ ≈ ε)
+    ∀ {B ε₂ ε′} (m : Free ε₂ B)
+    → (σ : ε ∙ ε₂ ≈ ε′)
       --------------------------------------
     → handle σ (♯ʳ′ σ m) ≡ ⇑ m
 
@@ -207,9 +227,9 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
 
   Coherent : Set₁
   Coherent =
-    ∀ {B C ε₂}
-    → (σ : ε ∙ ε₂ ≈ ε)
-    → (m : Free ε B) (k : B → Free ε C)
+    ∀ {B C ε₂ ε′}
+    → (σ : ε ∙ ε₂ ≈ ε′)
+    → (m : Free ε′ B) (k : B → Free ε′ C)
       -------------------------------------------------
     → handle σ (m >>= k) ≡ handle σ m >>= handle σ ∘ k
 
@@ -281,7 +301,6 @@ record Handler (ε : Effect) (P : Set) (F : Set → Set) : Set₁ where
           ∎
           where
             
-
             handle′-commute : (m : Free (ε ⊕ᶜ ε₂) X) → handle′ {ε₂ = ε₂} (fmap f m)  ≡ fmap f (handle′ m) 
             handle′-commute (pure x)           =
               begin

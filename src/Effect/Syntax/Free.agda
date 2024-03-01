@@ -145,3 +145,31 @@ hmap-natural θ N .commute {f = f} = hmap-commute
       ≡⟨⟩
         fmap f (hmap-free θ (impure ⟨ c , k ⟩))
       ∎
+
+hmap-id : (m : Free C A) → hmap-free id m ≡ id m
+hmap-id (pure _)           = refl
+hmap-id (impure ⟨ c , k ⟩) = cong (λ ○ → impure ⟨ c , ○ ⟩) (extensionality (hmap-id ∘ k))
+
+hmap-∘ : {A B D : Set} → (m : Free C A) (f : C ↦ C₁) (g : C₁ ↦ C₂) → Natural f → hmap-free (g ∘ f) m ≡ hmap-free g (hmap-free f m) 
+hmap-∘ (pure _) f g _ = refl
+hmap-∘ {B = B} {D = D} (impure ⟨ c , k ⟩) f g fn = 
+  begin
+    hmap-free (g ∘ f) (impure ⟨ c , k ⟩)
+  ≡⟨⟩ 
+    impure (g (f ( ⟨ c , hmap-free (g ∘ f) ∘ k ⟩)))
+  ≡⟨ cong (λ ○ → impure (g (f ⟨ c , ○ ⟩))) (extensionality λ x → hmap-∘ {B = B}{D = D} (k x) f g fn) ⟩ 
+    impure (g (f ⟨ c , hmap-free g ∘ hmap-free f ∘ k ⟩))
+  ≡⟨ cong (impure ∘ g) (fn .commute {f = hmap-free g ∘ hmap-free f} ⟨ c , k ⟩) ⟩
+    impure (g (fmap (hmap-free g ∘ hmap-free f) (f ⟨ c , k ⟩))) 
+  ≡⟨ cong (λ ○ → impure (g (○ (f ⟨ c , k ⟩)))) (fmap-∘ (hmap-free f) (hmap-free g)) ⟩
+    impure (g (fmap (hmap-free g) (fmap (hmap-free f) (f ⟨ c , k ⟩))))
+  ≡⟨⟩
+    hmap-free g (impure (fmap (hmap-free f) (f ⟨ c , k ⟩))) 
+  ≡⟨ cong (λ ○ → hmap-free g (impure ○)) (sym $ fn .commute {f = hmap-free f} ⟨ c , k ⟩) ⟩ 
+    hmap-free g (impure (f (fmap (hmap-free f) ⟨ c , k ⟩))) 
+  ≡⟨⟩ 
+    hmap-free g (impure (f ⟨ c , hmap-free f ∘ k ⟩))
+  ≡⟨⟩ 
+    hmap-free g (hmap-free f (impure ⟨ c , k ⟩))
+  ∎
+  where open ≡-Reasoning

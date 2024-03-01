@@ -158,10 +158,10 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     -- Elaborations are a monad morphism between Hefty trees and the Free monad
     elab-mm : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → MonadMorphism (Hefty (ξ ε′)) (Free ε′)
     elab-mm = record
-      { Ψ                       = elaborate′
-      ; Ψ-natural               = elab-natural
-      ; respects-unit           = elab-id
-      ; respects-multiplication = elab-∘
+      { Ψ         = elaborate′
+      ; Ψ-natural = elab-natural
+      ; resp-unit = elab-id
+      ; resp-join = elab-∘
       }
 
 open Elaboration

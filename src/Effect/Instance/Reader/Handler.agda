@@ -71,7 +71,6 @@ module _ where
   Handler.M-apply     (ReaderHandler _)                = refl
   Handler.hdl-commute (ReaderHandler _) f ⟨ `ask , k ⟩ = refl
   
-
 open Handler
 
 handleReader : ∀ {R} → Reader R ∙ ε ≈ ε′ → Free ε′ A → R → Free ε A 

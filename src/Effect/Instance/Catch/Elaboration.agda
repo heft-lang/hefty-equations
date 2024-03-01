@@ -141,7 +141,7 @@ CatchElab .Elaboration.coherent {ε′ = ε′} {c = `catch t} {s = s} ⦃ i ⦄
 
 -- TODO: explain why we need to disable the termination checker here, and why we
 -- think this is okay
-{-# TERMINATING #-}
+--{-# TERMINATING #-}
 CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
 CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub 
   where
@@ -220,63 +220,9 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
         ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure)
       ≈⟪⟫
         ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (abort >>= pure)  
-      ≈⟪ ≡-to-≈ $ catch-throw-lemma ℰ⟦ m ⟧ ⟫ 
+      ≈⟪ ≡-to-≈ $ Properties.catch-throw-lemma ℰ⟦ m ⟧ ⟫ 
         ℰ⟦ m ⟧
       ∎
       where
 
         open Union (i .proj₂)
-        open ≡-Reasoning renaming (begin_ to ≡-begin_; _∎ to _QED) 
-
-        catch-throw-lemma : ∀ (m : Free ε′ A) → ℋ⟦ m ⟧ tt >>= maybe′ pure (abort >>= pure) ≡ m
-        catch-throw-lemma (pure x)               = refl
-        catch-throw-lemma (impure v@(⟨ c , k ⟩)) with proj v | inspect proj v
-        ... | ⟨ inj₁ `abort , k′ ⟩ | ≡[ eq ] =
-          ≡-begin
-            ℋ⟦ impure v ⟧ tt >>= f
-          ≡⟨⟩
-            ♯ (handle′ tt (impure (proj (fmap (separate (i .proj₂)) v)))) >>= f
-          ≡⟨ cong (λ ○ → ♯ (handle′ tt (impure ○)) >>= f) (proj-natural .commute {f = separate (i .proj₂)} _) ⟩
-            ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) (proj v)))) >>= f
-          ≡⟨ cong (λ ○ → ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) ○))) >>= f) eq ⟩
-            ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) ⟨ inj₁ `abort , k′ ⟩))) >>= f
-          ≡⟨⟩ {- simplify -} 
-            abort >>= pure
-          ≡⟨ >>=-idʳ abort ⟩
-            abort 
-          ≡⟨⟩ 
-            impure (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩) 
-          ≡⟨ cong (λ ○ → impure (inj ⟨ `abort , ○ ⟩)) (extensionality (λ())) ⟩ 
-            impure (inja ⟨ `abort , k′ ⟩)  
-          ≡⟨ cong impure (sym (proj-injˡ _ _ eq)) ⟩
-            impure v
-          QED
-
-          where
-            f = maybe′ pure (abort >>= pure)
-            
-        ... | ⟨ inj₂ c′ , k′ ⟩ | ≡[ eq ] =
-
-          ≡-begin
-            ℋ⟦ impure ⟨ c , k ⟩ ⟧ tt >>= f
-          ≡⟨⟩ {- inline definition -} 
-            ♯ (handle′ tt (impure (proj (fmap (separate (i .proj₂)) v)))) >>= f
-          ≡⟨ cong (λ ○ → ♯ (handle′ tt (impure ○)) >>= f) (proj-natural .commute {f = separate (i .proj₂)} _)⟩
-            ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) (proj v)))) >>= f
-          ≡⟨ cong (λ ○ → ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) ○))) >>= f) eq ⟩
-            ♯ (handle′ tt (impure (fmap (separate (i .proj₂)) ⟨ inj₂ c′ , k′ ⟩))) >>= f
-          ≡⟨⟩ {- simplify -} 
-            impure (injb ⟨ c′ , flip ℋ⟦_⟧ tt ∘ k′ ⟩) >>= f
-          ≡⟨⟩ {- definition of >>= -} 
-            impure (fmap ⦃ con-functor ⦄ (_>>= f) (injb ⟨ c′ , flip ℋ⟦_⟧ tt ∘ k′ ⟩)) 
-          ≡⟨ cong impure (sym $ injb-natural .commute {f = _>>= f} _) ⟩
-            impure (injb ⟨ c′ , (_>>= f) ∘ flip ℋ⟦_⟧ tt ∘ k′ ⟩)
-          ≡⟨ cong (λ ○ → impure (injb ⟨ c′ , ○ ⟩)) (extensionality λ x → catch-throw-lemma (k′ x)) ⟩  
-            impure (injb ⟨ c′ , k′ ⟩) 
-          ≡⟨ (cong impure (sym $ proj-injʳ _ _ eq)) ⟩
-            impure ⟨ c , k ⟩
-          QED
-          
-          where
-            f = maybe′ pure (abort >>= pure)
-            

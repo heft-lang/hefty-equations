@@ -95,16 +95,16 @@ Handler.M-apply     AbortHandler                  = refl
 Handler.hdl-commute AbortHandler f ⟨ `abort , k ⟩ = refl
 
 
-open Handler
-
 handleAbort : Abort ∙ ε ≈ ε′ → Free ε′ A → Free ε (Maybe A)
-handleAbort σ m = handle AbortHandler σ m tt
+handleAbort σ m = Handler.handle AbortHandler σ m tt
 
 
 module Properties where
 
-  modular : Modular AbortHandler
-  modular = handle-modular AbortHandler 
+  open Handler AbortHandler
+
+  modular : Modular
+  modular = handle-modular 
  
   correct : Correct AbortTheory AbortHandler 
   correct (here refl) = refl
@@ -114,24 +114,24 @@ module Properties where
     begin
       handleAbort σ abort
     ≡⟨⟩ 
-      handle AbortHandler σ abort tt
+      handle σ abort tt
     ≡⟨⟩
-      handle AbortHandler σ (♯ (impure ⟨ `abort , ⊥-elim ⟩)) tt
+      handle σ (♯ (impure ⟨ `abort , ⊥-elim ⟩)) tt
     ≡⟨⟩ 
-      handle′ AbortHandler (reorder σ (impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩))) tt
+      handle′ (reorder σ (impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩))) tt
     ≡⟨⟩
-      handle′ AbortHandler (fold-free pure (λ where .αᶜ → impure ∘ proj σ) $ impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩)) tt
+      handle′ (fold-free pure (λ where .αᶜ → impure ∘ proj σ) $ impure (inj ⟨ `abort , (λ x → fold-free pure inject (⊥-elim x)) ⟩)) tt
     ≡⟨⟩ 
-      handle′ AbortHandler (impure (proj σ (fmap (reorder σ) (inj ⟨ `abort , ((λ x → fold-free pure inject (⊥-elim x))) ⟩)))) tt
-    ≡⟨ cong (flip (handle′ AbortHandler) tt ∘ impure ∘ proj σ)
+      handle′ (impure (proj σ (fmap (reorder σ) (inj ⟨ `abort , ((λ x → fold-free pure inject (⊥-elim x))) ⟩)))) tt
+    ≡⟨ cong (flip handle′ tt ∘ impure ∘ proj σ)
        ( sym (inj-natural .commute {f = reorder σ} _)
        ) ⟩
-      flip (handle′ AbortHandler) tt (impure (proj σ (inj (⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)))) 
-    ≡⟨ cong (flip (handle′ AbortHandler) tt ∘ impure)
+      flip handle′ tt (impure (proj σ (inj (⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)))) 
+    ≡⟨ cong (flip handle′ tt ∘ impure)
          ( σ .union .equivalence _ .inverse .proj₂
            ( injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)
          ) ⟩
-      flip (handle′ AbortHandler) tt (impure (injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)) 
+      flip handle′ tt (impure (injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)) 
     ≡⟨⟩ 
       pure nothing
     ∎
@@ -141,4 +141,128 @@ module Properties where
       open ≡-Reasoning
       instance inst : Abort ≲ _
       inst = _ , σ
-  
+
+  module _ ⦃ i : Abort ≲ ε′ ⦄ where 
+
+    private instance ≲-inst-right : i .proj₁ ≲ (Abort ⊕ᶜ i .proj₁)
+    ≲-inst-right = ≲-⊕ᶜ-right Abort
+               
+    private instance ≲-inst-left :  Abort ≲ (Abort ⊕ᶜ i .proj₁)
+    ≲-inst-left = ≲-⊕ᶜ-left $ i .proj₁
+
+    private instance inst : i .proj₁ ≲ ε′
+    inst = Abort , union-comm (i .proj₂)
+
+    reorder-catch-throw :
+        ( ∀ (m : Free (Abort ⊕ᶜ i .proj₁) A)
+          → ♯ (handle′ m tt) >>= maybe′ pure (abort >>= pure) ≡ m
+        )
+      → ∀ (m : Free ε′ A)
+        -----------------------------------------------
+      → ℋ⟦ m ⟧ tt >>= maybe′ pure (abort >>= pure) ≡ m
+    reorder-catch-throw px m =
+      begin
+        ℋ⟦ m ⟧ tt >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩ 
+        ♯ (handle (i .proj₂) m tt) >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩ 
+        ♯ (handle′ (reorder (i .proj₂) m) tt) >>= maybe′ pure (abort >>= pure)
+      ≡⟨ reorder-lemma (reorder (i .proj₂) m) ⟩
+        reorder⁻¹ (i .proj₂) (♯ (handle′ (reorder (i .proj₂) m) tt) >>= maybe′ pure (abort >>= pure))
+      ≡⟨ cong (reorder⁻¹ (i .proj₂)) (px (reorder (i .proj₂) m)) ⟩ 
+        reorder⁻¹ (i .proj₂) (reorder (i .proj₂) m) 
+      ≡⟨ reorder-inv (i .proj₂) m ⟩
+        m
+      ∎
+      where
+        open ≡-Reasoning
+
+        reorder-lemma :
+          ∀ (m : Free (Abort ⊕ᶜ i .proj₁) A)
+            --------------------------------------------------------------------------
+          → ♯ (handle′ m tt) >>= maybe′ pure (abort >>= pure)
+            ≡ reorder⁻¹ (i .proj₂) (♯ (handle′ m tt) >>= maybe′ pure (abort >>= pure))
+        reorder-lemma (pure x) = refl
+        reorder-lemma (impure ⟨ inj₁ `abort , k ⟩) =
+          begin
+            ♯ (handle′ (impure ⟨ inj₁ `abort , k ⟩) tt) >>= maybe′ pure (abort >>= pure)
+          ≡⟨⟩ 
+            pure nothing >>= maybe′ pure (abort >>= pure)
+          ≡⟨⟩ 
+            abort >>= pure
+          ≡⟨⟩ 
+            ♯ (impure ⟨ `abort , ⊥-elim ⟩) >>= pure
+          ≡⟨⟩
+            impure (inj ⟨ (`abort , ♯ ∘ ⊥-elim) ⟩) >>= pure 
+          ≡⟨⟩ 
+            impure (fmap {F = ⟦ _ ⟧ᶜ} (_>>= pure) (inj ⟨ `abort , ♯ ∘ ⊥-elim ⟩))
+          ≡⟨ cong impure (sym $ inj-natural .commute {f = _>>= pure} ⟨ `abort , (♯ ∘ ⊥-elim) ⟩) ⟩
+            impure (inj (fmap {F = ⟦ _ ⟧ᶜ} (_>>= pure) ⟨ `abort , ♯ ∘ ⊥-elim ⟩))
+          ≡⟨⟩ 
+            impure (inj ⟨ `abort , ((♯ ∘ ⊥-elim) >=> pure) ⟩) 
+          ≡⟨⟩ 
+            impure (Union.proj⁻¹ (i .proj₂) (inj ⦃ ≲-inst-left ⦄ ⟨ `abort , ((♯ ∘ ⊥-elim) >=> pure) ⟩) ) 
+          ≡⟨ cong (λ ○ → impure (Union.proj⁻¹ (i .proj₂) (inj ⟨ (`abort , ○) ⟩))) (extensionality λ()) ⟩
+           impure (Union.proj⁻¹ (i .proj₂) (inj ⟨ `abort , hmap-free (Union.proj⁻¹ (i .proj₂)) ∘ (((♯ ∘ ⊥-elim) >=> pure)) ⟩))
+          ≡⟨⟩ 
+            hmap-free (Union.proj⁻¹ (i .proj₂)) (impure (inj ⟨ `abort , ((♯ ∘ ⊥-elim) >=> pure) ⟩)) 
+          ≡⟨⟩ 
+            hmap-free (Union.proj⁻¹ (i .proj₂)) (♯ (impure ⟨ `abort , ⊥-elim ⟩) >>= pure) 
+          ≡⟨⟩ 
+            hmap-free (Union.proj⁻¹ (i .proj₂)) ((abort >>= pure)) 
+          ≡⟨⟩ 
+            reorder⁻¹ (i .proj₂) (abort >>= pure) 
+          ≡⟨⟩ 
+             reorder⁻¹ (i .proj₂) (pure nothing >>= maybe′ pure (abort >>= pure))
+          ≡⟨⟩ 
+            reorder⁻¹ (i .proj₂) (♯ (handle′ (impure ⟨ inj₁ `abort , k ⟩) tt) >>= maybe′ pure (abort >>= pure))
+          ∎
+        reorder-lemma (impure ⟨ inj₂ c , k ⟩) =
+          begin
+            ♯ (handle′ (impure ⟨ inj₂ c , k ⟩) tt) >>= maybe′ pure (abort >>= pure)
+          ≡⟨⟩
+            ♯ (impure ⟨ c , flip handle′ tt ∘ k ⟩) >>= maybe′ pure (abort >>= pure)
+          ≡⟨⟩ 
+            impure (inj ⟨ c , ♯ ∘ flip handle′ tt ∘ k ⟩) >>= maybe′ pure (abort >>= pure)
+          ≡⟨⟩ 
+            impure (fmap {F = ⟦ _ ⟧ᶜ} (_>>= maybe′ pure (abort >>= pure)) (inj ⟨ c , ♯ ∘ flip handle′ tt ∘ k ⟩))
+          ≡⟨ cong impure (sym $ inj-natural .commute {f = (_>>= maybe′ pure (abort >>= pure))} ⟨ c , ♯ ∘ flip handle′ tt ∘ k ⟩) ⟩ 
+            impure (inj ⟨ c , ((♯ ∘ flip handle′ tt ∘ k) >=> maybe′ pure (abort >>= pure)) ⟩)
+          ≡⟨ cong (λ ○ → impure (inj ⟨ c , ○ ⟩)) (extensionality (reorder-lemma ∘ k)) ⟩ 
+            impure (inj ⟨ c , (λ x → reorder⁻¹ (i .proj₂) (♯ (handle′ (k x) tt) >>= maybe′ pure (abort >>= pure))) ⟩) 
+          ≡⟨⟩
+            reorder⁻¹ (i .proj₂) (♯ (handle′ (impure ⟨ inj₂ c , k ⟩) tt) >>= maybe′ pure (abort >>= pure))
+          ∎
+
+    catch-throw-lemma′ :
+      ∀ (m : Free (Abort ⊕ᶜ i .proj₁) A)
+        -----------------------------------------------------
+      → ♯ (handle′ m tt) >>= maybe′ pure (abort >>= pure) ≡ m
+    catch-throw-lemma′ (pure x)                     = refl
+    catch-throw-lemma′ (impure ⟨ inj₁ `abort , k ⟩) =
+      begin
+        ♯ (handle′ (impure ⟨ inj₁ `abort , k ⟩) tt) >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩
+        pure nothing >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩
+        abort >>= pure
+      ≡⟨ >>=-idʳ abort ⟩ 
+        abort
+      ≡⟨ cong (λ ○ → impure ⟨ inj₁ `abort , ○ ⟩) (extensionality λ()) ⟩ 
+        impure ⟨ inj₁ `abort , k ⟩
+      ∎
+    catch-throw-lemma′ (impure ⟨ inj₂ c , k ⟩) =
+      begin
+        ♯ (handle′ (impure ⟨ inj₂ c , k ⟩) tt) >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩ 
+        ♯ (impure ⟨ c , flip handle′ tt ∘ k ⟩) >>= maybe′ pure (abort >>= pure) 
+      ≡⟨⟩ 
+        impure ⟨ inj₂ c , ♯ ∘ flip handle′ tt ∘ k ⟩ >>= maybe′ pure (abort >>= pure)
+      ≡⟨⟩ 
+        impure ⟨ inj₂ c , (♯ ∘ flip handle′ tt ∘ k) >=> maybe′ pure (abort >>= pure) ⟩ 
+      ≡⟨ cong (λ ○ → impure ⟨ inj₂ c , ○ ⟩) (extensionality (catch-throw-lemma′ ∘ k)) ⟩
+        impure ⟨ inj₂ c , k ⟩
+      ∎
+
+    catch-throw-lemma : ∀ (m : Free ε′ A) → ℋ⟦ m ⟧ tt >>= maybe′ pure (abort >>= pure) ≡ m
+    catch-throw-lemma m = reorder-catch-throw catch-throw-lemma′ m

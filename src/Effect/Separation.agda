@@ -47,25 +47,14 @@ record Union (ε₁ ε₂ ε : Effect) : Set₁ where
   proj : ε ↦ (ε₁ ⊕ᶜ ε₂)
   proj = union .equivalence _ .from
 
+  proj⁻¹ : (ε₁ ⊕ᶜ ε₂) ↦ ε
+  proj⁻¹ = union .equivalence _ .to
+
   proj-natural : Natural proj 
   proj-natural = union .natural .from-natural 
 
-  proj-injˡ : ∀ {X} (x : ⟦ ε ⟧ᶜ X) x′ → proj x ≡ injˡ ε₂ x′ → x ≡ inja x′
-  proj-injˡ x x′ eq with union .equivalence _ .from x | inspect (union .equivalence _ .from) x 
-  ... | ⟨ inj₁ c , k ⟩ | ≡[ eq′ ] =
-    begin
-      x
-    ≡⟨ (sym $ union .equivalence _ .inverse .proj₁ x) ⟩
-      union .equivalence _ .to (union .equivalence _ .from x) 
-    ≡⟨ cong (union .equivalence _ .to) eq′ ⟩
-      union .equivalence _ .to ⟨ inj₁ c , k ⟩ 
-    ≡⟨ cong (union .equivalence _ .to) eq ⟩ 
-      union .equivalence _ .to (injˡ ε₂ x′)
-    ∎
-    where
-      open ≡-Reasoning 
-
-  postulate proj-injʳ : ∀ {X} (x : ⟦ ε ⟧ᶜ X) x′ → proj x ≡ injʳ ε₁ x′ → x ≡ injb x′
+  proj⁻¹-natural : Natural proj⁻¹
+  proj⁻¹-natural = union .natural .to-natural
 
 -- infix notation
 _∙_≈_ = Union 
