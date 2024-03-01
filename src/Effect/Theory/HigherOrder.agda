@@ -300,7 +300,6 @@ weaken-correct :
 weaken-correct e i Th T′ sub₁ c px ⦃ i = i′ ⦄ T′′ sub₂
   = c px ⦃ ≲-trans i i′ ⦄ T′′ $ ⟨⊆⟩-trans sub₁ sub₂ 
 
-
 compose-elab-correct
   : ∀ (e₁ : Elaboration ξ₁ ε₁) (e₂ : Elaboration ξ₂ ε₂)
     → Correctᴴ Th₁ T₁ e₁

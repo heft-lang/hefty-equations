@@ -52,7 +52,6 @@ eta = left ≗ᴴ right
     left _  f = pure f
     right _ f = abs λ x → app f (var x)
 
-
 LambdaTheory : Theoryᴴ Lam
 LambdaTheory =
   ∥ beta
