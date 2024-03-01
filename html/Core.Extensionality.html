@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Core.Extensionality</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">OPTIONS</a> <a id="13" class="Pragma">--without-K</a> <a id="25" class="Symbol">#-}</a>
+
+<a id="30" class="Keyword">module</a> <a id="37" href="Core.Extensionality.html" class="Module">Core.Extensionality</a> <a id="57" class="Keyword">where</a>
+
+<a id="64" class="Keyword">open</a> <a id="69" class="Keyword">import</a> <a id="76" href="Level.html" class="Module">Level</a>
+<a id="82" class="Keyword">open</a> <a id="87" class="Keyword">import</a> <a id="94" href="Axiom.Extensionality.Propositional.html" class="Module">Axiom.Extensionality.Propositional</a>
+
+<a id="130" class="Keyword">postulate</a>
+  <a id="polymorphicExtensionality"></a><a id="142" href="Core.Extensionality.html#142" class="Postulate">polymorphicExtensionality</a> <a id="168" class="Symbol">:</a> <a id="170" class="Symbol">∀</a> <a id="172" href="Core.Extensionality.html#172" class="Bound">a</a> <a id="174" href="Core.Extensionality.html#174" class="Bound">b</a> <a id="176" class="Symbol">→</a> <a id="178" href="Axiom.Extensionality.Propositional.html#741" class="Function">Extensionality</a> <a id="193" href="Core.Extensionality.html#172" class="Bound">a</a> <a id="195" href="Core.Extensionality.html#174" class="Bound">b</a> 
+
+<a id="extensionality"></a><a id="199" href="Core.Extensionality.html#199" class="Function">extensionality</a> <a id="214" class="Symbol">=</a> <a id="216" href="Core.Extensionality.html#142" class="Postulate">polymorphicExtensionality</a> <a id="242" href="Agda.Primitive.html#915" class="Primitive">zero</a> <a id="247" href="Agda.Primitive.html#915" class="Primitive">zero</a>
+
+<a id="extensionality′"></a><a id="253" href="Core.Extensionality.html#253" class="Function">extensionality′</a> <a id="269" class="Symbol">:</a> <a id="271" href="Axiom.Extensionality.Propositional.html#928" class="Function">ExtensionalityImplicit</a> <a id="294" href="Agda.Primitive.html#915" class="Primitive">zero</a> <a id="299" href="Agda.Primitive.html#915" class="Primitive">zero</a>
+<a id="304" href="Core.Extensionality.html#253" class="Function">extensionality′</a> <a id="320" class="Symbol">=</a> <a id="322" href="Axiom.Extensionality.Propositional.html#2032" class="Function">implicit-extensionality</a> <a id="346" href="Core.Extensionality.html#199" class="Function">extensionality</a> 
+
+<a id="pfext"></a><a id="363" href="Core.Extensionality.html#363" class="Function">pfext</a> <a id="369" class="Symbol">=</a> <a id="371" href="Core.Extensionality.html#142" class="Postulate">polymorphicExtensionality</a>
+</pre></body></html>

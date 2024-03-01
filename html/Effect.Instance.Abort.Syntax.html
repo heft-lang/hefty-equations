@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Effect.Instance.Abort.Syntax</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">OPTIONS</a> <a id="13" class="Pragma">--without-K</a> <a id="25" class="Symbol">#-}</a> 
+
+<a id="31" class="Keyword">open</a> <a id="36" class="Keyword">import</a> <a id="43" href="Core.Functor.html" class="Module">Core.Functor</a>
+<a id="56" class="Keyword">open</a> <a id="61" class="Keyword">import</a> <a id="68" href="Core.Container.html" class="Module">Core.Container</a>
+
+<a id="84" class="Keyword">open</a> <a id="89" class="Keyword">import</a> <a id="96" href="Effect.Base.html" class="Module">Effect.Base</a>
+<a id="108" class="Keyword">open</a> <a id="113" class="Keyword">import</a> <a id="120" href="Effect.Separation.html" class="Module">Effect.Separation</a>
+<a id="138" class="Keyword">open</a> <a id="143" class="Keyword">import</a> <a id="150" href="Effect.Inclusion.html" class="Module">Effect.Inclusion</a>
+<a id="167" class="Keyword">open</a> <a id="172" class="Keyword">import</a> <a id="179" href="Effect.Syntax.Free.html" class="Module">Effect.Syntax.Free</a>
+
+<a id="199" class="Keyword">open</a> <a id="204" class="Keyword">import</a> <a id="211" href="Data.Empty.html" class="Module">Data.Empty</a>
+<a id="222" class="Keyword">open</a> <a id="227" class="Keyword">import</a> <a id="234" href="Data.Product.html" class="Module">Data.Product</a>
+
+<a id="248" class="Keyword">module</a> <a id="255" href="Effect.Instance.Abort.Syntax.html" class="Module">Effect.Instance.Abort.Syntax</a> <a id="284" class="Keyword">where</a>
+
+<a id="291" class="Keyword">data</a> <a id="AbortC"></a><a id="296" href="Effect.Instance.Abort.Syntax.html#296" class="Datatype">AbortC</a> <a id="303" class="Symbol">:</a> <a id="305" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="309" class="Keyword">where</a> <a id="AbortC.`abort"></a><a id="315" href="Effect.Instance.Abort.Syntax.html#315" class="InductiveConstructor">`abort</a> <a id="322" class="Symbol">:</a> <a id="324" href="Effect.Instance.Abort.Syntax.html#296" class="Datatype">AbortC</a> 
+
+<a id="Abort"></a><a id="333" href="Effect.Instance.Abort.Syntax.html#333" class="Function">Abort</a> <a id="339" class="Symbol">:</a> <a id="341" href="Core.Container.html#556" class="Record">Container</a>
+<a id="351" href="Effect.Instance.Abort.Syntax.html#333" class="Function">Abort</a> <a id="357" class="Symbol">=</a> <a id="359" class="Keyword">record</a>
+  <a id="368" class="Symbol">{</a> <a id="370" href="Core.Container.html#605" class="Field">shape</a>    <a id="379" class="Symbol">=</a> <a id="381" href="Effect.Instance.Abort.Syntax.html#296" class="Datatype">AbortC</a>
+  <a id="390" class="Symbol">;</a> <a id="392" href="Core.Container.html#628" class="Field">position</a> <a id="401" class="Symbol">=</a> <a id="403" class="Symbol">λ</a> <a id="405" class="Keyword">where</a> <a id="411" href="Effect.Instance.Abort.Syntax.html#315" class="InductiveConstructor">`abort</a> <a id="418" class="Symbol">→</a> <a id="420" href="Data.Empty.html#886" class="Function">⊥</a>
+  <a id="424" class="Symbol">}</a>
+
+<a id="abort"></a><a id="427" href="Effect.Instance.Abort.Syntax.html#427" class="Function">abort</a> <a id="433" class="Symbol">:</a> <a id="435" class="Symbol">⦃</a> <a id="437" href="Effect.Instance.Abort.Syntax.html#333" class="Function">Abort</a> <a id="443" href="Effect.Inclusion.html#635" class="Function Operator">≲</a> <a id="445" href="Effect.Base.html#899" class="Generalizable">ε</a> <a id="447" class="Symbol">⦄</a> <a id="449" class="Symbol">→</a> <a id="451" href="Effect.Syntax.Free.html#483" class="Datatype">Free</a> <a id="456" href="Effect.Base.html#899" class="Generalizable">ε</a> <a id="458" href="Core.Functor.html#1514" class="Generalizable">A</a>
+<a id="460" href="Effect.Instance.Abort.Syntax.html#427" class="Function">abort</a> <a id="466" class="Symbol">=</a> <a id="468" href="Effect.Inclusion.html#1844" class="Function">♯</a> <a id="470" class="Symbol">(</a><a id="471" href="Effect.Syntax.Free.html#554" class="InductiveConstructor">impure</a> <a id="478" href="Core.Container.html#719" class="InductiveConstructor Operator">⟨</a> <a id="480" href="Effect.Instance.Abort.Syntax.html#315" class="InductiveConstructor">`abort</a> <a id="487" href="Agda.Builtin.Sigma.html#235" class="InductiveConstructor Operator">,</a> <a id="489" href="Data.Empty.html#1041" class="Function">⊥-elim</a> <a id="496" href="Core.Container.html#719" class="InductiveConstructor Operator">⟩</a><a id="497" class="Symbol">)</a>
+</pre></body></html>
