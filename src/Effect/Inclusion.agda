@@ -166,18 +166,20 @@ module _ where
 
   -- inclusion witnesses form a monoid w.r.t. the equivalence relation defined above
 
-  postulate ⇔≲-identityˡ : (i : ε₁ ≲ ε) → ≲-trans ≲-refl i ⇔≲ i
-  -- ⇔≲-identityˡ = ? 
+  ⇔≲-identityˡ : (i : ε₁ ≲ ε) → ≲-trans ≲-refl i ⇔≲ i
+  ⇔≲-identityˡ i = record { ≗-inj = refl }
 
-  postulate ⇔≲-identityʳ : (i : ε₁ ≲ ε₂) → ≲-trans i ≲-refl ⇔≲ i
+  ⇔≲-identityʳ : (i : ε₁ ≲ ε₂) → ≲-trans i ≲-refl ⇔≲ i
+  ⇔≲-identityʳ i = record { ≗-inj = refl } 
 
-  postulate ⇔≲-assoc : (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε₃) (i₃ : ε₃ ≲ ε) → ≲-trans (≲-trans i₁ i₂) i₃ ⇔≲ ≲-trans i₁ (≲-trans i₂ i₃)   
-
+  ⇔≲-assoc : (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε₃) (i₃ : ε₃ ≲ ε) → ≲-trans (≲-trans i₁ i₂) i₃ ⇔≲ ≲-trans i₁ (≲-trans i₂ i₃)   
+  ⇔≲-assoc i₁ i₂ i₃ = record { ≗-inj = refl }
   
-  postulate ⇔≲-trans-congₗ : (i₁ i₂ : ε₁ ≲ ε₂) (i : ε₂ ≲ ε′) → i₁ ⇔≲ i₂ → ≲-trans i₁ i ⇔≲ ≲-trans i₂ i 
-  --⇔≲-trans-congₗ = {!!}
+  ⇔≲-trans-congₗ : (i₁ i₂ : ε₁ ≲ ε₂) (i : ε₂ ≲ ε′) → i₁ ⇔≲ i₂ → ≲-trans i₁ i ⇔≲ ≲-trans i₂ i 
+  ⇔≲-trans-congₗ i₁ i₂ i eq = record { ≗-inj = cong (λ x → inj ⦃ i ⦄ x) (eq .≗-inj) }
 
-  postulate ⇔≲-trans-congᵣ : (i : ε′ ≲ ε₁) (i₁ i₂ : ε₁ ≲ ε₂) → i₁ ⇔≲ i₂ → ≲-trans i i₁ ⇔≲ ≲-trans i i₂ 
-  -- ⇔≲-trans-congᵣ i i₁ i₂ eq = record { ≗-inj = {!!} }
+  ⇔≲-trans-congᵣ : (i : ε′ ≲ ε₁) (i₁ i₂ : ε₁ ≲ ε₂) → i₁ ⇔≲ i₂ → ≲-trans i i₁ ⇔≲ ≲-trans i i₂ 
+  ⇔≲-trans-congᵣ i i₁ i₂ eq = record { ≗-inj = eq .≗-inj }
 
-  postulate ⇔≲-resp-⇿ˡ : (i₁ i₂ : ε₁ ≲ ε′) (eq : ε₁ ⇿ ε₂) → i₁ ⇔≲ i₂ → ≲-respects-⇿ˡ eq i₁ ⇔≲ ≲-respects-⇿ˡ eq i₂ 
+  ⇔≲-resp-⇿ˡ : (i₁ i₂ : ε₁ ≲ ε′) (eq : ε₁ ⇿ ε₂) → i₁ ⇔≲ i₂ → ≲-respects-⇿ˡ eq i₁ ⇔≲ ≲-respects-⇿ˡ eq i₂ 
+  ⇔≲-resp-⇿ˡ i₁ i₂ eq eq′ = record { ≗-inj = eq′ .≗-inj }
