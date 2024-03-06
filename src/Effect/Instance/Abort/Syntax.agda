@@ -7,9 +7,12 @@ open import Effect.Base
 open import Effect.Separation
 open import Effect.Inclusion
 open import Effect.Syntax.Free
+open import Effect.Theory.FirstOrder
 
 open import Data.Empty
 open import Data.Product
+
+open import Relation.Binary.PropositionalEquality
 
 module Effect.Instance.Abort.Syntax where
 
@@ -23,3 +26,16 @@ Abort = record
 
 abort : ⦃ Abort ≲ ε ⦄ → Free ε A
 abort = ♯ (impure ⟨ `abort , ⊥-elim ⟩)
+
+abort-resp-⇔≲ : ∀ {A} (i₁ i₂ : Abort ≲ ε) → i₁ ⇔≲ i₂ → abort {A = A} ⦃ i₁ ⦄ ≡ abort ⦃ i₂ ⦄
+abort-resp-⇔≲ i₁ i₂ eqv =
+  begin
+    abort ⦃ i₁ ⦄
+  ≡⟨⟩ 
+    ♯ ⦃ i₁ ⦄ (impure ⟨ `abort , ⊥-elim ⟩) 
+  ≡⟨ ♯-resp-⇔≲ eqv (impure ⟨ `abort , ⊥-elim ⟩) ⟩
+    ♯ ⦃ i₂ ⦄ (impure ⟨ `abort , ⊥-elim ⟩) 
+  ≡⟨⟩ 
+    abort ⦃ i₂ ⦄
+  ∎
+  where open ≡-Reasoning

@@ -107,6 +107,8 @@ CBVCorrect (here refl) T′ sub {γ = f , m} =
     ℰ⟦ m >>= f ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = sub .inc
     open ≈-Reasoning T′
     open Elaboration LambdaElabCBV
 
@@ -123,6 +125,8 @@ CBVCorrect (there (here refl)) T′ sub {γ = f} =
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
   where
+    instance inst : _ ≲ _
+    inst = sub .inc
     open ≈-Reasoning T′
     open Elaboration LambdaElabCBV
 

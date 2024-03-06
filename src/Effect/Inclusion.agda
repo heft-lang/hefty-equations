@@ -141,4 +141,43 @@ module _ where
     ; resp-join = λ f g → extensionality λ x → ♯-coherent (f x) g
     } 
 
+-- (Extensional) equivalence of inclusion witnesses 
+module _ where
+
+  record _⇔≲_ {ε₁ ε₂} (i₁ i₂ : ε₁ ≲ ε₂) : Set₁ where
+    field
+      ≗-inj   : ∀ {X : Set} {x : ⟦ _ ⟧ᶜ X} → inj ⦃ i₁ ⦄ x ≡ inj ⦃ i₂ ⦄ x
+
+  open _⇔≲_
+
+
+  -- witness equivalence is indeed in equivalence relation
+
+  ⇔≲-refl : (i : ε₁ ≲ ε₂) → i ⇔≲ i
+  ⇔≲-refl i = record { ≗-inj = refl }
+
+  ⇔≲-sym  : (i₁ i₂ : ε₁ ≲ ε₂) → i₁ ⇔≲ i₂ → i₂ ⇔≲ i₁
+  ⇔≲-sym i₁ i₂ eq = record { ≗-inj = sym (eq .≗-inj) }
+
+  ⇔≲-trans : (i₁ i₂ i₃ : ε₁ ≲ ε₂) → i₁ ⇔≲ i₂ → i₂ ⇔≲ i₃ → i₁ ⇔≲ i₃
+  ⇔≲-trans i₁ i₂ i₃ eq₁ eq₂ = record { ≗-inj = trans (eq₁ .≗-inj) (eq₂ .≗-inj) }
+
+
+
+  -- inclusion witnesses form a monoid w.r.t. the equivalence relation defined above
+
+  postulate ⇔≲-identityˡ : (i : ε₁ ≲ ε) → ≲-trans ≲-refl i ⇔≲ i
+  -- ⇔≲-identityˡ = ? 
+
+  postulate ⇔≲-identityʳ : (i : ε₁ ≲ ε₂) → ≲-trans i ≲-refl ⇔≲ i
+
+  postulate ⇔≲-assoc : (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε₃) (i₃ : ε₃ ≲ ε) → ≲-trans (≲-trans i₁ i₂) i₃ ⇔≲ ≲-trans i₁ (≲-trans i₂ i₃)   
+
   
+  postulate ⇔≲-trans-congₗ : (i₁ i₂ : ε₁ ≲ ε₂) (i : ε₂ ≲ ε′) → i₁ ⇔≲ i₂ → ≲-trans i₁ i ⇔≲ ≲-trans i₂ i 
+  --⇔≲-trans-congₗ = {!!}
+
+  postulate ⇔≲-trans-congᵣ : (i : ε′ ≲ ε₁) (i₁ i₂ : ε₁ ≲ ε₂) → i₁ ⇔≲ i₂ → ≲-trans i i₁ ⇔≲ ≲-trans i i₂ 
+  -- ⇔≲-trans-congᵣ i i₁ i₂ eq = record { ≗-inj = {!!} }
+
+  postulate ⇔≲-resp-⇿ˡ : (i₁ i₂ : ε₁ ≲ ε′) (eq : ε₁ ⇿ ε₂) → i₁ ⇔≲ i₂ → ≲-respects-⇿ˡ eq i₁ ⇔≲ ≲-respects-⇿ˡ eq i₂ 

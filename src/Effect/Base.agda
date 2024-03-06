@@ -87,17 +87,15 @@ injectᴴ .α v = impure (injᴴ v)
   ; fork-stable     = refl
   ; types-stable    = refl
   }  
-
-postulate TODO : ∀ {a} {A : Set a} → A 
-
-⊑ᴴ-trans : η₁ ⊑ᴴ η₂ → η₂ ⊑ᴴ η₃ → η₁ ⊑ᴴ η₃
-⊑ᴴ-trans sub₁ sub₂ = record
-  { injᴴ-c          = injᴴ-c ⦃ sub₂ ⦄ ∘ injᴴ-c ⦃ sub₁ ⦄
-  ; response-stable = trans (response-stable ⦃ sub₁ ⦄) (response-stable ⦃ sub₂ ⦄)
-  ; fork-stable     = trans (fork-stable ⦃ sub₁ ⦄) (fork-stable ⦃ sub₂ ⦄)
-  ; types-stable    = trans TODO (types-stable ⦃ sub₂ ⦄)
-  }
-
+-- 
+-- ⊑ᴴ-trans : η₁ ⊑ᴴ η₂ → η₂ ⊑ᴴ η₃ → η₁ ⊑ᴴ η₃
+-- ⊑ᴴ-trans sub₁ sub₂ = record
+--   { injᴴ-c          = injᴴ-c ⦃ sub₂ ⦄ ∘ injᴴ-c ⦃ sub₁ ⦄
+--   ; response-stable = trans (response-stable ⦃ sub₁ ⦄) (response-stable ⦃ sub₂ ⦄)
+--   ; fork-stable     = trans (fork-stable ⦃ sub₁ ⦄) (fork-stable ⦃ sub₂ ⦄)
+--   ; types-stable    = {!!} 
+--   }
+-- 
 ⊑ᴴ-⊕-left : η₁ ⊑ᴴ (η₁ ⊕ η₂)
 ⊑ᴴ-⊕-left = record
   { injᴴ-c          = inj₁

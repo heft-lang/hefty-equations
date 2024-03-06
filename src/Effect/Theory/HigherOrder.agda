@@ -162,9 +162,9 @@ Correctᴴ : Theoryᴴ ξ → Theory ε → Elaboration ξ ε → Set₁
 Correctᴴ Th T e =
   ∀ {eq : Equationᴴ _}
   → eq ◃ᴴ Th
-  → ∀ {ε′} → ⦃ i : _ ≲ ε′ ⦄
-  → (T′ : Theory ε′) → T ⊆⟨ i ⟩ T′ 
-  → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ i) eq 
+  → ∀ {ε′} 
+  → (T′ : Theory ε′) → (sub : T ≪ T′) 
+  → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ sub .inc) eq 
 
 
 -- Equations that occur in a composed theory can be found in either of the
@@ -258,47 +258,47 @@ module _ {T : Theory ε} where
         -------------------------------------
       → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
 
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
     with [+]ᴴ-injective Th₁ Th₂ px
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
     | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑ᴴ-⊕-left _ px′
   ... | eq′ , px′′ , refl = begin
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
-      fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₁ px′′ ⦃ i ⦄ T′ it ⟫
-      fold-hefty pure (□⟨ e₁ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
+      fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
+    ≈⟪ c₁ px′′ T′ it ⟫
+      fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .rhsᴴ _ _))
     ∎
     where open ≈-Reasoning T′
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px ⦃ i ⦄ T′ it
+  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
     | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑ᴴ-⊕-right _ px′
   ... | eq′ , px′′ , refl = begin
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
-      fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₂ px′′ ⦃ i ⦄ T′ it ⟫ 
-      fold-hefty pure (□⟨ e₂ .elab ⟩ i) (eq′ .rhsᴴ _ _) 
+      fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
+    ≈⟪ c₂ px′′ T′ it ⟫ 
+      fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i))
+      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
         (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .rhsᴴ _ _))
     ∎
     where open ≈-Reasoning T′ 
 
 
 weaken-correct :
-  ∀ e (i : ε₁ ≲ ε₂) (Th : Theoryᴴ ξ) T′
-  → T ⊆⟨ i ⟩ T′
+  ∀ {T : Theory ε} e (Th : Theoryᴴ ξ) (T′ : Theory ε′)
+  → (sub : T ≪ T′)
   → Correctᴴ Th T e
     ---------------------------
-  → Correctᴴ Th T′ (weaken i e)
-  
-weaken-correct e i Th T′ sub₁ c px ⦃ i = i′ ⦄ T′′ sub₂
-  = c px ⦃ ≲-trans i i′ ⦄ T′′ $ ⟨⊆⟩-trans sub₁ sub₂ 
+  → Correctᴴ Th T′ (weaken (sub .inc) e)
+weaken-correct e Th T′ sub₁ c px T′′ sub₂
+  = c px  T′′ $ ≪-trans sub₁ sub₂ 
+
 
 compose-elab-correct
   : ∀ (e₁ : Elaboration ξ₁ ε₁) (e₂ : Elaboration ξ₂ ε₂)
@@ -313,12 +313,12 @@ compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e�
     {T = compose-theory (T₁ ✴⟨ σ ⟩ T₂)} {Th₁ = Th₁} {Th₂ = Th₂}
     {e₁ = weaken (≲-∙-left σ) e₁}
     {e₂ = weaken (≲-∙-right σ) e₂}
-    ( weaken-correct {T = T₁} e₁ (≲-∙-left σ) Th₁
+    ( weaken-correct {T = T₁} e₁ Th₁
         ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
-        ( ⟨⊆⟩-compose-left  T₁ T₂ σ )
+        ( ≪-compose-left  T₁ T₂ σ )
       c₁ )
-    ( weaken-correct {T = T₂} e₂ (≲-∙-right σ) Th₂
+    ( weaken-correct {T = T₂} e₂ Th₂
         ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
-        ( ⟨⊆⟩-compose-right T₁ T₂ σ)
+        ( ≪-compose-right T₁ T₂ σ)
       c₂ ) 
 
