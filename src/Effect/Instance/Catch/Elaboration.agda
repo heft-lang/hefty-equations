@@ -139,23 +139,22 @@ CatchElab .Elaboration.coherent {ε′ = ε′} {c = `catch t} {s = s} ⦃ i ⦄
     open ≡-Reasoning
     elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α
 
--- TODO: explain why we need to disable the termination checker here, and why we
--- think this is okay
---{-# TERMINATING #-}
 CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
-CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub 
+CatchElabCorrect px {ε′ = ε′} T′ ζ {γ = k} = go px ζ 
   where
     open ≈-Reasoning T′
     open Elaboration CatchElab
-    instance inst : proj₁ i ≲ ε′
-    inst = _ , (union-comm $ proj₂ i)
+    instance inst : proj₁ (ζ .inc) ≲ ε′
+    inst = _ , (union-comm $ proj₂ (ζ .inc))
+    instance inst′ : _ ≲ _
+    inst′ = ζ .inc
 
 
     go : ∀ {eq : Equationᴴ _}
          → eq ◃ᴴ CatchTheory
-         → AbortTheory ⊆⟨ i ⟩ T′
+         → AbortTheory ≪ T′
            --------------------------------------
-         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ elab ⟩ i) eq
+         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ elab ⟩ (ζ .inc)) eq
 
     -- bind-throw 
     go (here refl) _ {γ = k} =
@@ -205,9 +204,9 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
           ≡-begin
             ℋ⟦ abort ⟧ tt
           ≡⟨⟩
-            ♯ ⦃ Abort , union-comm (i .proj₂) ⦄ (handleAbort (i .proj₂) abort)
-          ≡⟨ cong (♯ ⦃ Abort , union-comm (i .proj₂) ⦄) (Properties.handle-abort-is-nothing (i .proj₂)) ⟩ 
-            ♯ ⦃ Abort , union-comm (i .proj₂) ⦄ (pure nothing) 
+            ♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄ (handleAbort (ζ .inc .proj₂) abort)
+          ≡⟨ cong (♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄) (Properties.handle-abort-is-nothing (ζ .inc .proj₂)) ⟩ 
+            ♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄ (pure nothing) 
           ≡⟨⟩
             pure nothing
           QED
@@ -225,4 +224,4 @@ CatchElabCorrect px {ε′ = ε′} ⦃ i ⦄ T′ sub {γ = k} = go px sub
       ∎
       where
 
-        open Union (i .proj₂)
+        open Union (ζ .inc .proj₂)

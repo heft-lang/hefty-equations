@@ -21,10 +21,6 @@ open import Effect.Logic
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
 
-open import Effect.Instance.Reader.Syntax
-import Effect.Instance.Reader.Theory as RT
-open import Effect.Instance.Reader.Handler
-
 open import Effect.Instance.Empty.Syntax
 
 open import Data.Product
@@ -43,12 +39,16 @@ module Effect.Instance.LocalReader.Elaboration (R : Set) where
 
 open Connectives
 
+open import Effect.Instance.Reader.Syntax R
+import Effect.Instance.Reader.Theory R as RT
+open import Effect.Instance.Reader.Handler R
+
 open import Effect.Instance.LocalReader.Syntax R
 open import Effect.Instance.LocalReader.Theory R
 
-open Handler (ReaderHandler R)
+open Handler ReaderHandler
 
-coherence : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) (k : A → Free ε B) → ℋ⟦ m >>= k ⟧ ≡ ℋ⟦ m ⟧ >>= ℋ⟪ k ⟫
+coherence : ⦃ _ : Reader ≲ ε ⦄ → (m : Free ε A) (k : A → Free ε B) → ℋ⟦ m >>= k ⟧ ≡ ℋ⟦ m ⟧ >>= ℋ⟪ k ⟫
 coherence {ε = ε} ⦃ i ⦄ m k =
   begin
     ℋ⟦ m >>= k ⟧
@@ -64,11 +64,11 @@ coherence {ε = ε} ⦃ i ⦄ m k =
   where
     open ≡-Reasoning
     instance inst : proj₁ i ≲ ε
-    inst = Reader R , (union-comm $ i .proj₂)
+    inst = Reader , (union-comm $ i .proj₂)
 
 
 -- TODO: we can (and should) prove this as a general lemma for all handlers 
-handle-merge : ⦃ _ : Reader R ≲ ε ⦄ → (m : Free ε A) → (r r′ : R) → ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′ ≡ ℋ⟦ m ⟧ r
+handle-merge : ⦃ _ : Reader ≲ ε ⦄ → (m : Free ε A) → (r r′ : R) → ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′ ≡ ℋ⟦ m ⟧ r
 handle-merge ⦃ i ⦄ m r r′ =
   begin
     ℋ⟦ ℋ⟦ m ⟧ r ⟧ r′
@@ -86,12 +86,12 @@ handle-merge ⦃ i ⦄ m r r′ =
   where
     open ≡-Reasoning
     instance inst : proj₁ i ≲ _
-    inst = Reader _ , union-comm (i .proj₂) 
+    inst = Reader , union-comm (i .proj₂) 
 
-ReaderElab : Elaboration (LocalReader) (Reader R)
+ReaderElab : Elaboration (LocalReader) Reader
 ReaderElab .Elaboration.elab = necessary λ i → readerElab ⦃ i ⦄
   where
-    readerElab : ⦃ Reader R ≲ ε ⦄ → Algebra (LocalReader ε) (Free ε)
+    readerElab : ⦃ Reader ≲ ε ⦄ → Algebra (LocalReader ε) (Free ε)
     readerElab .α ⟪ `ask ,       k , s ⟫ = ask >>= k
     readerElab .α ⟪ `local _ f , k , s ⟫ = do
       r ← ask 
@@ -151,7 +151,7 @@ ReaderElab .Elaboration.coherent {c = `local t f} {s = s} ⦃ i ⦄ k₁ k₂ =
 ReaderElabCorrect : Correctᴴ LocalReaderTheory RT.ReaderTheory ReaderElab
 
 -- ask-query
-ReaderElabCorrect (here refl) {ε′} ⦃ i ⦄ T′ ζ {γ = m} =
+ReaderElabCorrect (here refl) {ε′} T′ ζ {γ = m} =
   begin
     ℰ⟦ askl >> m ⟧
   ≈⟪⟫  
@@ -164,31 +164,35 @@ ReaderElabCorrect (here refl) {ε′} ⦃ i ⦄ T′ ζ {γ = m} =
     (ask >>= pure) >> ℰ⟦ m ⟧ 
   ≈⟪ >>=-resp-≈ˡ (λ _ → ℰ⟦ m ⟧) (>>=-idʳ-≈ ask) ⟫
     ask >> ℰ⟦ m ⟧
-  ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
+  ≈⟪ ≈-eq′ (weaken (ζ .inc) RT.ask-query) (ζ .sub (here refl)) ⟫
     ℰ⟦ m ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
 -- local-return 
-ReaderElabCorrect (there (here refl)) {ε′} ⦃ i ⦄ T′ ζ {γ = f , x} =
+ReaderElabCorrect (there (here refl)) {ε′} T′ ζ {γ = f , x} =
   begin
     ℰ⟦ local f (return x) ⟧
   ≈⟪⟫
     ask >>= (λ r → ℋ⟦ return x ⟧ (f r))
   ≈⟪⟫ 
     ask >> return x 
-  ≈⟪ ≈-eq′ (weaken i RT.ask-query) (ζ .sub (here refl)) ⟫
+  ≈⟪ ≈-eq′ (weaken (ζ .inc) RT.ask-query) (ζ .sub (here refl)) ⟫
     return x
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
 
 -- ask-bind 
-ReaderElabCorrect (there (there (here refl))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k} =
+ReaderElabCorrect (there (there (here refl))) {ε′} T′ ζ {γ = m , k} =
   begin
     ℰ⟦ m >>= (λ x → askl >>= λ r → k x r) ⟧
   ≈⟪ ≡-to-≈ $ elab-∘′ m (λ x → askl >>= λ r → k x r) ⟫
@@ -199,7 +203,7 @@ ReaderElabCorrect (there (there (here refl))) {ε′} ⦃ i ⦄ T′ ζ {γ = m 
     ℰ⟦ m ⟧ >>= (λ x → (ask >>= pure) >>= λ r → ℰ⟦ k x r ⟧)
   ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → >>=-resp-≈ˡ (λ r → ℰ⟦ k x r ⟧) ( >>=-idʳ-≈ ask)) ⟫ 
     ℰ⟦ m ⟧ >>= (λ x → ask >>= λ r → ℰ⟦ k x r ⟧)
-  ≈⟪ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℰ⟦ m ⟧ , _}  ⟫
+  ≈⟪ ≈-eq′ (weaken (ζ .inc) RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℰ⟦ m ⟧ , _}  ⟫
     ask >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
   ≈⟪ >>=-resp-≈ˡ (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) (≈-sym $ >>=-idʳ-≈ ask) ⟫ 
     (ask >>= pure) >>= (λ r → ℰ⟦ m ⟧ >>= λ x → ℰ⟦ k x r ⟧) 
@@ -211,12 +215,14 @@ ReaderElabCorrect (there (there (here refl))) {ε′} ⦃ i ⦄ T′ ζ {γ = m 
     ℰ⟦ (askl >>= λ r → m >>= λ x → k x r) ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
 
 -- local-bind 
-ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ {γ = m , k , f} =
+ReaderElabCorrect (there (there (there (here refl)))) {ε′} T′ ζ {γ = m , k , f} =
   begin
     ℰ⟦ local f (m >>= k) ⟧
   ≈⟪⟫
@@ -227,9 +233,9 @@ ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ 
     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫ ⟧ (f r))
   ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ○ ∘ f) (coherence ℰ⟦ m ⟧ ℰ⟪ k ⟫) ) ⟫ 
     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r))
-  ≈⟪ ≈-sym $ ≈-eq′ (weaken i RT.ask-ask) (ζ .sub (there (here refl))) ⟫ 
+  ≈⟪ ≈-sym $ ≈-eq′ (weaken (ζ .inc) RT.ask-ask) (ζ .sub (there (here refl))) ⟫ 
     ask >>= (λ r → ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
-  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≈-sym $ ≈-eq′ (weaken i RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) , _}) ⟫
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≈-sym $ ≈-eq′ (weaken (ζ .inc) RT.ask-bind) (ζ .sub (there (there (here refl)))) {γ = ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) , _}) ⟫
     ask >>= (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r) >>= λ x → ask >>= λ r → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r)) 
   ≈⟪ ≈-sym $ >>=-assoc-≈ (λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) ask ⟫ 
     (ask >>= λ r → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r)) >>= (λ x → ask >>= λ r′ → ℋ⟦ ℰ⟦ k x ⟧ ⟧ (f r′)) 
@@ -245,11 +251,13 @@ ReaderElabCorrect (there (there (there (here refl)))) {ε′} ⦃ i ⦄ T′ ζ 
     ℰ⟦ local f m >>= (λ x → local f (k x)) ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
 -- local-ask 
-ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f} =
+ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} T′ ζ {γ = f} =
   begin
     ℰ⟦ local f askl ⟧
   ≈⟪⟫
@@ -260,18 +268,20 @@ ReaderElabCorrect (there (there (there (there (here refl))))) {ε′} ⦃ i ⦄ 
     ask >>= (λ r → (ℋ⟦ ask ⟧ (f r) >>= λ x → ℋ⟦ pure x ⟧ (f r)) )
   ≈⟪⟫
     ask >>= (λ r → ℋ⟦ ask ⟧ (f r) >>= return )
-  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (Properties.handle-ask (i .proj₂) return)) ⟫
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → ≡-to-≈ (Properties.handle-ask (ζ .inc .proj₂) return)) ⟫
     ask >>= return ∘ f 
   ≈⟪⟫ 
     ℰ⟦ askl >>= return ∘ f ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab
 
 
 -- local-local 
-ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} ⦃ i ⦄ T′ ζ {γ = f , g , m} =
+ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} T′ ζ {γ = f , g , m} =
   begin
     ℰ⟦ local (f ∘ g) m ⟧
   ≈⟪⟫ 
@@ -280,7 +290,7 @@ ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} �
     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) ⟧ (g r) >>= pure) 
   ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (cong (λ ○ → ℋ⟦ ○ ⟧ (g r)) (sym $ >>=-idʳ (ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r))) )))) ⟫ 
     ask >>= (λ r → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f (g r)) >>= pure ⟧ (g r) >>= pure) 
-  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym (Properties.handle-ask (i .proj₂) _)))) ⟫ 
+  ≈⟪ >>=-resp-≈ʳ ask (λ r → >>=-resp-≈ˡ pure (≡-to-≈ (sym (Properties.handle-ask (ζ .inc .proj₂) _)))) ⟫ 
     (ask >>= λ r → (ℋ⟦ ask ⟧ (g r) >>= (λ r′ → ℋ⟦ ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ⟧ (g r))) >>= pure)
   ≈⟪ ≡-to-≈ (cong (λ ○ → ask >>= ((○ ∘ g) >=> pure)) (sym $ coherence ask λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure)) ⟫ 
     ask >>= (λ r → ℋ⟦ (ask >>= λ r′ → ℋ⟦ ℰ⟦ m ⟧ ⟧ (f r′) >>= pure ) ⟧ (g r) >>= pure) 
@@ -290,5 +300,7 @@ ReaderElabCorrect (there (there (there (there (there (here refl)))))) {ε′} �
     ℰ⟦ local g (local f m) ⟧
   ∎
   where
+    instance inst : _ ≲ _
+    inst = ζ .inc
     open ≈-Reasoning T′
     open Elaboration ReaderElab

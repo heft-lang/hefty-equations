@@ -27,11 +27,11 @@ open import Effect.Instance.State.Syntax S
 
 open Connectives
 
-get-get : □ Equation (State S)
+get-get : □ Equation State
 get-get = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
 
   where
-    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+    module _ {ε} ⦃ _ : State ≲ ε ⦄ where
 
       ctx ret : TypeContext 1 → Set
       ctx (A , _) = S → S → Free ε A
@@ -61,10 +61,10 @@ get-get-respects-⇔≲ = eq-lawful
         (λ _ → refl)
   ) 
 
-get-put : □ Equation (State S)
+get-put : □ Equation State
 get-put = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
   where 
-    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+    module _ {ε} ⦃ _ : State ≲ ε ⦄ where
       ctx ret : TypeContext 0 → Set
       ctx _ = ⊤ 
       ret _ = ⊤
@@ -83,10 +83,10 @@ get-put-respects-⇔≲ = eq-lawful
         (λ _ → put-resp-⇔≲ _ _ eqv)
   ) (λ i₁ i₂ eqv → refl) 
 
-put-get : □ Equation (State S)
+put-get : □ Equation State
 put-get = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄
   where 
-    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+    module _ {ε} ⦃ _ : State ≲ ε ⦄ where
       ctx ret : TypeContext 0 → Set
       ctx _ = S 
       ret _ = S
@@ -113,11 +113,11 @@ put-get-respects-⇔≲ = eq-lawful
         (λ _ → refl)
   )
 
-put-put : □ Equation (State S) 
+put-put : □ Equation State 
 put-put = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄ 
 
   where 
-    module _ {ε} ⦃ _ : State S ≲ ε ⦄ where
+    module _ {ε} ⦃ _ : State ≲ ε ⦄ where
 
       ctx ret : TypeContext 0 → Set
       ctx _ = S × S 
@@ -139,7 +139,7 @@ put-put-respects-⇔≲ = eq-lawful
   ) (λ i₁ i₂ eqv → put-resp-⇔≲ i₁ i₂ eqv)
 
 
-StateTheory : Theory (State S)
+StateTheory : Theory State
 StateTheory =
   ∥ get-get
   ∷ get-put

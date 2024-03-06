@@ -20,16 +20,16 @@ open import Function
 open import Effect.Handle
 open import Effect.Theory.FirstOrder
 
-open import Effect.Instance.State.Syntax
-open import Effect.Instance.State.Theory
-
 open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality
 open import Relation.Unary
 
 open import Level
 
-module Effect.Instance.State.Handler where 
+module Effect.Instance.State.Handler (S : Set) where 
+
+open import Effect.Instance.State.Syntax S
+open import Effect.Instance.State.Theory S
 
 module _ where
 
@@ -71,7 +71,7 @@ module _ where
             (return-natural ⦃ free-monad ⦄ .commute {f = f} x) 
     } 
 
-  StateHandler : Handler (State S) S (S ×_)
+  StateHandler : Handler State S (S ×_)
   Handler.F-functor   StateHandler = ×-functor
   Handler.M-monad     StateHandler = stateT-monad
   
@@ -85,12 +85,12 @@ module _ where
 
 open Handler
 
-handleState : State S ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
+handleState : State ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
 handleState σ m s = handle StateHandler σ m s 
 
 module Properties where 
 
-  correct : Correct StateTheory (StateHandler {S = S})
+  correct : Correct StateTheory StateHandler
   correct (here refl)                              = refl
   correct (there (here refl))                      = refl
   correct (there (there (here refl)))              = refl
