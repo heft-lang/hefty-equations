@@ -73,7 +73,7 @@ module _ where
     ; from      = from′
     ; to-cong   = λ where refl → refl
     ; from-cong = λ where refl → refl
-    ; inverse   = (λ _ → refl) , λ where ⟨ inj₂ c , k ⟩ → refl
+    ; inverse   = (λ where refl → refl) , λ where {x = ⟨ inj₂ _ , _ ⟩ } refl → refl
     }
     where
       to′ : (⊥ᶜ ⊕ᶜ ε) ↦ ε
@@ -92,7 +92,7 @@ module _ where
     ; from      = from′
     ; to-cong   = λ where refl → refl
     ; from-cong = λ where refl → refl
-    ; inverse   = (λ _ → refl) , (λ where ⟨ inj₁ c , k ⟩ → refl)
+    ; inverse   = (λ where refl → refl) , (λ where {x = ⟨ inj₁ c , k ⟩} refl → refl)
     }
     where
       to′ : (ε ⊕ᶜ ⊥ᶜ) ↦ ε

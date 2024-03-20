@@ -138,7 +138,7 @@ module Properties where
       ♯ (handle′ ReaderHandler (impure (proj σ (fmap (reorder σ) (inj ⟨ (`ask , pure) ⟩)))) r) >>= k
     ≡⟨ cong (λ ○ → ♯ (handle′ ReaderHandler (impure (proj σ ○)) r) >>= k) (sym (inj-natural .commute {f = reorder σ} ⟨ (`ask , pure) ⟩)) ⟩ 
       ♯ (handle′ ReaderHandler (impure (proj σ (inj ( ⟨ `ask , reorder σ ∘ pure ⟩)))) r) >>= k
-    ≡⟨ cong (λ ○ → ♯ (handle′ ReaderHandler (impure ○) r) >>= k) (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
+    ≡⟨ cong (λ ○ → ♯ (handle′ ReaderHandler (impure ○) r) >>= k) (σ .union .equivalence _ .inverse .proj₂ refl) ⟩ 
       ♯ (handle′ ReaderHandler (impure (injˡ {C₁ = Reader} ε′ ( ⟨ `ask , reorder σ ∘ pure ⟩))) r) >>= k
     ≡⟨⟩
       k r

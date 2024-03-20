@@ -53,7 +53,7 @@ module _ where
       hmap-free (Union.proj⁻¹ σ) (hmap-free (Union.proj σ) m)
     ≡⟨ sym $ hmap-∘ {B = ⟦ ε₁ ⟧ᶜ A} {D = ⟦ ε₂ ⟧ᶜ A} m (Union.proj σ) (Union.proj⁻¹ σ) (proj-natural σ) ⟩ 
       hmap-free (Union.proj⁻¹ σ ∘ Union.proj σ ) m
-    ≡⟨ cong (λ ○ → hmap-free (λ {A} → ○ A) m ) (pfext _ _ λ X → extensionality λ x → Union.union σ .equivalence X .inverse .proj₁ x) ⟩ 
+    ≡⟨ cong (λ ○ → hmap-free (λ {A} → ○ A) m ) (pfext _ _ λ X → extensionality λ x → Union.union σ .equivalence X .inverse .proj₁ {x = x} refl) ⟩ 
       hmap-free id m
     ≡⟨ hmap-id m ⟩
       m
@@ -104,7 +104,7 @@ weaken-lemma {ε₁} {ε₂} {ε} σ (impure ⟨ c , r ⟩) =
     impure (proj σ (fmap (reorder σ) (injb σ ⟨ c , ♯ʳ′ σ ∘ r ⟩))) 
   ≡⟨ cong (impure ∘ proj σ) (sym $ injb-natural σ .commute {f = fmap (reorder σ)} ⟨ c , ♯ʳ′ σ ∘ r ⟩)  ⟩
     impure (proj σ (injb σ (fmap (reorder σ) ⟨ c , ♯ʳ′ σ ∘ r ⟩))) 
-  ≡⟨ cong impure (σ .union .equivalence _ .inverse .proj₂ _) ⟩ 
+  ≡⟨ cong impure (σ .union .equivalence _ .inverse .proj₂ refl) ⟩ 
     impure ⟨ inj₂ c , (reorder σ ∘ ♯ʳ′ σ) ∘ r ⟩ 
   ≡⟨ cong (λ ○ → impure ⟨ inj₂ c , ○ ⟩) (extensionality $ weaken-lemma σ ∘ r) ⟩
     impure ⟨ inj₂ c , ♯ʳ ε₁ ∘ r ⟩ 

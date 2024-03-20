@@ -69,18 +69,19 @@ natiso-∘ : ∀ {a b} {F G H : Set a → Set b}
           {F↔G : ∀ x → F x ↔ G x} {G↔H : ∀ x → G x ↔ H x}
         → ⦃ _ : Functor F ⦄ → ⦃ _ : Functor G ⦄ → ⦃ _ : Functor H ⦄ 
         → NaturalIsomorphism F↔G → NaturalIsomorphism G↔H
-        → NaturalIsomorphism λ x → F↔G x ↔-∘ G↔H x 
+        → NaturalIsomorphism λ x → G↔H x ↔-∘ F↔G x
 natiso-∘ {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
-  { to-natural   = λ where .commute → to-nat
-  ; from-natural = λ where .commute → from-nat
+  { to-natural   = λ where .commute → to-nat 
+  ; from-natural = λ where .commute → from-nat 
   }
+  
   where
     open Inverse
     open ≡-Reasoning 
 
-    to-nat   : ∀ {X Y f} (x : F X) → (F↔G Y ↔-∘ G↔H Y) .to (fmap f x) ≡ fmap f ((F↔G X ↔-∘ G↔H X) .to x)
+    to-nat   : ∀ {X Y f} (x : F X) → (G↔H Y ↔-∘ F↔G Y) .to (fmap f x) ≡ fmap f ((G↔H X ↔-∘ F↔G X) .to x)
     to-nat {X}{Y}{f} x = begin
-        (F↔G Y ↔-∘ G↔H Y) .to (fmap f x)
+        (G↔H Y ↔-∘ F↔G Y) .to (fmap f x)
       ≡⟨⟩ {- Definition of ↔-∘ -} 
         G↔H Y .to (F↔G Y .to (fmap f x)) 
       ≡⟨ cong (G↔H Y .to) (natiso₁ .to-natural .commute x) ⟩
@@ -88,12 +89,12 @@ natiso-∘ {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
       ≡⟨ natiso₂ .to-natural .commute _ ⟩ 
         fmap f (G↔H X .to (F↔G X .to x))
       ≡⟨⟩ {- Defintion of ↔-∘ -} 
-        fmap f ((F↔G X ↔-∘ G↔H X) .to x) 
+        fmap f ((G↔H X ↔-∘ F↔G X) .to x) 
       ∎
     
-    from-nat : ∀ {X Y f} (x : H X) → (F↔G Y ↔-∘ G↔H Y) .from (fmap f x) ≡ fmap f ((F↔G X ↔-∘ G↔H X) .from x)
+    from-nat : ∀ {X Y f} (x : H X) → (G↔H Y ↔-∘ F↔G Y) .from (fmap f x) ≡ fmap f ((G↔H X ↔-∘ F↔G X) .from x)
     from-nat {X}{Y}{f} x = begin
-        (F↔G Y ↔-∘ G↔H Y) .from (fmap f x)
+        (G↔H Y ↔-∘ F↔G Y) .from (fmap f x)
       ≡⟨⟩ {- Definition of ↔-∘ -}
         F↔G Y .from (G↔H Y .from (fmap f x)) 
       ≡⟨ cong (F↔G Y .from) (natiso₂ .from-natural .commute x) ⟩
@@ -101,5 +102,6 @@ natiso-∘ {F = F} {G} {H} {F↔G} {G↔H} natiso₁ natiso₂ = record
       ≡⟨ natiso₁ .from-natural .commute _ ⟩
         fmap f (F↔G X .from (G↔H X .from x))
       ≡⟨⟩ {- Definition of ↔-∘ -} 
-        fmap f ((F↔G X ↔-∘ G↔H X) .from x)
+        fmap f ((G↔H X ↔-∘ F↔G X) .from x)
       ∎ 
+      -- 

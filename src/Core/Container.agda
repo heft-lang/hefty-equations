@@ -102,7 +102,7 @@ module _ where
 
   ⇿-trans : Transitive _⇿_
   ⇿-trans eq₁ eq₂ = record
-    { equivalence = λ X → eq₁ .equivalence X ↔-∘ eq₂ .equivalence X 
+    { equivalence = λ X → eq₂ .equivalence X ↔-∘ eq₁ .equivalence X 
     ; natural     = natiso-∘ (eq₁ .natural) (eq₂ .natural)
     } 
 
@@ -139,7 +139,7 @@ swapᶜ-⇿ C₁ C₂ .equivalence _ = record
   ; from      = swapᶜ C₂ C₁
   ; to-cong   = λ where refl → refl
   ; from-cong = λ where refl → refl
-  ; inverse   = swapᶜ-involutive , swapᶜ-involutive
+  ; inverse   = (λ where refl → swapᶜ-involutive _) ,  (λ where refl → swapᶜ-involutive _)
   }
 swapᶜ-⇿ _ _ .natural = record
   { to-natural   = λ where
@@ -166,7 +166,7 @@ assocᶜ-⇿ C₁ C₂ C₃ .equivalence _ = record
   ; from      = assocᶜʳ C₁ C₂ C₃
   ; to-cong   = λ where refl → refl
   ; from-cong = λ where refl → refl
-  ; inverse   = assoc-inverseˡ , assoc-inverseʳ
+  ; inverse   = (λ where refl → assoc-inverseˡ _) , (λ where refl → assoc-inverseʳ _) 
   }
   where
     assoc-inverseˡ : ∀ x → assocᶜˡ C₁ C₂ C₃ (assocᶜʳ C₁ C₂ C₃ x) ≡ x
@@ -196,7 +196,7 @@ assocᶜ-⇿ _ _ _ .natural = record
   ; from      = from′
   ; to-cong   = λ where refl → refl
   ; from-cong = λ where refl → refl
-  ; inverse   = cong-inverseˡ , cong-inverseʳ
+  ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _ 
   }
   where
     to′ : (C₁ ⊕ᶜ C) ↦ (C₂ ⊕ᶜ C)
@@ -208,11 +208,11 @@ assocᶜ-⇿ _ _ _ .natural = record
     from′ ⟨ inj₂ c , k ⟩ = ⟨ (inj₂ c , k) ⟩
 
     cong-inverseˡ : ∀ x → to′ (from′ x) ≡ x
-    cong-inverseˡ ⟨ inj₁ c , k ⟩ = cong (injˡ C) (iso .equivalence _ .inverse .proj₁ _) 
+    cong-inverseˡ ⟨ inj₁ c , k ⟩ = cong (injˡ C) (iso .equivalence _ .inverse .proj₁ refl) 
     cong-inverseˡ ⟨ inj₂ c , k ⟩ = refl
     
     cong-inverseʳ : ∀ x → from′ (to′ x) ≡ x 
-    cong-inverseʳ ⟨ inj₁ c , k ⟩ = cong (injˡ C) (iso .equivalence _ .inverse. proj₂ _)
+    cong-inverseʳ ⟨ inj₁ c , k ⟩ = cong (injˡ C) (iso .equivalence _ .inverse. proj₂ refl)
     cong-inverseʳ ⟨ inj₂ c , k ⟩ = refl
 ⊕ᶜ-congˡ C₁ C₂ C iso .natural = record
   { to-natural   = λ where
@@ -232,7 +232,7 @@ assocᶜ-⇿ _ _ _ .natural = record
   ; from      = from′
   ; to-cong   = λ where refl → refl
   ; from-cong = λ where refl → refl
-  ; inverse   = cong-inverseˡ , cong-inverseʳ
+  ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _ 
   }
   where
     to′ : (C ⊕ᶜ C₁) ↦ (C ⊕ᶜ C₂)
@@ -245,11 +245,11 @@ assocᶜ-⇿ _ _ _ .natural = record
 
     cong-inverseˡ : ∀ x → to′ (from′ x) ≡ x
     cong-inverseˡ ⟨ inj₁ x , k ⟩ = refl
-    cong-inverseˡ ⟨ inj₂ y , k ⟩ = cong (injʳ C) (iso .equivalence _ .inverse. proj₁ _)
+    cong-inverseˡ ⟨ inj₂ y , k ⟩ = cong (injʳ C) (iso .equivalence _ .inverse. proj₁ refl)
     
     cong-inverseʳ : ∀ x → from′ (to′ x) ≡ x 
     cong-inverseʳ ⟨ inj₁ x , k ⟩ = refl
-    cong-inverseʳ ⟨ inj₂ y , k ⟩ = cong (injʳ C) (iso .equivalence _ .inverse .proj₂ _)
+    cong-inverseʳ ⟨ inj₂ y , k ⟩ = cong (injʳ C) (iso .equivalence _ .inverse .proj₂ refl)
 ⊕ᶜ-congʳ C₁ C₂ C iso .natural = record
   { to-natural   = λ where
       .commute ⟨ inj₁ c , k ⟩ → refl

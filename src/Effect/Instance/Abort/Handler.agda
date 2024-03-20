@@ -129,7 +129,7 @@ module Properties where
       flip handle′ tt (impure (proj σ (inj (⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)))) 
     ≡⟨ cong (flip handle′ tt ∘ impure)
          ( σ .union .equivalence _ .inverse .proj₂
-           ( injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)
+           {x = ( injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)} refl
          ) ⟩
       flip handle′ tt (impure (injˡ {C₁ = Abort} ε ⟨ (`abort , (λ x → reorder σ $ fold-free pure inject (⊥-elim x))) ⟩)) 
     ≡⟨⟩ 

@@ -82,7 +82,7 @@ module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) 
     Ext-preorder = record
       { Carrier    = Carrier
       ; _≈_        = _≡_
-      ; _∼_        = Ext
+      ; _≲_        = Ext
       ; isPreorder = record
         { isEquivalence = ≡-isEquivalence
         ; reflexive     = λ where refl → Ext-reflexive ∙-unitʳ
