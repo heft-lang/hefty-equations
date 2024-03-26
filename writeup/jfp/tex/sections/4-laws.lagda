@@ -15,11 +15,13 @@ open import Data.Vec hiding (_++_)
 open import Data.List renaming (map to map-list)
 open import Data.Product
 open import Data.Sum
-open import Relation.Unary
+open import Relation.Unary hiding (_∈_)
+open import Data.List.Membership.Propositional
 
 open import Level renaming (suc to sℓ)
 
 open import Function.Construct.Identity
+open import Function.Construct.Composition
 
 open FreeModule renaming (_𝓑_ to bindF) hiding (_>>_)
 open HeftyModule renaming (_𝓑_ to bindH) hiding (_>>_; m; n; catch)
@@ -103,39 +105,52 @@ record Equation (Δ : Effect) : Set₁ where
     R : Vec Set V → Set 
     lhs rhs : (vs : Vec Set V) → Γ vs → Free Δ (R vs)
 
+record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
+  field future : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
+
+open □ 
+
+extract : {P : Effect → Set₁} → □ P Δ → P Δ
+extract px = px .future ⦃ ≲-refl ⦄
+
 record Theory (Δ : Effect) : Set₁ where
   field
-    equations : List (Equation Δ)
+    equations : List (□ Equation Δ)
 
 record Monotone {ℓ} (P : Effect → Set ℓ) : Set (sℓ 0ℓ ⊔ ℓ) where
   field
-    weaken : ⦃ Δ₁ ≲ Δ₂ ⦄ → P Δ₁ → P Δ₂
+    weaken : Δ₁ ≲ Δ₂ → P Δ₁ → P Δ₂
 
 open Monotone ⦃...⦄
 open Equation
 open Theory
 
 instance eq-monotone : Monotone Equation
-V    (Monotone.weaken eq-monotone eq)       = V eq
-Γ    (Monotone.weaken eq-monotone eq)       = Γ eq
-R    (Monotone.weaken eq-monotone eq)       = R eq
-lhs  (Monotone.weaken eq-monotone eq) vs γ  = ♯ lhs eq vs γ
-rhs  (Monotone.weaken eq-monotone eq) vs γ  = ♯ rhs eq vs γ
+V    (Monotone.weaken eq-monotone w eq)       = V eq
+Γ    (Monotone.weaken eq-monotone w eq)       = Γ eq
+R    (Monotone.weaken eq-monotone w eq)       = R eq
+lhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (lhs eq) vs γ
+rhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (rhs eq) vs γ
+
+instance □-monotone : {P : Effect → Set₁} → Monotone (□ P)
+Monotone.weaken □-monotone w₁ px .future ⦃ w₂ ⦄ = px .future ⦃ ≲-trans w₁ w₂ ⦄
 
 instance theory-monotone : Monotone Theory
-equations (Monotone.weaken theory-monotone T) = map-list weaken (T .equations)
+equations (Monotone.weaken theory-monotone w T) = map-list (weaken w) (T .equations)
 
-instance ≲-⊕-left : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
+≲-⊕-left : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
 ≲-⊕-left = _ , λ where .reorder → ↔-id _ 
 
-instance ≲-⊕-right : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
-≲-⊕-right = _ , λ where .reorder → swap-⊕-↔ 
+≲-⊕-right : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
+≲-⊕-right = _ , λ where .reorder → swap-⊕-↔
+
+≲-∙-left : Δ₁ ∙ Δ₂ ≈ Δ → Δ₁ ≲ Δ
+≲-∙-left w = _ , w
+
+≲-∙-right : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ≲ Δ
+≲-∙-right w = _ , λ where .reorder → w .reorder ↔-∘ swap-⊕-↔ 
 \end{code}
 
-\begin{code}
-□ : (Effect → Set₁) → Effect → Set₁
-□ P Δ = ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
-\end{code}
 
 Why the witness in the type of lhs and rhs? We want to state equations for all
 programs that contain at least the effect $Δ$, but potentially more
@@ -151,17 +166,11 @@ open Theory
 \end{code}
 \begin{code}
 bind-throw : □ Equation Throw
-V    (bind-throw)                      = 2
-Γ    (bind-throw {Δ′}) (A ∷ B ∷ [])    = A → Free Δ′ B
-R    (bind-throw)      (A ∷ B ∷ [])    = B
-lhs  (bind-throw)      (_ ∷ _ ∷ []) k  = ‵throw >>= k
-rhs  (bind-throw)      (_ ∷ _ ∷ []) k  = ‵throw
-\end{code}
-
-
-\begin{code}
-Respects : Alg Δ A → Equation Δ → Set₁
-Respects {Δ = Δ} alg eq = ∀ {vs γ k} → fold k alg (lhs eq vs γ) ≡ fold k alg (rhs eq vs γ) 
+V    (bind-throw .future)                      = 2
+Γ    (bind-throw .future {Δ′}) (A ∷ B ∷ [])    = A → Free Δ′ B
+R    (bind-throw .future)      (A ∷ B ∷ [])    = B
+lhs  (bind-throw .future)      (_ ∷ _ ∷ []) k  = ‵throw >>= k
+rhs  (bind-throw .future)      (_ ∷ _ ∷ []) k  = ‵throw
 \end{code}
 
 
@@ -170,8 +179,103 @@ _⟨+⟩_ : Theory Δ → Theory Δ → Theory Δ
 equations (T₁ ⟨+⟩ T₂) = equations T₁ ++ equations T₂
 
 _[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
-T₁ [+] T₂ = weaken T₁ ⟨+⟩ weaken T₂
+T₁ [+] T₂ = weaken ≲-⊕-left T₁ ⟨+⟩ weaken ≲-⊕-right T₂
 \end{code}
+
+\begin{code}
+compose-theory : Δ₁ ∙ Δ₂ ≈ Δ → Theory Δ₁ → Theory Δ₂ → Theory Δ
+compose-theory w T₁ T₂ = weaken (≲-∙-left w) T₁ ⟨+⟩ weaken (≲-∙-right w) T₂ 
+\end{code}
+
+\subsection{Syntactic Equivalence of Effectful Programs} 
+
+\begin{code}[hide]
+variable T T₁ T₂ T₃ T′ : Theory Δ
+variable m m₁ m₂ m₃ m′ : Free Δ A
+
+open ⟨_!_⇒_⇒_!_⟩
+
+open Effect 
+\end{code} 
+
+\begin{AgdaAlign}
+\begin{code}
+data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → Set₁ where 
+\end{code}
+
+\begin{code}
+  ≈-refl   : m  ≈⟨ T ⟩ m
+  ≈-sym    : m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₁ 
+  ≈-trans  : m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
+\end{code}
+
+\begin{code}
+  ≈-cong  :  (op : Op Δ)
+          →  (k₁ k₂ : Ret Δ op → Free Δ A)
+          →  (∀ x → k₁ x ≈⟨ T ⟩ k₂ x) 
+          →  impure (op , k₁) ≈⟨ T ⟩ impure (op , k₂) 
+\end{code}
+
+\begin{code}
+  ≈-eq  :  (eq : □ Equation Δ)
+        →  eq ∈ equations T 
+        →  (vs : Vec Set (V (extract eq)))
+        →  (γ : Γ (extract eq) vs)
+        →  (k : R (extract eq) vs → Free Δ A)
+        →  (lhs (extract eq) vs γ >>= k) ≈⟨ T ⟩ (lhs (extract eq) vs γ >>= k)  
+\end{code}
+
+\end{AgdaAlign}
+
+\begin{code}
+module ≈-Reasoning (T : Theory Δ) where
+
+  infix 3 _≈_
+  _≈_ : Free Δ A → Free Δ A → Set₁
+  m₁ ≈ m₂ = m₁ ≈⟨ T ⟩ m₂
+
+  begin_ : {m₁ m₂ : Free Δ A} → m₁ ≈ m₂ → m₁ ≈ m₂ 
+  begin eq = eq 
+
+  _∎ : (m : Free Δ A) → m ≈ m
+  m ∎ = ≈-refl
+
+  _≈⟪⟫_ : (m₁ : Free Δ A) {m₂ : Free Δ A} → m₁ ≈ m₂ → m₁ ≈ m₂  
+  m₁ ≈⟪⟫ eq = eq
+
+  _≈⟪_⟫_  : (m₁ {m₂ m₃} : Free Δ A) → m₁ ≈ m₂ → m₂ ≈ m₃ → m₁ ≈ m₃
+  m₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
+
+  infix  1 begin_
+  infixr 2 _≈⟪_⟫_ _≈⟪⟫_
+  infix  3 _∎
+\end{code}
+
+(Prove two example programs equal perhaps?) 
+
+
+\subsection{Handler Correctness}
+
+An algebra over an effect Δ respects an equation of that effect iff folding with
+the algebra gives the same result for the left hand side and right hand side of
+the equation: 
+
+\begin{code}
+Respects : Alg Δ A → □ Equation Δ → Set₁
+Respects {Δ = Δ} alg eq =
+  ∀  {vs γ k}
+  →  fold k alg (lhs (extract eq) vs γ)
+  ≡  fold k alg (rhs (extract eq) vs γ) 
+\end{code}
+
+Correctness of an effect handler with respect to some theory: handling the
+effect respects all equations in the theory.
+
+\begin{code}
+Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
+Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) eq
+\end{code}
+
 
 
 %% 

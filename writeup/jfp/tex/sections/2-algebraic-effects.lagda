@@ -245,6 +245,9 @@ somewhere in \ab{Δ′}:
     
   _≲_ : (Δ₁ Δ₂ : Effect) → Set₁
   Δ₁ ≲ Δ₂ = ∃ λ Δ′ → Δ₁ ∙ Δ′ ≈ Δ₂
+
+  postulate ≲-refl : Δ ≲ Δ
+  postulate ≲-trans : Δ₁ ≲ Δ₂ → Δ₂ ≲ Δ → Δ₁ ≲ Δ 
   
   inj : ⦃ Δ₁ ≲ Δ₂ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ₂ ⟧ A
   inj ⦃ _ , w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
@@ -544,8 +547,8 @@ ends:\\
       }
       }
 
-  instance ≲-refl : Δ ≲ Δ
-  ≲-refl = Nil , ∙-unitᵣ 
+  instance ≲-refl' : Δ ≲ Δ
+  ≲-refl' = Nil , ∙-unitᵣ 
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
