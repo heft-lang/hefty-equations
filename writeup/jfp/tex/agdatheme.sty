@@ -1,0 +1,53 @@
+\renewcommand{\AgdaFontStyle}[1]{\textsf{#1}}
+\renewcommand{\AgdaStringFontStyle}[1]{\textit{#1}}
+\renewcommand{\AgdaCommentFontStyle}[1]{\textit{#1}}
+\renewcommand{\AgdaBoundFontStyle}[1]{\textit{#1}}
+
+\definecolor{agdablue}{HTML}{28546C}
+\definecolor{agdagreen}{HTML}{28784D}
+\definecolor{agdared}{HTML}{AA5239}
+\definecolor{agdayellow}{HTML}{AA7639}
+\definecolor{agdagray}{HTML}{333333}
+
+% Aspect colours.
+\colorlet{AgdaComment}{agdagray}
+% \definecolor{AgdaPragma}       {HTML}{000000}
+\colorlet{AgdaKeyword}{black}
+% \definecolor{AgdaString}       {HTML}{B22222}
+\colorlet{AgdaNumber}{black}
+% \definecolor{AgdaSymbol}       {HTML}{404040}
+\colorlet{AgdaPrimitiveType}{agdablue}
+
+% NameKind colours.
+% \definecolor{AgdaBound}                 {HTML}{000000}
+% \definecolor{AgdaGeneralizable}         {HTML}{000000}
+\colorlet{AgdaInductiveConstructor}{agdared}
+% \definecolor{AgdaCoinductiveConstructor}{HTML}{8B7500}
+\colorlet{AgdaDatatype}{agdablue}
+\colorlet{AgdaField}{agdayellow}
+\colorlet{AgdaFunction}{agdablue}
+% \definecolor{AgdaMacro}                 {HTML}{458B74}
+% \definecolor{AgdaModule}                {HTML}{A020F0}
+\colorlet{AgdaPostulate}{agdablue}
+\colorlet{AgdaPrimitive}{agdablue}
+\colorlet{AgdaRecord}{agdablue}
+% \definecolor{AgdaArgument}              {HTML}{404040}
+
+% Other aspect colours.
+% \definecolor{AgdaDottedPattern}     {HTML}{000000}
+% \definecolor{AgdaUnsolvedMeta}      {HTML}{FFFF00}
+% \definecolor{AgdaUnsolvedConstraint}{HTML}{FFFF00}
+% \definecolor{AgdaTerminationProblem}{HTML}{FFA07A}
+% \definecolor{AgdaIncompletePattern} {HTML}{F5DEB3}
+% \definecolor{AgdaErrorWarning}      {HTML}{FFA07A}
+% \definecolor{AgdaError}             {HTML}{FF0000}
+
+ % Misc.
+ % \definecolor{AgdaHole}              {HTML}{9DFF9D}
+
+
+\renewcommand{\AgdaKeywordFontStyle}[1]{\textbf{#1}}
+\newenvironment{codes}%
+  {\AgdaNoSpaceAroundCode{}\vspace{\abovedisplayskip}}%
+  {\vspace{\belowdisplayskip}}
+

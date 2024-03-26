@@ -1,0 +1,201 @@
+\documentclass[draft]{jfp}
+
+\let\Bbbk\relax
+
+\journaltitle{JFP}
+\cpr{Cambridge University Press}
+\doival{10.1017/xxxxx}
+
+\lefttitle{Submitted for publication.}
+\righttitle{Journal of Functional Programming}
+
+\totalpg{\pageref{lastpage01}}
+\jnlDoiYr{2021}
+
+\usepackage{multicol}
+\usepackage{xparse}
+%\usepackage[capitalise,noabbrev]{cleveref}
+%\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{wasysym}
+\usepackage{agda}
+\usepackage{tex/agdadimmed}
+\usepackage{newunicodechar}
+\usepackage{mdframed}
+\usepackage{wrapfig}
+\usepackage{boxedminipage}
+\usepackage{dsfont}
+\usepackage{etoolbox}
+\usepackage{natbib}
+
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{scalerel}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,calc}
+\tikzset{block/.style={draw, thick, text width=3cm, minimum height=1.5cm, align=center}, line/.style={-latex}}
+\usepackage{pgfplots} 
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{#1}}}
+
+
+\DeclareRobustCommand{\VAN}[3]{#3}
+
+
+%% 
+%% %include agda.fmt
+%% %include fmts/polycode.fmt 
+%% %include fmts/agdabase.fmt
+%% %include fmts/agda.fmt
+%% %include fmts/syntax.fmt
+%% %include fmts/misc.fmt
+%%
+
+%%
+%% Agda typesetting commands shorthands, for
+%% manual typesetting of inline code
+%%
+
+\newcommand{\af}{\AgdaFunction}
+\newcommand{\un}{\AgdaUnderscore}
+\newcommand{\ad}{\AgdaDatatype}
+\newcommand{\ab}{\AgdaBound}
+\newcommand{\ac}{\AgdaInductiveConstructor}
+\newcommand{\aF}{\AgdaField}
+\newcommand{\as}{\AgdaSymbol}
+\newcommand{\ak}{\AgdaKeyword}
+\newcommand{\ap}{\AgdaPrimitiveType}
+\newcommand{\an}{\AgdaNumber}
+\newcommand{\aC}{\AgdaComment}
+\newcommand{\am}{\AgdaModule}
+
+
+%%
+%% Unicode for typesetting Agda code
+\input{tex/unicode.tex}
+
+%%
+% Multi-column code
+\NewDocumentCommand{\vcodesep}{}{{\color{lightgray}\vrule}}
+
+% displays put some stuff like code in a paragraph, without interrupting it.
+\setlength{\parskip}{0em} 
+\setlength\mathindent{0.2cm}
+%\setlength\abovedisplayskip{0em}
+%\setlength\belowdisplayskip{em}
+\usepackage{float}
+\newcommand{\displayskip}[1]{%
+  {\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+\NewDocumentCommand{\display}{m}
+  {{\ifhmode%
+    \parskip=0pt\parindent=0pt\par\vskip 5pt\noindent
+    %\displayskip{\abovedisplayskip}%
+    %\displayskip{0pt}%
+       #1%
+    %\displayskip{\belowdisplayskip}%
+    \parskip=0pt\parindent=0pt\par\noindent
+    \displayskip{0pt}%
+   \else
+     #1
+   \fi}}
+
+\NewDocumentCommand{\twocodes}{O{0.49\textwidth} O{0.49\textwidth} m m}
+  {\display{\vskip -10pt
+    \begin{minipage}[t]{#1}
+    #3
+    \end{minipage}
+    \hfill\vcodesep
+    \begin{minipage}[t]{#2}
+    #4
+    \end{minipage}
+  }}
+
+\begin{document}
+\raggedbottom
+
+%% Title information
+\title{Hefty Algebras: Modular Elaboration of Higher-Order Effects}
+% 
+% %% Author with single affiliation.
+% \author{Cas van der Rest}				
+% \orcid{0000-0002-0059-5353}            
+% \affiliation{
+%   \institution{Delft University of Technology}          
+%   \city{Delft}
+%   \country{The Netherlands}                  
+% }
+% \email{c.r.vanderrest@tudelft.nl}       
+% 
+% \author{Casper Bach Poulsen}			
+% \orcid{0000-0003-0622-7639}            
+% \affiliation{
+%   \institution{Delft University of Technology}          
+%   \city{Delft}
+%   \country{The Netherlands}                  
+% }
+% \email{c.b.poulsen@tudelft.nl}    
+%
+
+\begin{authgrp}
+\author{Casper Bach Poulsen}
+\affiliation{Delft University of Technology\\
+  (\email{c.b.poulsen@tudelft.nl})}
+\author{Cas van der Rest}
+\affiliation{Delft University of Technology\\
+  (\email{c.r.vanderrest@tudelft.nl})}
+\end{authgrp}
+
+\begin{abstract}
+  Algebraic effects and handlers is an increasingly popular approach to
+  programming with effects.  An attraction of the approach is its modularity:
+  effectful programs are written against an interface of declared operations,
+  which allows the implementation of these operations to be defined and refined
+  without changing or recompiling programs written against the interface.
+  However, higher-order operations (i.e., operations that take computations as
+  arguments) break this modularity.  While it is possible to encode higher-order
+  operations by elaborating them into more primitive algebraic effects and
+  handlers, such elaborations are typically not modular.  In particular,
+  operations defined by elaboration are typically not a part of any effect
+  interface, so we cannot define and refine their implementation without
+  changing or recompiling programs.  To resolve this problem, a recent line of
+  research focuses on developing new and improved effect handlers.  In this
+  paper we present a (surprisingly) simple alternative solution to the
+  modularity problem with higher-order operations: we modularize the previously
+  non-modular elaborations commonly used to encode higher-order operations.  Our
+  solution is as expressive as the state of the art in effects and handlers.
+\end{abstract}
+
+% 
+% \keywords{
+%   Type Safety,
+%   Modularity,
+%   Reuse,
+%   Definitional Interpreters,
+%   Dependently Typed Programming
+% } %% \keywords are mandatory in final camera-ready submission
+% 
+
+\maketitle
+
+\input{tex/sections/1-introduction.tex}
+\input{tex/sections/2-algebraic-effects.tex}
+\input{tex/sections/3-hefty-algebras.tex}
+\input{tex/sections/4-laws.tex}
+\input{tex/sections/5-examples.tex}
+\input{tex/sections/6-related.tex}
+\input{tex/sections/7-conclusion.tex}
+% 
+\paragraph*{Acknowledgements}
+We thank the anonymous reviewers for their comments which helped improve the exposition of the paper.
+  Furthermore, we thank Nicolas Wu, Andrew Tolmach, Peter Mosses, and Jaro Reinders for feedback on earlier drafts.
+  This research was partially funded by the NWO VENI Composable and Safe-by-Construction Programming Language Definitions
+project (VI.Veni.192.259).
+
+\label{lastpage01}
+
+%% Bibliography
+\bibliographystyle{JFPlike}
+\bibliography{tex/references}
+
+\end{document}

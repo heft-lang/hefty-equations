@@ -1,0 +1,193 @@
+\usepackage{xcolor}
+
+\definecolor{red}{HTML}{CC0000}
+\definecolor{green}{HTML}{009955}
+\definecolor{blue}{HTML}{0077CC}
+\definecolor{purple}{HTML}{551A8B}
+\definecolor{orange}{HTML}{BC6412}
+\definecolor{pink}{HTML}{EE19DA}
+\definecolor{steelblue}{HTML}{4682B4}
+\definecolor{darkslategray}{HTML}{2F4F4F}
+\definecolor{darkgreen}{HTML}{006400}
+
+\definecolor{c1}{HTML}{3B6EA8}
+\definecolor{c2}{HTML}{29838D}
+\definecolor{c3}{HTML}{9A7500}
+\definecolor{c4}{HTML}{6B8EB8}
+
+\newcommand{\D}[1]{\textcolor{c3}{#1}}
+\newcommand{\Co}[1]{\textcolor{c4}{\textsf{#1}}}
+\newcommand{\F}[1]{\textcolor{c2}{\textsf{#1}}}
+\newcommand{\V}[1]{\textcolor{black}{\ensuremath{\mathit{#1}}}}
+\newcommand{\K}[1]{\textcolor{c1}{\ensuremath{\mathbf{#1}}}}
+\newcommand{\Proj}[1]{\textcolor{c3}{\textsf{#1}}}
+\newcommand{\Lit}[1]{\textcolor{purple}{\textsf{#1}}}
+
+%%
+%% Builtins
+%%
+
+%DONTformat Set = "\D{Set}"
+%format ∀ = "\forall"
+%format ∀[ = "\forall["
+%format λ = "\lambda"
+%format → = "\rightarrow"
+%format ⇒ = "\Rightarrow"
+%format ↔ = "\D{\leftrightarrow}"
+%format ⦃ = "\{\mkern-5mu|"
+%format ⦄ = "|\mkern-5mu\}"
+%format ℕ = "\ensuremath{\mathbb{N}}"
+%format 𝔹 = "\ensuremath{\mathbb{B}}"
+%format 𝟙 = "\ensuremath{\mathbb{1}}"
+
+%format ?hole = "{\setlength{\fboxsep}{0.75pt}\colorbox{c4}{\textcolor{white}{\textbf{\texttt{\{\ \}?}}}}}"
+
+%% do notation
+%format ←      = "\leftarrow"
+%format _>>=_  = _ >>= _
+%format >>=    = "\F{\gg=}"
+%format do     = "\K{do}"
+%format return = "\K{return}"
+%format bind   = "\K{bind}"
+
+%format instance = "\K{instance}"
+%format constructor = "\K{constructor}"
+
+%% greek
+%format μ = "\mu"
+%format σ = "\sigma"
+%format φ = "\phi"
+%format Σ = "\Sigma"
+%format Σ' = "\Sigma^\prime"
+%format ζ = "\zeta" 
+%format Δ = "\Delta"
+%format η = "\eta"
+%format ξ = "\xi"
+%format ξ₁ = "\xi_1"
+%format ξ₂ = "\xi_2"
+%format Γ = "\Gamma"
+%format υ = "\upsilon"
+%format ι = "\iota"
+%format ε = "\epsilon"
+
+%% math
+%format × = "\times"
+%format ⊎ = "\uplus"
+%format ℤ = "\mathbb{Z}"
+%format ⊕ = "\oplus"
+%format ‵ = "\lq"
+%format ′ = "\text{\rq}"
+%format ∄ = "\not\exists"
+%format ∃ = "\exists"
+%format ⟦ = "\llbracket"
+%format ⟧ = "\rrbracket"
+%format _ = "\_"
+%format ⊤ = "\top"
+%format ≡ = "\equiv"
+%format ≺ = "\prec"
+%format ⊂ = "\subset"
+%format ∘ = "\circ"
+
+%format _≤_ = _ ≤ _ 
+%format ≤ = "\ensuremath{\leq}"
+
+%format _∧_ = _ ∧ _
+%format ∧ = "\land"
+%format ∨ = "\lor"
+
+%format ∶   = ":"
+%format \!  = "\!"
+%format _+_ = _ + _
+
+%format _,_ = _ , _
+%format ,   = "\Co{,}"
+
+
+%format _∷_ = _ ∷ _
+%format ∷   = "\Co{::}"
+%format []  = "\Co{[]}"
+
+%% subscripts
+%format e₁ = e ₁
+%format e₂ = e ₂
+%format e₃ = e ₃
+%format e₄ = e ₄
+
+%format v₁ = v ₁
+%format v₂ = v ₂
+%format v₃ = v ₃
+%format v₄ = v ₄
+
+%format x₁ = x ₁
+%format x₂ = x ₂
+%format x₃ = x ₃
+%format x₄ = x ₄
+
+%format b₁ = b ₁
+%format b₂ = b ₂
+%format b₃ = b ₃
+%format b₄ = b ₄
+
+%format c₁ = c ₁
+%format c₂ = c ₂
+%format c₃ = c ₃
+%format c₄ = c ₄
+
+%format n₁ = n ₁
+%format n₂ = n ₂
+%format n₃ = n ₃
+%format n₄ = n ₄
+
+%format m₁ = m ₁
+%format m₂ = m ₂
+%format m₃ = m ₃
+%format m₄ = m ₄
+
+%format D₁ = D ₁
+%format D₂ = D ₂
+%format D₃ = D ₃
+%format D₄ = D ₄
+%format Dᵣ = D ᵣ
+%format Dₗ = D ₗ
+
+%format E₁ = E ₁
+%format E₂ = E ₂
+%format E₃ = E ₃
+%format E₄ = E ₄ 
+
+%format R₁ = R ₁
+%format R₂ = R ₂
+%format R₃ = R ₃
+
+%format T₁ = T ₁ 
+%format T₂ = T ₂ 
+%format T₃ = T ₃ 
+%format T₄ = T ₄
+
+%format t₁ = t ₁ 
+%format t₂ = t ₂ 
+%format t₃ = t ₃ 
+%format t₄ = t ₄
+
+%format V₁ = V ₁ 
+%format V₂ = V ₂ 
+%format V₃ = V ₃ 
+%format V₄ = V ₄
+
+
+%format alg₁ = alg ₁
+%format alg₂ = alg ₂
+
+%format ₀ = "_0"
+%format ₁ = "_1"
+%format ₂ = "_2"
+%format ₃ = "_3"
+%format ₄ = "_4"
+
+%format ᵣ = "_r"
+%format ₗ = "_l"
+
+%format 0 = "\Lit{0}"
+%format 1 = "\Lit{1}"
+%format 2 = "\Lit{2}"
+%format 3 = "\Lit{3}"
