@@ -12,14 +12,20 @@ open import Data.Maybe using (Maybe; just; nothing)
 open import Tactic.Cong
 open import Data.Nat hiding (_⊔_)
 open import Data.Vec hiding (_++_)
-open import Data.List 
+open import Data.List renaming (map to map-list)
+open import Data.Product
+open import Data.Sum
 open import Relation.Unary
 
 open import Level renaming (suc to sℓ)
 
+open import Function.Construct.Identity
+
 open FreeModule renaming (_𝓑_ to bindF) hiding (_>>_)
 open HeftyModule renaming (_𝓑_ to bindH) hiding (_>>_; m; n; catch)
 
+open Abbreviation
+open _∙_≈_ 
 
 private variable M : Set → Set
 
@@ -41,6 +47,23 @@ module _ where
         }
     ; _>>=_ = bindH
     }
+
+
+swap-⊕-↔ : {A : Set} → ⟦ Δ₁ ⊕ Δ₂ ⟧ A ↔ ⟦ Δ₂ ⊕ Δ₁ ⟧ A
+swap-⊕-↔ = record
+  { to        = λ where (inj₁ c , k) → inj₂ c , k
+                        (inj₂ c , k) → inj₁ c , k 
+  ; from      = λ where (inj₁ c , k) → inj₂ c , k
+                        (inj₂ c , k) → inj₁ c , k 
+  ; to-cong   = λ where refl → refl
+  ; from-cong = λ where refl → refl
+  ; inverse   = ( λ where {inj₁ c , k} refl → refl
+                          {inj₂ c , k} refl → refl
+                )
+              , ( λ where {inj₁ c , k} refl → refl
+                          {inj₂ c , k} refl → refl
+                )
+  } 
 \end{code} 
 
 \section{Modular Reasoning for Higher-Order Effects}
@@ -89,18 +112,24 @@ record Monotone {ℓ} (P : Effect → Set ℓ) : Set (sℓ 0ℓ ⊔ ℓ) where
     weaken : ⦃ Δ₁ ≲ Δ₂ ⦄ → P Δ₁ → P Δ₂
 
 open Monotone ⦃...⦄
+open Equation
+open Theory
 
 instance eq-monotone : Monotone Equation
-eq-monotone = {!!}
+V    (Monotone.weaken eq-monotone eq)       = V eq
+Γ    (Monotone.weaken eq-monotone eq)       = Γ eq
+R    (Monotone.weaken eq-monotone eq)       = R eq
+lhs  (Monotone.weaken eq-monotone eq) vs γ  = ♯ lhs eq vs γ
+rhs  (Monotone.weaken eq-monotone eq) vs γ  = ♯ rhs eq vs γ
 
 instance theory-monotone : Monotone Theory
-theory-monotone = {!!}
+equations (Monotone.weaken theory-monotone T) = map-list weaken (T .equations)
 
 instance ≲-⊕-left : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
-≲-⊕-left = {!!}
+≲-⊕-left = _ , λ where .reorder → ↔-id _ 
 
 instance ≲-⊕-right : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
-≲-⊕-right = {!!} 
+≲-⊕-right = _ , λ where .reorder → swap-⊕-↔ 
 \end{code}
 
 \begin{code}
