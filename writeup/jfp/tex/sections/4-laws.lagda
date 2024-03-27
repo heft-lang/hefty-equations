@@ -70,6 +70,64 @@ swap-⊕-↔ = record
 
 \section{Modular Reasoning for Higher-Order Effects}
 
+A key aspect of algebraic effects and handlers is to state and prove equational
+\emph{laws} that characterize correct implementations of effectful
+operations. Usually, an effect comes equipped with multiple laws that govern the
+behavior of its operations, which we refer to a as a \emph{theory} of that
+effect. Effect theories are closed under the co-product of effects, by combining
+the equations into a new theory that contains all equations for both
+effects~\citep{DBLP:journals/tcs/HylandPP06}. The concept of effect theories
+extends to higher-order effects. Theories for higher-order effects too are
+closed under sums of higher-order effect signatures. In this section, we discuss
+how to define theories for algebraic effects in Agda (based on the definitions
+used by \cite{DBLP:journals/pacmpl/YangW21}), and how to state and prove
+correctness of implementations with respect to a given theory. We extend this
+infrastructure to higher-order effects, to allow for modular reasoning about
+elaborations of higher-order effects. 
+
+To consider an example, the state effect, which comprises the $\af{get}$ and
+$\af{put}$ operations, is typically associated with a set of equations (or laws)
+that specify how implementations of the state effect ought to behave. One such
+law is the \emph{get-get} law, which captures the intuition that the state
+returned by two subsequent $\af{get}$ operation does not change if we do not use
+the $\af{put}$ operation in between:
+%
+\begin{equation*}
+  \af{get}\ 𝓑\ λ s →\ \af{get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{get}\ 𝓑\ λ s →\ k\ s\ s
+\end{equation*}
+%
+In a similar fashion, we an also state equations about higher-order effects. For
+example, the following law is usually associated with the $\af{local}$ operation
+of the reader effect, stating that transforming the context of a computation
+that immediately returns a value has no effect:
+%
+\begin{equation*}
+  \af{local}\ f\ (\mathbf{return}\ x)\ \equiv\ \mathbf{return}\ x
+\end{equation*}
+
+Correctness of an implementation of an algebraic effect with respect to a given
+theory is defined by comparing the implementations of programs that are equal
+under that theory. That is, if we can show that two programs are equal using the
+equations of a theory for its effects, handling the effects should produce equal
+results. For instance, a way to implement the state effect is by mapping
+programs to functions of the form $\ab{S}~\to~S×A$. Such an implementation would
+be correct if programs that are equal with respect to a theory of the state
+effect are mapped to functions that give the same value and output state for
+every input state.
+
+For higher-order effects, correctness is defined in a similar manner. However,
+since higher-order effects are implemented by elaborating into algebraic
+effects, correctness of elaborations with respect to a higher-order effect
+theory is defined by comparing the elaborated programs. Crucially, the
+elaborated programs do not have to be syntactically equal, but rather we should
+be able to prove them equal using a theory of the algebraic effects used to
+implement a higher-order effect. 
+
+
+\subsection{Correctness of Implementations}
+
+
+
 \begin{itemize}
 
   \item
@@ -115,7 +173,7 @@ extract px = px .future ⦃ ≲-refl ⦄
 
 record Theory (Δ : Effect) : Set₁ where
   field
-    equations : List (□ Equation Δ)
+    equations : List (Equation Δ)
 
 record Monotone {ℓ} (P : Effect → Set ℓ) : Set (sℓ 0ℓ ⊔ ℓ) where
   field
@@ -217,12 +275,12 @@ data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → 
 \end{code}
 
 \begin{code}
-  ≈-eq  :  (eq : □ Equation Δ)
+  ≈-eq  :  (eq : Equation Δ)
         →  eq ∈ equations T 
-        →  (vs : Vec Set (V (extract eq)))
-        →  (γ : Γ (extract eq) vs)
-        →  (k : R (extract eq) vs → Free Δ A)
-        →  (lhs (extract eq) vs γ >>= k) ≈⟨ T ⟩ (lhs (extract eq) vs γ >>= k)  
+        →  (vs : Vec Set (V eq))
+        →  (γ : Γ eq vs)
+        →  (k : R eq vs → Free Δ A)
+        →  (lhs eq vs γ >>= k) ≈⟨ T ⟩ (lhs eq vs γ >>= k)  
 \end{code}
 
 \end{AgdaAlign}
@@ -261,11 +319,11 @@ the algebra gives the same result for the left hand side and right hand side of
 the equation: 
 
 \begin{code}
-Respects : Alg Δ A → □ Equation Δ → Set₁
+Respects : Alg Δ A → Equation Δ → Set₁
 Respects {Δ = Δ} alg eq =
   ∀  {vs γ k}
-  →  fold k alg (lhs (extract eq) vs γ)
-  ≡  fold k alg (rhs (extract eq) vs γ) 
+  →  fold k alg (lhs eq vs γ)
+  ≡  fold k alg (rhs eq vs γ) 
 \end{code}
 
 Correctness of an effect handler with respect to some theory: handling the
