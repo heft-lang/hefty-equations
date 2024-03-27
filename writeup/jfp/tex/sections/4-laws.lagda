@@ -50,6 +50,10 @@ module _ where
     ; _>>=_ = bindH
     }
 
+open RawMonad ⦃...⦄
+
+_𝓑_ : Free Δ A → (A → Free Δ B) → Free Δ B
+m 𝓑 k = m >>= k 
 
 swap-⊕-↔ : {A : Set} → ⟦ Δ₁ ⊕ Δ₂ ⟧ A ↔ ⟦ Δ₂ ⊕ Δ₁ ⟧ A
 swap-⊕-↔ = record
@@ -121,48 +125,78 @@ effects, correctness of elaborations with respect to a higher-order effect
 theory is defined by comparing the elaborated programs. Crucially, the
 elaborated programs do not have to be syntactically equal, but rather we should
 be able to prove them equal using a theory of the algebraic effects used to
-implement a higher-order effect. 
+implement a higher-order effect.
 
+\subsection{Theories of Algebraic Effects}
 
-\subsection{Correctness of Implementations}
+Theories are collections of equations, so we start defining the type of
+equations in Agda. At its core, an equation for the effect $Δ$ is given by a
+pair of effect trees of the form $\ad{Free}~\ab{Δ}~A$, representing the left and
+right hand side of the equation. However, looking at the \emph{get-get} law
+above, we see that this equation contains a \emph{metavariable}, i.e.,
+$\ab{k}$. Furthermore, looking at the type of $\ab{k}$,
+$\ab{S}~\to~\ab{S}~\to~\ad{Free}~\ab{Δ}~\ab{A}$, we see that its type contains a
+\emph{type metavariable}, i.e., $\ab{A}$. In general, an equation may refer to
+any number of metavariables, which, in turn, may depend on any number of type
+metavariables. Moreover, the type of the value returned by the left hand side
+and right hand side of an equation may depend on these type metavariables as
+well, as is the case for the \emph{get-get} law above.
 
-
-
-\begin{itemize}
-
-  \item
-    A key part of algebraic effects is to state and prove equational laws about
-    effectful operations.
-
-  \item
-    An \emph{effect theory} for some effect, given by a set of equations
-    relating its operations, gives a specification for lawful implementations.
-
-  \item
-    In this section, we describe how to embed such effect theories for 1st order
-    effects in Agda, and what it means for implementations to respect these theories
-    
-  \item
-    Then, we generalize effect theories to higher-order effects, where they give
-    a specification of lawful elaborations. Since elaborations define an
-    ``implementation'' of higher-order effects in terms of algebraic effect,
-    correctness of an elaboration is defined with respect to a theory of the
-    algebraic effects it elaborates into. This is key for higher-order effect
-    theories to be modular. 
-  
-\end{itemize}
-
-
-Theories are defined as follows:
-
+This motivates the following definition of equations in Agda:
+%
 \begin{code}
 record Equation (Δ : Effect) : Set₁ where
   field
-    V : ℕ
-    Γ : Vec Set V → Set
-    R : Vec Set V → Set 
-    lhs rhs : (vs : Vec Set V) → Γ vs → Free Δ (R vs)
+    V        : ℕ
+    Γ        : Vec Set V → Set
+    R        : Vec Set V → Set 
+    lhs rhs  : (vs : Vec Set V) → Γ vs → Free Δ (R vs)
+\end{code}
+%
+An equation consists of five components. The field $\aF{V}$ defines the number
+of type metavariables used in the equation. Then, the fields $\aF{Γ}$ and
+$\aF{R}$ define the metavariables respectively return type of the equation. Both
+may depend on the type metavariables of the equation, so they take a vector of
+length $\aF{V}$ containing instantiations of all type metavariables as
+input. Finally, the left hand side ($\aF{lhs}$) and right hand side ($\aF{rhs}$)
+of the equation are then defined as values of type
+$\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which take an instantiation of the type
+metavariables and term metavariables as their input.
 
+\paragraph*{Example.}
+We consider how to define the \emph{get-get} as a value of type
+$\ad{Equation}~\af{State}$. Recall that it depends on one type metavariable, and
+one term metavariable. Furthermore, the return type of the programs on the left
+and right hand sides is equal to the sole type metavariable:
+%
+\begin{AgdaAlign}
+\begin{code}[hide]
+open Equation
+\end{code}
+\begin{code}
+get-get : Equation State
+V    get-get = 1
+Γ    get-get = λ where (A ∷ []) → ℕ → ℕ → Free State A
+R    get-get = λ where (A ∷ []) → A
+\end{code}
+%
+Since there is exactly one term metavariable, we equate $\aF{Γ}$ to the type of
+$k$. For equations with more than one metavariable, we define $\aF{Γ}$ as a
+product of the types of all term metavariables.  The $\aF{lhs}$ and $\aF{rhs}$
+of the \emph{get-get} law are then defined as follows:
+%
+\begin{code} 
+lhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′ 
+rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
+\end{code}
+\end{AgdaAlign}
+
+
+\begin{equation*}
+  \af{get}\ 𝓑\ λ s →\ \aF{get}\ 𝓑\ λ s′ →\ \af{abort}\ \equiv\ \af{get}\ 𝓑\ \af{abort}  
+\end{equation*}
+
+\begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
   field future : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
 
@@ -219,7 +253,6 @@ instantiated to a weakened tree.
 
 \begin{code}[hide]
 open Equation 
-open RawMonad ⦃...⦄
 open Theory 
 \end{code}
 \begin{code}
