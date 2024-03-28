@@ -163,7 +163,7 @@ of the equation are then defined as values of type
 $\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which take an instantiation of the type
 metavariables and term metavariables as their input.
 
-\paragraph*{Example.}
+\paragraph*{Example}.
 We consider how to define the \emph{get-get} as a value of type
 $\ad{Equation}~\af{State}$. Recall that it depends on one type metavariable, and
 one term metavariable. Furthermore, the return type of the programs on the left
@@ -191,20 +191,66 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 \end{code}
 \end{AgdaAlign}
 
-
+\paragraph*{Modal Necessity}.
+Consider the following equality: 
+%
 \begin{equation*}
-  \af{get}\ 𝓑\ λ s →\ \aF{get}\ 𝓑\ λ s′ →\ \af{abort}\ \equiv\ \af{get}\ 𝓑\ \af{abort}  
+  \af{get}\ 𝓑\ λ s\ →\ \af{get}\ 𝓑\ λ s′\ →\ \af{abort}\ \equiv\ \af{get}\ 𝓑\ λ s\ →\ \af{abort}  
 \end{equation*}
+%
+We might expect to be able to prove this equality using the \emph{get-get} law,
+but using the embedding of the law defined above---i.e., \af{get-get}---this is
+not possible. The reason for this is that we cannot pick an appropriate
+instantiation for the term metavariable $k$: it ranges over values of type
+$\ab{S}~\to~\ab{S}~\to~Free State A$, inhibiting all references to effectful
+operation that are not part of the state effect, such as $\af{abort}$.
 
+Given an equation for the effect $Δ$, the solution is to view $Δ$ as a
+\emph{lower bound}, rather than an exact specification of the effects used in
+the left hand side and right hand side of the equation. Effectively, this means
+that we close over all posible contexts of effects in which the equation can
+occur. A useful abstraction that captures this pattern, which was also used by
+\cite{DBLP:journals/jfp/AllaisACMM21} and \cite{DBLP:journals/pacmpl/RestPRVM22}
+to respectively close over future contexts of free variables and canonical
+forms, is to use a shallow embedding of the Kripke semantics of modal necessity:
+%
 \begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
-  field future : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
-
+  field
+    necessary : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
+\end{code}
+\begin{code}[hide]
 open □ 
-
+\end{code}
+%
+Intuitively the difference between terms of type $\ad{Equation}~\ab{Δ}$ and
+$\ad{□}~\ad{Equation}~\ab{Δ}$ is that the former defines an equation relating
+programs that have exactly effects $Δ$, while the latter defines an equation
+relating programs that have \emph{at least} the effects $Δ$. The $\ad{□}$
+modifier is a comonad, where the counit tells us that we can always view a lower
+bound on effects as an exact specification by instantiating the extension
+witness with a proof of reflexivity.
+%
+\begin{code}
 extract : {P : Effect → Set₁} → □ P Δ → P Δ
-extract px = px .future ⦃ ≲-refl ⦄
+extract px = px .necessary ⦃ ≲-refl ⦄
+\end{code}
+%
+We can now redefine the \emph{get-get} law so that it applies to all programs
+that have at least the $\ad{State}$ effect, but potentially other effects too.
+%
+\begin{code}
+get-get′ : □ Equation State
+V    (necessary get-get′       )             = 1
+Γ    (necessary get-get′ {Δ′}  ) (A ∷ [])    = ℕ → ℕ → Free Δ′ A
+R    (necessary get-get′       ) (A ∷ [])    = A
+lhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
+rhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → k s s
+\end{code}
 
+\paragraph{Effect Theories}
+
+\begin{code}
 record Theory (Δ : Effect) : Set₁ where
   field
     equations : List (Equation Δ)
@@ -225,7 +271,7 @@ lhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (lhs eq) vs γ
 rhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (rhs eq) vs γ
 
 instance □-monotone : {P : Effect → Set₁} → Monotone (□ P)
-Monotone.weaken □-monotone w₁ px .future ⦃ w₂ ⦄ = px .future ⦃ ≲-trans w₁ w₂ ⦄
+Monotone.weaken □-monotone w₁ px .necessary ⦃ w₂ ⦄ = px .necessary ⦃ ≲-trans w₁ w₂ ⦄
 
 instance theory-monotone : Monotone Theory
 equations (Monotone.weaken theory-monotone w T) = map-list (weaken w) (T .equations)
@@ -257,11 +303,11 @@ open Theory
 \end{code}
 \begin{code}
 bind-throw : □ Equation Throw
-V    (bind-throw .future)                      = 2
-Γ    (bind-throw .future {Δ′}) (A ∷ B ∷ [])    = A → Free Δ′ B
-R    (bind-throw .future)      (A ∷ B ∷ [])    = B
-lhs  (bind-throw .future)      (_ ∷ _ ∷ []) k  = ‵throw >>= k
-rhs  (bind-throw .future)      (_ ∷ _ ∷ []) k  = ‵throw
+V    (bind-throw .necessary)                      = 2
+Γ    (bind-throw .necessary {Δ′}) (A ∷ B ∷ [])    = A → Free Δ′ B
+R    (bind-throw .necessary)      (A ∷ B ∷ [])    = B
+lhs  (bind-throw .necessary)      (_ ∷ _ ∷ []) k  = ‵throw >>= k
+rhs  (bind-throw .necessary)      (_ ∷ _ ∷ []) k  = ‵throw
 \end{code}
 
 
