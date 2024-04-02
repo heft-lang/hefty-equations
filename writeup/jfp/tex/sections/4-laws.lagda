@@ -1,5 +1,5 @@
 \begin{code}[hide]
-{-# OPTIONS --overlapping-instances --instance-search-depth=2 #-}
+{-# OPTIONS --overlappin --instance-search-depth=2 #-}
 module tex.sections.4-laws where
 
 open import tex.sections.2-algebraic-effects
@@ -17,6 +17,7 @@ open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
 open import Relation.Unary hiding (_∈_)
 open import Data.List.Membership.Propositional
+open import Data.List.Relation.Unary.Any hiding (map)
 
 open import Level renaming (suc to sℓ)
 
@@ -36,9 +37,6 @@ open Universe ⦃ ... ⦄
 module _ where
   open RawMonad hiding (pure)
 
-  postulate instance FreeRawMonad : RawMonad (Free Δ)
-  --FreeRawMonad = {!!} 
-
   HeftyRawMonad : RawMonad (Hefty H)
   HeftyRawMonad = record
     { rawApplicative = record
@@ -53,7 +51,7 @@ module _ where
 open RawMonad ⦃...⦄
 
 _𝓑_ : Free Δ A → (A → Free Δ B) → Free Δ B
-m 𝓑 k = m >>= k 
+m 𝓑 k = bindF m k
 
 swap-⊕-↔ : {A : Set} → ⟦ Δ₁ ⊕ Δ₂ ⟧ A ↔ ⟦ Δ₂ ⊕ Δ₁ ⟧ A
 swap-⊕-↔ = record
@@ -194,8 +192,8 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 \subsection{Modal Necessity}
 Consider the following equality: 
 %
-\begin{equation}\label{eq:get-get-abort}
-  \af{get}\ 𝓑\ λ s\ →\ \af{get}\ 𝓑\ λ s′\ →\ \af{abort}\ \equiv\ \af{get}\ 𝓑\ λ s\ →\ \af{abort}  
+\begin{equation}\label{eq:get-get-throw}
+  \af{get}\ 𝓑\ λ s\ →\ \af{get}\ 𝓑\ λ s′\ →\ \af{throw}\ \equiv\ \af{get}\ 𝓑\ λ s\ →\ \af{throw}  
 \end{equation}
 %
 We might expect to be able to prove this equality using the \emph{get-get} law,
@@ -203,7 +201,7 @@ but using the embedding of the law defined above---i.e., \af{get-get}---this is
 not possible. The reason for this is that we cannot pick an appropriate
 instantiation for the term metavariable $k$: it ranges over values of type
 $\ab{S}~\to~\ab{S}~\to~Free State A$, inhibiting all references to effectful
-operation that are not part of the state effect, such as $\af{abort}$.
+operation that are not part of the state effect, such as $\af{throw}$.
 
 Given an equation for the effect $Δ$, the solution is to view $Δ$ as a
 \emph{lower bound}, rather than an exact specification of the effects used in
@@ -244,21 +242,26 @@ We can now redefine the \emph{get-get} law so that it applies to all programs
 that have at least the $\ad{State}$ effect, but potentially other effects too.
 %
 \begin{code}
-get-get′ : □ Equation State
-V    (necessary get-get′       )             = 1
-Γ    (necessary get-get′ {Δ′}  ) (A ∷ [])    = ℕ → ℕ → Free Δ′ A
-R    (necessary get-get′       ) (A ∷ [])    = A
-lhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
-rhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → k s s
+get-get◂ : □ Equation State
+V    (necessary get-get◂       )             = 1
+Γ    (necessary get-get◂ {Δ′}  ) (A ∷ [])    = ℕ → ℕ → Free Δ′ A
+R    (necessary get-get◂       ) (A ∷ [])    = A
+lhs  (necessary get-get◂       ) (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
+rhs  (necessary get-get◂       ) (A ∷ []) k  = ‵get 𝓑 λ s → k s s
 \end{code}
 %
 The above embedding of the \emph{get-get} law now actually does allow us to
-prove the equality in \cref{eq:get-get-abort}; the term metavariable $k$ now
+prove the equality in \cref{eq:get-get-throw}; the term metavariable $k$ now
 ranges over all continuations returning a tree of type
 $\ad{Free}\ \ab{Δ′}\ \ab{A}$, for all $\ab{Δ′}$ such that
 $\af{State}~\ad{≲}~\ab{Δ′}$. This way, we can instantiate $\ab{Δ′}$ with any set
-of effects that includes both $\af{State}$ and $\af{Abort}$, allowing us to
-instantiate $k$ as $\af{abort}$.
+of effects that includes both $\af{State}$ and $\af{Throw}$, allowing us to
+instantiate $k$ as $\af{throw}$.
+
+\begin{code}
+close : ⦃ Δ₁ ≲ Δ₂ ⦄ → □ Equation Δ₁ → Equation Δ₂
+close eq = necessary eq 
+\end{code}
 
 \subsection{Effect Theories}
 
@@ -337,10 +340,10 @@ _[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
 T₁ [+] T₂ = weaken-theory T₁ ⟨+⟩ weaken-theory T₂
 \end{code}
 %
-While this operation is in principle sufficient, it forces a specific order on
-the effects of the combined theory. We can generalize the operation above to
-allow for the effects of the combined theory to appear in any order. This
-requires the following instances:  
+While this operation is in principle sufficient for our purposes, it forces a
+specific order on the effects of the combined theory. We can generalize the
+operation above to allow for the effects of the combined theory to appear in any
+order. This requires the following instances:
 %
 \begin{code}
 instance ≲-∙-left   : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₁ ≲ Δ
@@ -377,18 +380,24 @@ rhs (weaken-eq eq) = λ vs γ → ♯ rhs eq vs γ
 %
 This begs the question: why would we opt to rely on weakenability of the $□$
 modifier to show that theories are weakenable rather than using $\af{weaken-eq}$
-directly? Although the latter would indeed allow us to define composition of
-effect theories as well as to apply equations to programs that have more effects
-than the effect the equation was originally defined for, the possible ways we
-can instantiate term metavariables remains too restrictive. That is, we still
-would not be able to prove the equality in \cref{eq:get-get-abort}. Despite the
-fact that we can weaken the \emph{get-get} law so that it applies to programs
-that use the $\ad{Abort}$ effect as well, instantiations of $k$ will be limited
-to weakened effect trees precluding any instantiation that use operations of
-effects other than $\ad{State}$, such as $\af{abort}$.
+directly? Although the latter approach would indeed allow us to define
+composition of effect theories as well as to apply equations to programs that
+have more effects than the effect the equation was originally defined for, the
+possible ways we can instantiate term metavariables remains too
+restrictive. That is, we still would not be able to prove the equality in
+\cref{eq:get-get-throw}. Despite the fact that we can weaken the \emph{get-get}
+law so that it applies to programs that use the $\ad{Throw}$ effect as well,
+instantiations of $k$ will be limited to weakened effect trees, precluding any
+instantiation that use operations of effects other than $\ad{State}$, such as
+$\af{throw}$.
 
-\subsection{Syntactic Equivalence of Effectful Programs} 
-
+Finally, we must define what it means for a theory to be included in a bigger
+theory. Given two theories, $\ab{T₁}$ and $\ab{T₂}$, ranging over effects
+$\ab{Δ₁}$ and $\ab{Δ₂}$ respectively, we say that $\ab{T₁}$ is a
+\emph{sub-theory} of $\ab{T₂}$ if (1) $Δ₁$ is a sub-effect of $Δ₂$, and all
+equations of $\ab{T₁}$ are, in their weakened form, also part of $\ab{T₂}$. The
+following record type captures this definition of sub-theories in Agda: 
+%
 \begin{code}[hide]
 variable T T₁ T₂ T₃ T′ : Theory Δ
 variable m m₁ m₂ m₃ m′ : Free Δ A
@@ -396,7 +405,25 @@ variable m m₁ m₂ m₃ m′ : Free Δ A
 open ⟨_!_⇒_⇒_!_⟩
 
 open Effect 
-\end{code} 
+\end{code}
+\begin{code}
+record _⊑_ (T₁ : Theory Δ₁) (T₂ : Theory Δ₂) : Set₁ where
+  field
+    ⦃ ext ⦄  : Δ₁ ≲ Δ₂ 
+    sub      : ∀ {eq} → eq ∈ equations T₁ → weaken-□ eq ∈ equations T₂ 
+\end{code}
+\begin{code}[hide]
+open _⊑_ 
+\end{code}
+%
+Here, the field $\aF{ext}$ witnesses that the effects of $\ab{T₁}$ are included
+in the effects of $\ab{T₂}$, while the $\aF{sub}$ field transforms proofs that
+an equation is included in $\ab{T₁}$ into a proof that its weakened form is
+included in $\ab{T₂}$. 
+
+\subsection{Syntactic Equivalence of Effectful Programs} 
+
+
 
 \begin{AgdaAlign}
 \begin{code}
@@ -417,14 +444,14 @@ data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → 
 \end{code}
 
 \begin{code}
-  ≈-eq  :  (eq : □ Equation Δ)
+  ≈-eq  :  (eq : □ Equation Δ₁)
+        →  (sub : T ⊑ T′) 
         →  eq ∈ equations T 
-        →  (vs : Vec Set (V (extract eq)))
-        →  (γ : Γ (extract eq) vs)
-        →  (k : R (extract eq) vs → Free Δ A)
-        →  (lhs (extract eq) vs γ >>= k) ≈⟨ T ⟩ (lhs (extract eq) vs γ >>= k)  
+        →  (vs : Vec Set (V (close eq)))
+        →  (γ : Γ (close eq) vs)
+        →  (k : R (close eq) vs → Free Δ₂ A)
+        →  (lhs (close eq) vs γ 𝓑 k) ≈⟨ T′ ⟩ (rhs (close eq) vs γ 𝓑 k)  
 \end{code}
-
 \end{AgdaAlign}
 
 \begin{code}
@@ -449,6 +476,39 @@ module ≈-Reasoning (T : Theory Δ) where
   infix  1 begin_
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix  3 _∎
+
+postulate 𝓑-idʳ-≈ : (m : Free Δ A) → (m 𝓑 Free.pure) ≈⟨ T ⟩ m
+\end{code}
+
+\begin{code}
+use-equation :
+  ∀  ⦃ sub : T₁ ⊑ T₂ ⦄ 
+  →  (eq : □ Equation Δ₁)
+  →  eq ∈ equations T₁
+  →  {vs : Vec Set (V (close  eq))}
+  →  {γ : Γ (close eq) vs}
+  →  lhs (close eq) vs γ ≈⟨ T₂ ⟩ rhs (close eq) vs γ
+\end{code}
+\begin{code}[hide]
+use-equation ⦃ sub ⦄ eq px = ≈-trans (≈-sym (𝓑-idʳ-≈ _)) (≈-trans (≈-eq eq sub px _ _ Free.pure) (𝓑-idʳ-≈ _))
+\end{code}
+
+\begin{code}
+StateTheory : Theory State
+equations StateTheory = get-get◂ ∷ []
+
+
+get-get-throw : ⦃ _ : Throw ≲ Δ ⦄
+  → (T : Theory Δ)
+  → ⦃ _ : StateTheory ⊑ T ⦄ 
+  → (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ T ⟩ (‵get 𝓑  λ s → ‵throw)
+get-get-throw T = begin
+    ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
+  ≈⟪ use-equation get-get◂ (here refl) {_ ∷ []}  ⟫
+    ‵get 𝓑 (λ s → ‵throw)
+  ∎
+  where
+    open ≈-Reasoning T 
 \end{code}
 
 (Prove two example programs equal perhaps?) 
