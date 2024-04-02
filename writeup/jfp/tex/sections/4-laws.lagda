@@ -1,5 +1,5 @@
 \begin{code}[hide]
-{-# OPTIONS --overlapping-instances --instance-search-depth=10 #-}
+{-# OPTIONS --overlapping-instances --instance-search-depth=2 #-}
 module tex.sections.4-laws where
 
 open import tex.sections.2-algebraic-effects
@@ -11,10 +11,10 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Maybe using (Maybe; just; nothing)
 open import Tactic.Cong
 open import Data.Nat hiding (_⊔_)
-open import Data.Vec hiding (_++_)
-open import Data.List renaming (map to map-list)
-open import Data.Product
-open import Data.Sum
+open import Data.Vec hiding (_++_ ; map)
+open import Data.List
+open import Data.Product hiding (map)
+open import Data.Sum hiding (map)
 open import Relation.Unary hiding (_∈_)
 open import Data.List.Membership.Propositional
 
@@ -191,12 +191,12 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 \end{code}
 \end{AgdaAlign}
 
-\paragraph*{Modal Necessity}.
+\subsection{Modal Necessity}
 Consider the following equality: 
 %
-\begin{equation*}
+\begin{equation}\label{eq:get-get-abort}
   \af{get}\ 𝓑\ λ s\ →\ \af{get}\ 𝓑\ λ s′\ →\ \af{abort}\ \equiv\ \af{get}\ 𝓑\ λ s\ →\ \af{abort}  
-\end{equation*}
+\end{equation}
 %
 We might expect to be able to prove this equality using the \emph{get-get} law,
 but using the embedding of the law defined above---i.e., \af{get-get}---this is
@@ -209,10 +209,12 @@ Given an equation for the effect $Δ$, the solution is to view $Δ$ as a
 \emph{lower bound}, rather than an exact specification of the effects used in
 the left hand side and right hand side of the equation. Effectively, this means
 that we close over all posible contexts of effects in which the equation can
-occur. A useful abstraction that captures this pattern, which was also used by
-\cite{DBLP:journals/jfp/AllaisACMM21} and \cite{DBLP:journals/pacmpl/RestPRVM22}
-to respectively close over future contexts of free variables and canonical
-forms, is to use a shallow embedding of the Kripke semantics of modal necessity:
+occur. A useful abstraction that captures this pattern, which was also utilized
+by \cite{DBLP:journals/jfp/AllaisACMM21} and
+\cite{DBLP:journals/pacmpl/RestPRVM22} (where they respectively close over
+future contexts of free variables and canonical forms of definitional
+interpreters), is to use a shallow embedding of the Kripke semantics of modal
+necessity:
 %
 \begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
@@ -223,17 +225,19 @@ record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
 open □ 
 \end{code}
 %
-Intuitively the difference between terms of type $\ad{Equation}~\ab{Δ}$ and
-$\ad{□}~\ad{Equation}~\ab{Δ}$ is that the former defines an equation relating
-programs that have exactly effects $Δ$, while the latter defines an equation
-relating programs that have \emph{at least} the effects $Δ$. The $\ad{□}$
-modifier is a comonad, where the counit tells us that we can always view a lower
+Intuitively, the $□$ modifier transforms, for any effect-indexed type, an
+\emph{exact} specification of the set of effects to a \emph{lower bound}. For
+equations, the difference between terms of type $\ad{Equation}~\ab{Δ}$ and
+$\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former defining an equation
+relating programs that have exactly effects $Δ$, while the latter defines an
+equation relating programs that have at least the effects $Δ$. The $\ad{□}$
+modifier is a comonad, whose counit tells us that we can always view a lower
 bound on effects as an exact specification by instantiating the extension
 witness with a proof of reflexivity.
 %
 \begin{code}
 extract : {P : Effect → Set₁} → □ P Δ → P Δ
-extract px = px .necessary ⦃ ≲-refl ⦄
+extract px = necessary px ⦃ ≲-refl ⦄
 \end{code}
 %
 We can now redefine the \emph{get-get} law so that it applies to all programs
@@ -247,82 +251,141 @@ R    (necessary get-get′       ) (A ∷ [])    = A
 lhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
 rhs  (necessary get-get′       ) (A ∷ []) k  = ‵get 𝓑 λ s → k s s
 \end{code}
+%
+The above embedding of the \emph{get-get} law now actually does allow us to
+prove the equality in \cref{eq:get-get-abort}; the term metavariable $k$ now
+ranges over all continuations returning a tree of type
+$\ad{Free}\ \ab{Δ′}\ \ab{A}$, for all $\ab{Δ′}$ such that
+$\af{State}~\ad{≲}~\ab{Δ′}$. This way, we can instantiate $\ab{Δ′}$ with any set
+of effects that includes both $\af{State}$ and $\af{Abort}$, allowing us to
+instantiate $k$ as $\af{abort}$.
 
-\paragraph{Effect Theories}
+\subsection{Effect Theories}
 
+Equations for an effect $Δ$ can be combined into a \emph{theory} for $Δ$. A
+theory for the effect $Δ$ is simply a collection of equations, transformed using
+the $\ad{□}$ modifier to ensure that term metavariables can range over programs
+that include more effects than just $Δ$: 
+%
 \begin{code}
 record Theory (Δ : Effect) : Set₁ where
   field
-    equations : List (Equation Δ)
+    equations : List (□ Equation Δ)
+\end{code}
+%
+We can think of effect theories as defining a specification for how
+implementations of an effect ought to behave. Although implementations may vary,
+depending for example on whether they are tailored to readability or efficiency,
+they should at least respect the equations of the theory of the effect they
+implement. We will make precise what it means for an implementation to respect
+an equation in \cref{sec:handler-correctness}.
 
-record Monotone {ℓ} (P : Effect → Set ℓ) : Set (sℓ 0ℓ ⊔ ℓ) where
-  field
-    weaken : Δ₁ ≲ Δ₂ → P Δ₁ → P Δ₂
 
-open Monotone ⦃...⦄
+Effect theories are closed under several composition operations that allow us to
+combine the equations of different theories into single theory. The most basic
+way of combining effect theories is by concatenating their respective lists of
+equations.
+%
+\begin{code}[hide]
 open Equation
 open Theory
-
-instance eq-monotone : Monotone Equation
-V    (Monotone.weaken eq-monotone w eq)       = V eq
-Γ    (Monotone.weaken eq-monotone w eq)       = Γ eq
-R    (Monotone.weaken eq-monotone w eq)       = R eq
-lhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (lhs eq) vs γ
-rhs  (Monotone.weaken eq-monotone w eq) vs γ  = ♯_ ⦃ w ⦄ $ (rhs eq) vs γ
-
-instance □-monotone : {P : Effect → Set₁} → Monotone (□ P)
-Monotone.weaken □-monotone w₁ px .necessary ⦃ w₂ ⦄ = px .necessary ⦃ ≲-trans w₁ w₂ ⦄
-
-instance theory-monotone : Monotone Theory
-equations (Monotone.weaken theory-monotone w T) = map-list (weaken w) (T .equations)
-
-≲-⊕-left : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
-≲-⊕-left = _ , λ where .reorder → ↔-id _ 
-
-≲-⊕-right : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
-≲-⊕-right = _ , λ where .reorder → swap-⊕-↔
-
-≲-∙-left : Δ₁ ∙ Δ₂ ≈ Δ → Δ₁ ≲ Δ
-≲-∙-left w = _ , w
-
-≲-∙-right : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ≲ Δ
-≲-∙-right w = _ , λ where .reorder → w .reorder ↔-∘ swap-⊕-↔ 
 \end{code}
-
-
-Why the witness in the type of lhs and rhs? We want to state equations for all
-programs that contain at least the effect $Δ$, but potentially more
-effects. Although equations can be weakened to a larger set of effect, this does
-not give the desired result, as equations containing meta-variables ranging over
-effect trees in that case only apply to programs where the meta-variable is
-instantiated to a weakened tree.
-
-\begin{code}[hide]
-open Equation 
-open Theory 
-\end{code}
-\begin{code}
-bind-throw : □ Equation Throw
-V    (bind-throw .necessary)                      = 2
-Γ    (bind-throw .necessary {Δ′}) (A ∷ B ∷ [])    = A → Free Δ′ B
-R    (bind-throw .necessary)      (A ∷ B ∷ [])    = B
-lhs  (bind-throw .necessary)      (_ ∷ _ ∷ []) k  = ‵throw >>= k
-rhs  (bind-throw .necessary)      (_ ∷ _ ∷ []) k  = ‵throw
-\end{code}
-
-
 \begin{code}
 _⟨+⟩_ : Theory Δ → Theory Δ → Theory Δ
 equations (T₁ ⟨+⟩ T₂) = equations T₁ ++ equations T₂
-
-_[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
-T₁ [+] T₂ = weaken ≲-⊕-left T₁ ⟨+⟩ weaken ≲-⊕-right T₂
 \end{code}
+%
+This way of combining effects is somewhat limiting, as it imposes that the
+theories we combine are theories for the exact same effect. It is more likely,
+however, that we would want to combine theories for different effects. To do so
+requires the ability to \emph{weaken} effect theories 
 
 \begin{code}
-compose-theory : Δ₁ ∙ Δ₂ ≈ Δ → Theory Δ₁ → Theory Δ₂ → Theory Δ
-compose-theory w T₁ T₂ = weaken (≲-∙-left w) T₁ ⟨+⟩ weaken (≲-∙-right w) T₂ 
+weaken-□ : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → □ P Δ₂ 
+necessary (weaken-□ ⦃ w₁ ⦄ px) ⦃ w₂ ⦄ = necessary px ⦃ ≲-trans w₁ w₂ ⦄ 
+
+weaken-theory : ⦃ Δ₁ ≲ Δ₂ ⦄ → Theory Δ₁ → Theory Δ₂ 
+equations (weaken-theory T) = map weaken-□ (equations T)
 \end{code}
+%
+Categorically speaking, the observation that for a given effect-indexed type $P$
+we can transform a value of type $P\ \ab{Δ₁}$ to a value of type $P\ \ab{Δ₂}$ if
+we know that $\ab{Δ₁}~\ad{≲}~\ab{Δ₂}$ is equivalent to saying that $P$ is a
+functor from the category of containers and container morphisms to the categorie
+of sets. From this perspective, the existence of weakening for free $\ad{Free}$,
+as witnessed by the $\af{♯}$ operation, implies that it too is a such a functor.
+
+With weakening for theories at our disposal, we can combine effect theories for
+different effects into a theory ranging over their coproduct.  This requires us
+to first define appropriate instances relating coproducts to effect inclusion:
+%
+\begin{code}
+instance ≲-⊕-left   : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
+instance ≲-⊕-right  : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
+\end{code}
+\begin{code}[hide]
+≲-⊕-left = _ , λ where .reorder → ↔-id _
+≲-⊕-right = _ , λ where .reorder → swap-⊕-↔
+\end{code}
+%
+With these instances in scope, it is straightforward to show that effect
+theories are closed under the coproduct of effects, by summing the weakened
+theories.
+%
+\begin{code}
+_[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
+T₁ [+] T₂ = weaken-theory T₁ ⟨+⟩ weaken-theory T₂
+\end{code}
+%
+While this operation is in principle sufficient, it forces a specific order on
+the effects of the combined theory. We can generalize the operation above to
+allow for the effects of the combined theory to appear in any order. This
+requires the following instances:  
+%
+\begin{code}
+instance ≲-∙-left   : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₁ ≲ Δ
+instance ≲-∙-right  : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₂ ≲ Δ
+\end{code}
+\begin{code}[hide]
+≲-∙-left ⦃ w ⦄ = _ , w
+≲-∙-right ⦃ w ⦄ = _ , λ where .reorder → w .reorder ↔-∘ swap-⊕-↔ 
+\end{code}
+%
+Again, we show that effect theories are closed under coproducts up to reordering
+by summing the weakened theories: 
+%
+\begin{code}
+compose-theory : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Theory Δ₁ → Theory Δ₂ → Theory Δ
+compose-theory T₁ T₂ = weaken-theory T₁ ⟨+⟩ weaken-theory T₂ 
+\end{code}
+
+Since equations are defined by storing the syntax trees corresponding their left
+hand side and right hand side, we would expect them to be weakenable
+too. Indeed, we can define the following function witnessing weakenability of
+equations.
+%
+\begin{code}
+weaken-eq : ⦃ Δ₁ ≲ Δ₂ ⦄ → Equation Δ₁ → Equation Δ₂ 
+\end{code}
+\begin{code}[hide]
+V (weaken-eq eq) = V eq
+Γ (weaken-eq eq) = Γ eq
+R (weaken-eq eq) = R eq
+lhs (weaken-eq eq) = λ vs γ → ♯ lhs eq vs γ
+rhs (weaken-eq eq) = λ vs γ → ♯ rhs eq vs γ
+\end{code}
+%
+This begs the question: why would we opt to rely on weakenability of the $□$
+modifier to show that theories are weakenable rather than using $\af{weaken-eq}$
+directly? Although the latter would indeed allow us to define composition of
+effect theories as well as to apply equations to programs that have more effects
+than the effect the equation was originally defined for, the possible ways we
+can instantiate term metavariables remains too restrictive. That is, we still
+would not be able to prove the equality in \cref{eq:get-get-abort}. Despite the
+fact that we can weaken the \emph{get-get} law so that it applies to programs
+that use the $\ad{Abort}$ effect as well, instantiations of $k$ will be limited
+to weakened effect trees precluding any instantiation that use operations of
+effects other than $\ad{State}$, such as $\af{abort}$.
 
 \subsection{Syntactic Equivalence of Effectful Programs} 
 
@@ -354,12 +417,12 @@ data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → 
 \end{code}
 
 \begin{code}
-  ≈-eq  :  (eq : Equation Δ)
+  ≈-eq  :  (eq : □ Equation Δ)
         →  eq ∈ equations T 
-        →  (vs : Vec Set (V eq))
-        →  (γ : Γ eq vs)
-        →  (k : R eq vs → Free Δ A)
-        →  (lhs eq vs γ >>= k) ≈⟨ T ⟩ (lhs eq vs γ >>= k)  
+        →  (vs : Vec Set (V (extract eq)))
+        →  (γ : Γ (extract eq) vs)
+        →  (k : R (extract eq) vs → Free Δ A)
+        →  (lhs (extract eq) vs γ >>= k) ≈⟨ T ⟩ (lhs (extract eq) vs γ >>= k)  
 \end{code}
 
 \end{AgdaAlign}
@@ -391,7 +454,7 @@ module ≈-Reasoning (T : Theory Δ) where
 (Prove two example programs equal perhaps?) 
 
 
-\subsection{Handler Correctness}
+\subsection{Handler Correctness}\label{sec:handler-correctness}
 
 An algebra over an effect Δ respects an equation of that effect iff folding with
 the algebra gives the same result for the left hand side and right hand side of
@@ -410,9 +473,8 @@ effect respects all equations in the theory.
 
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
-Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) eq
+Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) (extract eq)
 \end{code}
-
 
 
 %% 
