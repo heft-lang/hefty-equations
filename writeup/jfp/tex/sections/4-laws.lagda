@@ -220,7 +220,19 @@ record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
     necessary : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
 \end{code}
 \begin{code}[hide]
-open □ 
+open □
+
+≲-refl : Δ ≲ Δ
+≲-refl = Nil , ∙Nil
+  where
+    ∙Nil : Δ ∙ Nil ≈ Δ 
+    ∙Nil .reorder = record
+      { to        = λ where (inj₁ c , k) → c , k
+      ; from      = λ where (c , k) → inj₁ c , k 
+      ; to-cong   = λ where refl → refl
+      ; from-cong = λ where refl → refl
+      ; inverse   = (λ where refl → refl) , λ where {inj₁ c , k} refl → refl
+      } 
 \end{code}
 %
 Intuitively, the $□$ modifier transforms, for any effect-indexed type, an
@@ -238,6 +250,14 @@ extract : {P : Effect → Set₁} → □ P Δ → P Δ
 extract px = necessary px ⦃ ≲-refl ⦄
 \end{code}
 %
+More generally, we can close values wrapped in the $□$ modifier using any
+extension witness using the following operation: 
+%
+\begin{code}
+close : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → P Δ₂
+close eq = necessary eq 
+\end{code}
+
 We can now redefine the \emph{get-get} law so that it applies to all programs
 that have at least the $\ad{State}$ effect, but potentially other effects too.
 %
@@ -258,11 +278,6 @@ $\af{State}~\ad{≲}~\ab{Δ′}$. This way, we can instantiate $\ab{Δ′}$ with
 of effects that includes both $\af{State}$ and $\af{Throw}$, allowing us to
 instantiate $k$ as $\af{throw}$.
 
-\begin{code}
-close : ⦃ Δ₁ ≲ Δ₂ ⦄ → □ Equation Δ₁ → Equation Δ₂
-close eq = necessary eq 
-\end{code}
-
 \subsection{Effect Theories}
 
 Equations for an effect $Δ$ can be combined into a \emph{theory} for $Δ$. A
@@ -282,7 +297,6 @@ depending for example on whether they are tailored to readability or efficiency,
 they should at least respect the equations of the theory of the effect they
 implement. We will make precise what it means for an implementation to respect
 an equation in \cref{sec:handler-correctness}.
-
 
 Effect theories are closed under several composition operations that allow us to
 combine the equations of different theories into single theory. The most basic
@@ -423,102 +437,141 @@ included in $\ab{T₂}$.
 
 \subsection{Syntactic Equivalence of Effectful Programs} 
 
-
-
+As discussed, propositional equality of effectful programs is too strict, as it
+precludes us from proving equalities that rely on a semantic understanding of
+the effects involved, such as the equality in \cref{eq:eq-get-get-throw}. The
+solution is to define an inductive relation that captures syntactic equivalence
+modulo some effect theory. We base our definition of syntactic equality of
+effectful programs on the relation defining equivalent computations by
+\cite{DBLP:journals/pacmpl/YangW21}, Definition 3.1, adapting their definition
+where necessary to account for the use of modal necessity in the definition of
+$\ad{Theory}$.
+%
 \begin{AgdaAlign}
 \begin{code}
 data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → Set₁ where 
 \end{code}
-
+%
+A value of type $\ab{m₁}~\ad{≈⟨}~\ab{T}~\ad{⟩}~\ab{m₂}$ witnesses that programs
+$\ab{m₁}$ and $\ab{m₂}$ are equal modulo the equations of theory $\ab{T}$. The
+first three constructors ensure that it is an equivalence relation.
+%
 \begin{code}
   ≈-refl   : m  ≈⟨ T ⟩ m
   ≈-sym    : m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₁ 
   ≈-trans  : m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
 \end{code}
-
+%
+Then, we add the following congruence rule, that establish that we can prove
+equality of two programs starting with the same operation by proving that the
+continuations yield equal programs for every possible value. 
+%
 \begin{code}
   ≈-cong  :  (op : Op Δ)
           →  (k₁ k₂ : Ret Δ op → Free Δ A)
           →  (∀ x → k₁ x ≈⟨ T ⟩ k₂ x) 
           →  impure (op , k₁) ≈⟨ T ⟩ impure (op , k₂) 
 \end{code}
-
+%
+The final constructor allows to prove equality of programs by reifying equations
+of an effect theory. 
+%
 \begin{code}
   ≈-eq  :  (eq : □ Equation Δ₁)
-        →  (sub : T ⊑ T′) 
-        →  eq ∈ equations T 
+        →  (sub : T₁ ⊑ T₂) 
+        →  eq ∈ equations T₁ 
         →  (vs : Vec Set (V (close eq)))
         →  (γ : Γ (close eq) vs)
         →  (k : R (close eq) vs → Free Δ₂ A)
-        →  (lhs (close eq) vs γ 𝓑 k) ≈⟨ T′ ⟩ (rhs (close eq) vs γ 𝓑 k)  
+        →  (lhs (close eq) vs γ 𝓑 k) ≈⟨ T₂ ⟩ (rhs (close eq) vs γ 𝓑 k)  
 \end{code}
 \end{AgdaAlign}
+%
+Fundamentally, the $\ac{≈-eq}$ constructor equates the left hand side and right
+hand side of any given equation. Due to the use of the $\ad{□}$ modifier, when
+proving equality with respect to a theory $T₂$ we can actually use equations of
+any sub-theory $T₁$ to prove equality. The extension witness stored in the
+sub-theory proof $\ab{sub}$ is used to close the equation $\ab{eq}$, allowing us
+to prove equality of its left and right hand side with respect to any larger
+theory that includes that equation.
 
-\begin{code}
-module ≈-Reasoning (T : Theory Δ) where
-
-  infix 3 _≈_
-  _≈_ : Free Δ A → Free Δ A → Set₁
-  m₁ ≈ m₂ = m₁ ≈⟨ T ⟩ m₂
-
-  begin_ : {m₁ m₂ : Free Δ A} → m₁ ≈ m₂ → m₁ ≈ m₂ 
-  begin eq = eq 
-
-  _∎ : (m : Free Δ A) → m ≈ m
-  m ∎ = ≈-refl
-
-  _≈⟪⟫_ : (m₁ : Free Δ A) {m₂ : Free Δ A} → m₁ ≈ m₂ → m₁ ≈ m₂  
-  m₁ ≈⟪⟫ eq = eq
-
-  _≈⟪_⟫_  : (m₁ {m₂ m₃} : Free Δ A) → m₁ ≈ m₂ → m₂ ≈ m₃ → m₁ ≈ m₃
-  m₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
-
-  infix  1 begin_
-  infixr 2 _≈⟪_⟫_ _≈⟪⟫_
-  infix  3 _∎
-
+The $\ac{≈-eq}$ lets us sequence the left and right hand sides of an
+equation with an arbitrary continuation $\ab{k}$. 
+\begin{code}[hide]
 postulate 𝓑-idʳ-≈ : (m : Free Δ A) → (m 𝓑 Free.pure) ≈⟨ T ⟩ m
 \end{code}
-
 \begin{code}
 use-equation :
   ∀  ⦃ sub : T₁ ⊑ T₂ ⦄ 
   →  (eq : □ Equation Δ₁)
   →  eq ∈ equations T₁
-  →  {vs : Vec Set (V (close  eq))}
+  →  (vs : Vec Set (V (close  eq)))
   →  {γ : Γ (close eq) vs}
   →  lhs (close eq) vs γ ≈⟨ T₂ ⟩ rhs (close eq) vs γ
 \end{code}
 \begin{code}[hide]
-use-equation ⦃ sub ⦄ eq px = ≈-trans (≈-sym (𝓑-idʳ-≈ _)) (≈-trans (≈-eq eq sub px _ _ Free.pure) (𝓑-idʳ-≈ _))
+use-equation ⦃ sub ⦄ eq px vs =
+  ≈-trans (≈-sym (𝓑-idʳ-≈ _)) (≈-trans (≈-eq eq sub px _ _ Free.pure) (𝓑-idʳ-≈ _))
+\end{code}
+%
+The definition of \af{use-equation} follows immediately from the right-identity
+law for monads, i.e., $m\ 𝓑\ \ac{pure} \equiv m$. 
+
+To construct proofs of equality it is convenient to use the following set of
+combinators to write proof terms in an equational style. They are completely
+analogous to the combinators commonly used to construct proofs of Agda's
+propositional equality. 
+%
+\begin{code}
+begin_ : {m₁ m₂ : Free Δ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂ 
+begin eq = eq 
+
+_∎ : (m : Free Δ A) → m ≈⟨ T ⟩ m
+m ∎ = ≈-refl
+
+_≈⟪⟫_ : (m₁ : Free Δ A) {m₂ : Free Δ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂  
+m₁ ≈⟪⟫ eq = eq
+
+_≈⟪_⟫_  : (m₁ {m₂ m₃} : Free Δ A) → m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
+m₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
+\end{code}
+%
+\begin{code}[hide]
+infix  1 begin_
+infixr 2 _≈⟪_⟫_ _≈⟪⟫_
+infix  3 _∎
 \end{code}
 
+We now have all the necessary tools to prove syntactic equality of programs
+modulo a theory of their effect. To illustrate, we consider how to prove the
+equation in \cref{eq:get-get-throw}. First, we define a theory for the
+$\ad{State}$ effect containing the $\af{get-get◂}$ law. While this is not the
+only law typically associated with $\ad{State}$, for this example it is enough
+to only have the $\af{get-get}$ law. 
+%
 \begin{code}
 StateTheory : Theory State
 equations StateTheory = get-get◂ ∷ []
-
-
-get-get-throw : ⦃ _ : Throw ≲ Δ ⦄
-  → (T : Theory Δ)
-  → ⦃ _ : StateTheory ⊑ T ⦄ 
-  → (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ T ⟩ (‵get 𝓑  λ s → ‵throw)
-get-get-throw T = begin
-    ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
-  ≈⟪ use-equation get-get◂ (here refl) {_ ∷ []}  ⟫
-    ‵get 𝓑 (λ s → ‵throw)
-  ∎
-  where
-    open ≈-Reasoning T 
 \end{code}
-
-(Prove two example programs equal perhaps?) 
-
+%
+Now to prove the equality in \cref{eq:get-get-throw} is simply a matter of
+invoking the $\af{get-get}$ law. 
+\begin{code}
+get-get-throw :
+     {T : Theory Δ} → ⦃ _ : Throw ≲ Δ ⦄ → ⦃ _ : StateTheory ⊑ T ⦄ 
+  →  (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ T ⟩ (‵get 𝓑  λ s → ‵throw)
+get-get-throw = begin
+    ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
+  ≈⟪ use-equation get-get◂ (here refl) (_ ∷ [])  ⟫
+    ‵get 𝓑 (λ s → ‵throw)
+  ∎ 
+\end{code}
 
 \subsection{Handler Correctness}\label{sec:handler-correctness}
 
 An algebra over an effect Δ respects an equation of that effect iff folding with
 the algebra gives the same result for the left hand side and right hand side of
-the equation: 
+the equation:
 
 \begin{code}
 Respects : Alg Δ A → Equation Δ → Set₁
@@ -534,6 +587,11 @@ effect respects all equations in the theory.
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
 Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) (extract eq)
+\end{code}
+
+\begin{code}
+hStCorrect : Correct {A = A} {Δ′ = Δ} StateTheory hSt
+hStCorrect (here refl) {_ ∷ []} {γ = k} = refl
 \end{code}
 
 
