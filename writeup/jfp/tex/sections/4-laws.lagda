@@ -567,32 +567,54 @@ get-get-throw = begin
   ∎ 
 \end{code}
 
-\subsection{Handler Correctness}\label{sec:handler-correctness}
+\subsection{Handler Correctness}
+\label{sec:handler-correctness}
 
-An algebra over an effect Δ respects an equation of that effect iff folding with
-the algebra gives the same result for the left hand side and right hand side of
-the equation:
-
+Broadly speaking, a handler is correct with respect to a given theory if
+handling syntactically equal programs yields equal results. Since handlers are
+defined as algebras over effect signatures, we start by defining what it means
+for an algebra of an effect $Δ$ to respect an equation of the same effect,
+adapting Definition 2.1 in the exposition by
+\cite{DBLP:journals/pacmpl/YangW21}.
+%
 \begin{code}
 Respects : Alg Δ A → Equation Δ → Set₁
-Respects {Δ = Δ} alg eq =
-  ∀  {vs γ k}
-  →  fold k alg (lhs eq vs γ)
-  ≡  fold k alg (rhs eq vs γ) 
+Respects alg eq = ∀ {vs γ k} →
+  fold k alg (lhs eq vs γ) ≡ fold k alg (rhs eq vs γ) 
 \end{code}
+%
+An algebra $\ab{alg}$ respects an equation $\ab{eq}$ if folding with that
+algebra produces propositionally equal results for the left and right hand side
+of the equation, for all possible instantiations of its type and term
+metavariables, and continuations $k$.
 
-Correctness of an effect handler with respect to some theory: handling the
-effect respects all equations in the theory.
-
+A handler $\ab{H}$ is correct with respect to a given theory $\ab{T}$ if its
+algebra respects all equations of $\ab{T}$ (\cite{DBLP:journals/pacmpl/YangW21},
+Definition 4.3). 
+%
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
 Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) (extract eq)
 \end{code}
-
+%
+We can now show that the handler for the $\ad{State}$ effect defined in
+\cref{fig:state-effect-handler} is correct with respect to
+$\af{StateTheory}$; the proof follows immediately by reflexivity.
+%
 \begin{code}
 hStCorrect : Correct {A = A} {Δ′ = Δ} StateTheory hSt
-hStCorrect (here refl) {_ ∷ []} {γ = k} = refl
+hStCorrect (here refl) {_ ∷ []} {γ = k} = refl 
 \end{code}
+
+
+\subsection{Theories of Higher-Order Effects}
+
+
+
+\subsection{Correctness of Elaborations}
+
+\subsection{Examples}
+
 
 
 %% 
