@@ -24,8 +24,8 @@ module Effect.Instance.LocalReader.Theory (R : Set) where
 open import Effect.Instance.LocalReader.Syntax R
 open Connectives
 
-instance ⊑ᴴ-refl-inst : LocalReader ε ⊑ᴴ LocalReader ε
-⊑ᴴ-refl-inst = ⊑ᴴ-refl
+instance ⊑-refl-inst : LocalReader ε ⊑ LocalReader ε
+⊑-refl-inst = ⊑-refl
 
 ask-query : Equationᴴ (LocalReader)
 ask-query = left ≗ᴴ right 

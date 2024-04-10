@@ -55,7 +55,7 @@ embed-equation eq = (embed-free ∘₂ eq .lhs) ≗ᴴ (embed-free ∘₂ eq .lh
 
 -- Weakening of equations (for higher-order effects). That is, `Equationᴴ`
 -- defines a functor over the category of h.o. effects
-wk-equationᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ᴴ ξ₂ ε ⦄ → Equationᴴ ξ₁ → Equationᴴ ξ₂ 
+wk-equationᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε ⦄ → Equationᴴ ξ₁ → Equationᴴ ξ₂ 
 wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ) 
 
 
@@ -68,7 +68,6 @@ wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ)
 Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra (ξ ε) (Free ε) → Equationᴴ ξ → Set₁
 Respectsᴴ _~_ alg (lhs ≗ᴴ rhs) =
   ∀ {δ γ} → fold-hefty pure alg (lhs δ γ) ~ fold-hefty pure alg (rhs δ γ)
-
 
 -- Theories of higher-order effects are collections of equations
 record Theoryᴴ (ξ : Effect → Effectᴴ) : Set₁ where
@@ -93,7 +92,7 @@ Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th�
 embed-theory : Theory ε → Theoryᴴ (const $ ↑ ε)
 embed-theory T .equationsᴴ = map embed-equation (map □-extract $ T .equations)
 
-wk-theoryᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ᴴ ξ₂ ε ⦄ → Theoryᴴ ξ₁ → Theoryᴴ ξ₂ 
+wk-theoryᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε ⦄ → Theoryᴴ ξ₁ → Theoryᴴ ξ₂ 
 wk-theoryᴴ eq = ∥ map wk-equationᴴ (eq .equationsᴴ) ∥ᴴ
 
 -- Coproduct of higher-order effect theories
@@ -101,7 +100,7 @@ _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
 (Th₁ ⟨+⟩ᴴ Th₂) .equationsᴴ = Th₁ .equationsᴴ ++ Th₂ .equationsᴴ
 
 _[+]ᴴ_ : Theoryᴴ ξ₁ → Theoryᴴ ξ₂ → Theoryᴴ (ξ₁ ·⊕ ξ₂)
-Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⦃ ⊑ᴴ-⊕-left ⦄ Th₁ ⟨+⟩ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-right ⦄ Th₂
+Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⦃ ⊑-⊕-left ⦄ Th₁ ⟨+⟩ᴴ wk-theoryᴴ ⦃ ⊑-⊕-right ⦄ Th₂
 
 -- Syntactic equivalence of programs with higher order effects, with respect to
 -- a given theory `Th`. Analagous to how we defined syntactic equivalence for
@@ -138,8 +137,6 @@ data _≅⟨_⟩_ {ε} {ξ} : (m₁ : Hefty (ξ ε) A) → Theoryᴴ ξ → (m�
           → eq .rhsᴴ δ γ >>= k ≅⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
 
 
-
-
 {- Correctness of elaborations -} 
 open Elaboration 
 
@@ -166,13 +163,12 @@ Correctᴴ Th T e =
   → (T′ : Theory ε′) → (sub : T ≪ T′) 
   → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ sub .inc) eq 
 
-
 -- Equations that occur in a composed theory can be found in either of the
 -- argument theories
 [+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (ξ₁ ·⊕ ξ₂)}
          → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
-         →   (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-left  ⦄ Th₁ )
-           ⊎ (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑ᴴ-⊕-right ⦄ Th₂ )
+         →   (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑-⊕-left  ⦄ Th₁ )
+           ⊎ (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑-⊕-right ⦄ Th₂ )
 [+]ᴴ-injective Th₁ Th₂ {eq} px with Th₁ .equationsᴴ
 ... | []      = inj₂ px
 ... | x ∷ eqs =
@@ -184,7 +180,7 @@ Correctᴴ Th T e =
               ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
 
 -- Equations of a weakened theory are themselves weakened equations 
-◃ᴴ-weaken-lemma : ∀ Th (w : ∀ {ε} → ξ₁ ε ⊑ᴴ ξ₂ ε)
+◃ᴴ-weaken-lemma : ∀ Th (w : ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε)
        → (eq : Equationᴴ ξ₂)
        → eq ◃ᴴ wk-theoryᴴ ⦃ w ⦄ Th
        → ∃ λ (eq′ : Equationᴴ ξ₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ w ⦄ eq′ 
@@ -208,39 +204,26 @@ map-id (impure ⟪ c , r , s ⟫) =
                   {f : Algebra η F} {g : Algebra η′ F}
                   {k : ∀[ id ⇒ F ]}
                 →   fold-hefty k f m
-                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑ᴴ-⊕-left ⦄ m)
+                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-left ⦄ m)
 ⟨⊕⟩-fold-left (pure _)                           = refl
 ⟨⊕⟩-fold-left (impure ⟪ c , r , s ⟫) {f} {g} {k} =
   cong₂
     (λ □₁ □₂ → f .α ⟪ c , □₁ , □₂ ⟫)
     ( extensionality λ x → ⟨⊕⟩-fold-left $ r x )
-    ( extensionality λ x →
-        trans
-          ( ⟨⊕⟩-fold-left $ s x )
-          ( cong
-              (λ □ → fold-hefty k (f ⟨⊕⟩ g) □)
-              (sym (map-id (♯ᴴ ⦃ ⊑ᴴ-⊕-left ⦄ (s x)))
-              ))
-    )
+    ( extensionality λ x → ⟨⊕⟩-fold-left $ s x )
 
 ⟨⊕⟩-fold-right : ∀ (m : Hefty η A)
                   {f : Algebra η′ F} {g : Algebra η F}
                   {k : ∀[ id ⇒ F ]}
                 →   fold-hefty k g m
-                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑ᴴ-⊕-right ⦄ m)
+                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-right ⦄ m)
 ⟨⊕⟩-fold-right (pure _)                           = refl
 ⟨⊕⟩-fold-right (impure ⟪ c , r , s ⟫) {f} {g} {k} =
   cong₂
     (λ □₁ □₂ → g .α ⟪ c , □₁ , □₂ ⟫)
     ( extensionality λ x → ⟨⊕⟩-fold-right $ r x )
-    ( extensionality λ x →
-        trans
-          ( ⟨⊕⟩-fold-right $ s x )
-          ( cong
-              (λ □ → fold-hefty k (f ⟨⊕⟩ g) □)
-              (sym (map-id (♯ᴴ ⦃ ⊑ᴴ-⊕-right ⦄ (s x)))
-              ))
-    )
+    ( extensionality λ x → ⟨⊕⟩-fold-right $ s x )
+    
 
 
 module _ {T : Theory ε} where
@@ -261,31 +244,31 @@ module _ {T : Theory ε} where
   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
     with [+]ᴴ-injective Th₁ Th₂ px
   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
-    | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑ᴴ-⊕-left _ px′
+    | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑-⊕-left _ px′
   ... | eq′ , px′′ , refl = begin
       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .lhsᴴ _ _))
+        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
       fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
     ≈⟪ c₁ px′′ T′ it ⟫
       fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-left ⦄) (eq′ .rhsᴴ _ _))
+        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .rhsᴴ _ _))
     ∎
     where open ≈-Reasoning T′
   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
-    | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑ᴴ-⊕-right _ px′
+    | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑-⊕-right _ px′
   ... | eq′ , px′′ , refl = begin
       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .lhsᴴ _ _))
+        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .lhsᴴ _ _))
     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
       fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
     ≈⟪ c₂ px′′ T′ it ⟫ 
       fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑ᴴ-⊕-right ⦄) (eq′ .rhsᴴ _ _))
+        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .rhsᴴ _ _))
     ∎
     where open ≈-Reasoning T′ 
 

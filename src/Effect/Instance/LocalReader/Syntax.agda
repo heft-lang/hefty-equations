@@ -32,13 +32,8 @@ LocalReader _ = record
   ; returns  = λ where {`local t f} tt → t
   }
 
-askl : ⦃ LocalReader ε ⊑ᴴ η ⦄ → Hefty η R
+askl : ⦃ LocalReader ε ⊑ η ⦄ → Hefty η R
 askl = ♯ᴴ (impure ⟪ `ask , pure , (λ()) ⟫)
 
-local : ⦃ LocalReader ε ⊑ᴴ η ⦄ → (R → R) → Hefty η A → Hefty η A
-local {ε} {η} {A} f m = impure
-  ⟪ injᴴ-c (`local A f)
-  , pure ∘ subst id (sym response-stable)
-  , (subst (Hefty η) types-stable ∘ λ where tt → m) ∘ subst id (sym fork-stable)
-  ⟫
-
+local : ⦃ LocalReader ε ⊑ η ⦄ → (R → R) → Hefty η A → Hefty η A
+local f m = impure (injᴴ ⟪ `local _ f , pure , (λ where tt → m) ⟫) 

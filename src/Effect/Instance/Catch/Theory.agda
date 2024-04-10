@@ -2,6 +2,7 @@
 
 open import Core.Functor
 open import Core.Functor.Monad
+open import Core.Signature
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
@@ -17,13 +18,13 @@ open import Data.Product
 
 open import Relation.Unary
 
-module Effect.Instance.Catch.Theory where
+module Effect.Instance.Catch.Theory  where
 
 -- This lets us use smart constructors when writing equations
-instance ⊑ᴴ-refl-inst : Catch ε ⊑ᴴ Catch ε
-⊑ᴴ-refl-inst = ⊑ᴴ-refl 
+instance ⊑-refl-inst : Catch ε ⊑ Catch ε
+⊑-refl-inst = ⊑-refl 
 
-bind-throw : Equationᴴ Catch 
+bind-throw : Equationᴴ Catch
 bind-throw = left ≗ᴴ right
 
   where 
@@ -34,7 +35,6 @@ bind-throw = left ≗ᴴ right
 
     left  _ k = throw >>= k 
     right _ _ = throw 
-
 
 catch-return : Equationᴴ Catch
 catch-return = left ≗ᴴ right

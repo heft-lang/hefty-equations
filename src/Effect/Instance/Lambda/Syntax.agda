@@ -38,25 +38,12 @@ Lam ε = record
     {`app {A} {B} _} tt → A
   } 
 
+var : ⦃ Lam ε ⊑ η ⦄ → c A → Hefty η A 
+var x = impure (injᴴ ⟪ `var x , pure , (λ()) ⟫) 
 
-var : ⦃ Lam ε ⊑ᴴ η ⦄ → c A → Hefty η A 
-var x = impure
-  ⟪ injᴴ-c (`var x)
-  , pure ∘ subst id (sym response-stable)
-  , ⊥-elim ∘ subst id (sym fork-stable)
-  ⟫
+abs : ⦃ Lam ε ⊑ η ⦄ → (c A → Hefty η B) → Hefty η (c A [ ε ]↦ B) 
+abs f = impure (injᴴ ⟪ `abs , pure , f  ⟫)
 
-abs : ⦃ Lam ε ⊑ᴴ η ⦄ → (c A → Hefty η B) → Hefty η (c A [ ε ]↦ B) 
-abs f = impure
-  ⟪ injᴴ-c `abs
-  , pure ∘ subst id (sym response-stable)
-  , subst (Hefty _) (types-stable) ∘ f ∘ subst id (sym fork-stable)
-  ⟫
-
-app : ⦃ Lam ε ⊑ᴴ η ⦄ → (c A [ ε ]↦ B) → Hefty η A → Hefty η B
-app f m = impure
-  ⟪ injᴴ-c (`app f)
-  , pure ∘ subst id (sym response-stable)
-  , (λ _ → subst (Hefty _) types-stable m)
-  ⟫ 
+app :  ⦃ Lam ε ⊑ η ⦄ → (c A [ ε ]↦ B) → Hefty η A → Hefty η B
+app f m = impure (injᴴ ⟪ `app f , pure , (λ where tt → m) ⟫)
 

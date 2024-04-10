@@ -23,7 +23,9 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.Structures
 open import Relation.Binary.PropositionalEquality using (refl ; _≡_ ; subst ; sym ; trans)
 
-module Effect.Base where
+open import Level
+
+module Effect.Base where 
 
 Effect  = Container 
 Effectᴴ = Signature
@@ -48,68 +50,34 @@ embed-free = fold-free pure λ where .αᶜ x → impure (embed x)
 
 -- Signature/highe-order effect morphisms
 
-record _⊑ᴴ_ (η₁ η₂ : Effectᴴ) : Set₁ where
+record _⊑_ (η₁ η₂ : Effectᴴ) : Set₁ where
   field
-  
-    injᴴ-c          : η₁ .command → η₂ .command
-    
-    response-stable : ∀ {c}
-                      → η₁ .response c ≡ η₂ .response (injᴴ-c c)
-                      
-    fork-stable     : ∀ {c}
-                      → η₁ .fork c ≡ η₂ .fork (injᴴ-c c)
-                      
-    types-stable    : ∀ {c} {ψ : η₂ .fork (injᴴ-c c)}
-                      → η₁ .returns (subst id (sym fork-stable) ψ) ≡ η₂ .returns ψ
+    injᴴ : ∀[ ⟦ η₁ ⟧ F ⇒ ⟦ η₂ ⟧ F ]
 
-  injᴴ : ⦃ Functor F ⦄ → ∀[ ⟦ η₁ ⟧ F ⇒ ⟦ η₂ ⟧ F ]
-  injᴴ ⟪ c , r , s ⟫ =
-    ⟪ (injᴴ-c c
-    , r ∘ subst id (sym response-stable)
-    , fmap (subst id types-stable) ∘ s ∘ subst id (sym fork-stable))
-    ⟫
+open _⊑_ ⦃...⦄ public 
 
-open _⊑ᴴ_ ⦃...⦄ public 
+_·⊑_ : ∀ {a} {A : Set a} → (ξ₁ ξ₂ : A → Effectᴴ) → Set (a ⊔ suc 0ℓ)
+ξ₁ ·⊑ ξ₂ = ∀ {x} → ξ₁ x ⊑ ξ₂ x
 
 free-resp-⇿ : ε₁ ⇿ ε₂ → ∀[ Free ε₁ ⇒ Free ε₂ ]
 free-resp-⇿ eq = hmap-free (eq .equivalence _ .Inverse.to) 
 
-injectᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → Algebra η₁ (Hefty η₂)
+injectᴴ : ⦃ η₁ ⊑ η₂ ⦄ → Algebra η₁ (Hefty η₂)
 injectᴴ .α v = impure (injᴴ v)  
 
-♯ᴴ : ⦃ η₁ ⊑ᴴ η₂ ⦄ → ∀[ Hefty η₁ ⇒ Hefty η₂ ]
+♯ᴴ : ⦃ η₁ ⊑ η₂ ⦄ → ∀[ Hefty η₁ ⇒ Hefty η₂ ]
 ♯ᴴ = fold-hefty {F = Hefty _} pure injectᴴ
 
-⊑ᴴ-refl : η ⊑ᴴ η
-⊑ᴴ-refl = record
-  { injᴴ-c          = id
-  ; response-stable = refl
-  ; fork-stable     = refl
-  ; types-stable    = refl
-  }  
--- 
--- ⊑ᴴ-trans : η₁ ⊑ᴴ η₂ → η₂ ⊑ᴴ η₃ → η₁ ⊑ᴴ η₃
--- ⊑ᴴ-trans sub₁ sub₂ = record
---   { injᴴ-c          = injᴴ-c ⦃ sub₂ ⦄ ∘ injᴴ-c ⦃ sub₁ ⦄
---   ; response-stable = trans (response-stable ⦃ sub₁ ⦄) (response-stable ⦃ sub₂ ⦄)
---   ; fork-stable     = trans (fork-stable ⦃ sub₁ ⦄) (fork-stable ⦃ sub₂ ⦄)
---   ; types-stable    = {!!} 
---   }
--- 
-⊑ᴴ-⊕-left : η₁ ⊑ᴴ (η₁ ⊕ η₂)
-⊑ᴴ-⊕-left = record
-  { injᴴ-c          = inj₁
-  ; response-stable = refl
-  ; fork-stable     = refl
-  ; types-stable    = refl
-  } 
+⊑-refl : η ⊑ η
+⊑-refl = record { injᴴ = id }
 
-⊑ᴴ-⊕-right : η₂ ⊑ᴴ (η₁ ⊕ η₂)
-⊑ᴴ-⊕-right = record
-  { injᴴ-c          = inj₂
-  ; response-stable = refl
-  ; fork-stable     = refl
-  ; types-stable    = refl
-  }
-  
+⊑-trans : η₁ ⊑ η₂ → η₂ ⊑ η₃ → η₁ ⊑ η₃
+⊑-trans px qx = record { injᴴ = qx .injᴴ ∘ px .injᴴ }
+
+⊑-⊕-left : η₁ ⊑ (η₁ ⊕ η₂)
+_⊑_.injᴴ ⊑-⊕-left ⟪ c , k , s ⟫ = ⟪ inj₁ c , k , s ⟫
+
+⊑-⊕-right : η₂ ⊑ (η₁ ⊕ η₂)
+_⊑_.injᴴ ⊑-⊕-right ⟪ c , k , s ⟫ = ⟪ inj₂ c , k , s ⟫
+
 

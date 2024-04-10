@@ -24,8 +24,8 @@ module Effect.Instance.Lambda.Theory
 
 open import Effect.Instance.Lambda.Syntax c _[_]↦_
 
-instance ⊑ᴴ-refl-inst : Lam ε ⊑ᴴ Lam ε
-⊑ᴴ-refl-inst = ⊑ᴴ-refl
+instance ⊑-refl-inst : Lam ε ⊑ Lam ε
+⊑-refl-inst = ⊑-refl
 
 beta : Equationᴴ Lam
 beta = left ≗ᴴ right 

@@ -31,31 +31,10 @@ Catch _ = record
   ; returns  = λ where {(`catch A)} → [ (λ where tt → A) , (λ where tt → A) ]
   }
 
-throw : ⦃ Catch ε ⊑ᴴ η ⦄ → Hefty η A
+throw : ⦃ Catch ε ⊑ η ⦄ → Hefty η A
 throw = ♯ᴴ (impure ⟪ `throw , (λ()) , (λ()) ⟫)
 
-catch : ⦃ Catch ε ⊑ᴴ η ⦄ → Hefty η A → Hefty η A → Hefty η A 
-catch {ε} {η = η}{A} m₁ m₂ = impure
-  ⟪ injᴴ-c (`catch _)
-  , pure ∘ subst id (sym response-stable) 
-  , catch-subs 
-  ⟫
-  where
-    f = subst id (sym $ fork-stable {c = `catch A})
-
-    catch-subs : (ψ : fork η (injᴴ-c (`catch A))) → Hefty η (returns η ψ) 
-    catch-subs ψ
-      with f ψ | inspect f ψ
-    ... | inj₁ tt | ≡[ eq ] 
-      = subst (Hefty η)
-          ( trans
-              ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
-              types-stable ) m₁ 
-    ... | inj₂ tt | ≡[ eq ]
-      = subst (Hefty η)
-          ( trans
-            ( subst (λ ○ → A ≡ Catch ε .returns ○) (sym eq) refl )
-            types-stable ) m₂
-
+catch : ⦃ Catch ε ⊑ η ⦄ → Hefty η A → Hefty η A → Hefty η A 
+catch m₁ m₂ = impure (injᴴ ⟪ `catch _ , pure , [ const m₁ , const m₂ ] ⟫)
 
     
