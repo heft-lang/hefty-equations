@@ -9,6 +9,7 @@ open import Core.Functor.Monad
 open import Core.Container
 open import Core.Signature
 open import Core.Extensionality
+open import Core.Ternary
 
 open import Effect.Base
 open import Effect.Syntax.Free
@@ -17,8 +18,8 @@ open import Data.Empty
 open import Data.Product
 open import Data.Sum
 
-open import Effect.Separation
-open import Effect.Inclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
+open import Effect.Relation.Binary.FirstOrderInclusion
 
 open import Function hiding (_⇔_)
 

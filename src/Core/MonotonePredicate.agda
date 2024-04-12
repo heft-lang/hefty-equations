@@ -21,10 +21,9 @@ open import Relation.Binary.PropositionalEquality renaming (refl to ≡-refl ; t
 -- induces a natural notion of weakening, which naturally extends to a notion of
 -- "monotonicity respecting" predicate transformers, analogous to the functor
 -- instances defined in Core.Functor.
-module Core.MonotonePredicate {ℓ}
-  (Carrier : Set ℓ)
-  (_~_ : Rel Carrier ℓ)
-  (~-isPreorder : IsPreorder _≡_ _~_) where
+module Core.MonotonePredicate {c ℓ}
+  (Carrier : Set c)
+  (_~_ : Rel Carrier ℓ) where
 
 -- Crucialy, we define monotone predicates w.r.t. the extension order (or, free
 -- preorder) generated from a unital and transitive ternary relation. This
@@ -35,18 +34,16 @@ open Relation.Unary
 
 variable P Q P₁ P₂ Q₁ Q₂ P′ Q′ : Pred Carrier ℓ
 
-open IsPreorder ~-isPreorder 
-
 -- Monotonicity of predicates. Or, in other words, monotone predicates are
 -- functors over the (thin) category defined by the preorder _~_ (and thus
 -- should respect the functor laws). 
-record Monotone (P : Pred Carrier ℓ) : Set (suc ℓ) where
+record Monotone (P : Pred Carrier ℓ) : Set (suc ℓ ⊔ c) where
   field
     weaken      : ∀ {x y} → x ~ y → P x → P y 
 
 open Monotone ⦃...⦄ public
 
-record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ) where
+record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ ⊔ c) where
   field
     ⦃ T-respects-monotonicity ⦄ : ⦃ Monotone P ⦄ → Monotone (T P)
     transform : ∀[ P ⇒ Q ] → ∀[ T P ⇒ T Q ]
@@ -54,12 +51,12 @@ record HMonotone (T : Pred Carrier ℓ → Pred Carrier ℓ) : Set (suc ℓ) whe
 open HMonotone ⦃...⦄ public 
 
 -- Should also respect functor laws, but we don't really use this (yet), so TODO? 
-record Antitone (P : Pred Carrier ℓ) : Set (suc ℓ) where 
+record Antitone (P : Pred Carrier ℓ) : Set (suc ℓ ⊔ c) where 
   field strengthen : ∀ {x y} → x ~ y → P y → P x
 
 open Antitone ⦃...⦄ public 
 
-record _⊣_ (L R : Pred Carrier ℓ → Pred Carrier ℓ) ⦃ _ : HMonotone L ⦄ ⦃ _ : HMonotone R ⦄ : Set (suc ℓ) where
+record _⊣_ (L R : Pred Carrier ℓ → Pred Carrier ℓ) ⦃ _ : HMonotone L ⦄ ⦃ _ : HMonotone R ⦄ : Set (suc ℓ ⊔ c) where
   field
     φ  : ⦃ Monotone P ⦄ → ⦃ Monotone Q ⦄ → ∀[ L P ⇒ Q ] → ∀[ P ⇒ R Q ]
     φᵒ : ⦃ Monotone P ⦄ → ⦃ Monotone Q ⦄ → ∀[ P ⇒ R Q ] → ∀[ L P ⇒ Q ]

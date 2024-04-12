@@ -79,9 +79,6 @@ module Relation {ℓ} {c} (Carrier : Set c) ⦃ _ : HasRel₃ Carrier ℓ ⦄ wh
   Ext : Rel Carrier _
   Ext c₁ c = ∃ λ c₂ → c₁ ∙ c₂ ≈ c
 
-  instance rel₃⇒rel₂ : HasRel₂ Carrier
-  rel₃⇒rel₂ = record { _≲_ = Ext } 
-
   Ext-reflexive : ∃⟨ RightIdentity ⟩ → Reflexive Ext
   Ext-reflexive (_ , σ) = _ , σ 
 
@@ -107,3 +104,6 @@ module Relation {ℓ} {c} (Carrier : Set c) ⦃ _ : HasRel₃ Carrier ℓ ⦄ wh
   Pointwise _ = λ c₁ c₂ c → ∀ x → c₁ x ∙ c₂ x ≈ c x
 
   
+
+instance rel₃⇒rel₂ : ∀ {c ℓ} {Carrier : Set c} → ⦃ HasRel₃ Carrier ℓ ⦄ → HasRel₂ Carrier
+rel₃⇒rel₂ = record { _≲_ = Relation.Ext _ } 

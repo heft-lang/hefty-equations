@@ -1,60 +1,43 @@
-{-# OPTIONS --without-K #-} 
+{-# OPTIONS --without-K --allow-unsolved-metas #-} 
 
 open import Core.Functor
 open import Core.Functor.Monad
 open import Core.Extensionality
+open import Core.Ternary
+open import Core.Logic
 
-open import Relation.Unary
-
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
 open import Effect.Base
 open import Effect.Syntax.Free
-open import Effect.Separation
-open import Effect.Inclusion 
-open import Effect.Logic
-
 open import Effect.Theory.FirstOrder
 open import Effect.Instance.Abort.Syntax
 
 open import Data.Product 
 open import Data.List
 open import Data.Sum
-
 open import Data.List.Relation.Unary.All
+
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; sym ; trans ; cong)
+open import Relation.Unary
+
 
 module Effect.Instance.Abort.Theory where
 
-open Connectives
 open Respects-⇔≲
 open _⇔≲_
 
-bind-abort : □ Equation Abort 
-bind-abort = necessary λ {ε} i → left ⦃ i ⦄ ≗ right ⦃ i ⦄  
-  
-  where
+module _ {ε : Effect} ⦃ _ : Abort ≲ ε ⦄ where 
 
-    module _ {ε} where 
+  bind-abort : Equation ε
+  Δ′  bind-abort             = 2
+  Γ′  bind-abort (A , B , _) = A → Free ε B
+  R′  bind-abort (A , B , _) = B
+  lhs bind-abort _ k         = abort >>= k
+  rhs bind-abort _ k         = abort
 
-      ctx ret : TypeContext 2 → Set
-      ctx (A , B , _) = A → Free ε B
-      ret (A , B , _) = B 
-
-      module _ ⦃ _ : Abort ≲ ε ⦄ where 
-        left right : Π[ ctx ⇒ ret ⊢ Free ε ] 
-        left  _ k = abort >>= k
-        right _ _ = abort
-
-bind-abort-respects-⇔≲ : Respects-⇔≲ bind-abort
-bind-abort-respects-⇔≲ =
-  eq-lawful
-    (λ i₁ i₂ eqv → >>=-resp-⇔≲ eqv (λ i → abort ⦃ i ⦄) _ (abort-resp-⇔≲ i₁ i₂ eqv) λ _ → refl)
-    (λ i₁ i₂ eqv → abort-resp-⇔≲ i₁ i₂ eqv)  
-
-AbortTheory : Theory Abort
-AbortTheory =
-  ∥ bind-abort
-  ∷ []
-  ∣ bind-abort-respects-⇔≲ ∷ []
-  ∥
-
+ 
+AbortTheory : ExtensibleTheory Abort
+theory AbortTheory = nec ∥ bind-abort ∷ [] ∥
+respects-⇔≲ (lawful AbortTheory) i₁ i₂ eq = {!!}
 

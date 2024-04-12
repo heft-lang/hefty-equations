@@ -1,3 +1,5 @@
+{-# OPTIONS --without-K #-} 
+
 open import Effect.Base
 open import Effect.Syntax.Free
 open import Effect.Syntax.Hefty

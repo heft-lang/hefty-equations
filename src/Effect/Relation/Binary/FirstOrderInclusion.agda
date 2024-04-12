@@ -12,7 +12,7 @@ open import Core.Extensionality
 
 open import Effect.Base 
 open import Effect.Syntax.Free 
-open import Effect.Separation
+open import Effect.Relation.Ternary.FirstOrderSeparation
 
 open import Relation.Unary
 open import Relation.Binary hiding (_⇒_)

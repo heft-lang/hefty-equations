@@ -6,13 +6,15 @@ open import Core.Functor.NaturalTransformation
 
 open import Core.Container
 open import Core.Extensionality
+open import Core.Ternary
+open import Core.Logic
 
 open import Effect.Base
 open import Effect.Handle
-open import Effect.Separation
-open import Effect.Inclusion
-open import Effect.Logic
 open import Effect.Syntax.Free
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
 
 open import Data.Unit
 open import Data.Maybe hiding (_>>=_)
@@ -37,8 +39,6 @@ open import Level
 open import Core.MonotonePredicate Effect _≲_
 
 module Effect.Instance.Abort.Handler where
-
-open Connectives hiding (_⟨_⟩_)
 
 instance maybe-functor : Functor {a = 0ℓ} Maybe
 maybe-functor = record
@@ -106,7 +106,7 @@ module Properties where
   modular : Modular
   modular = handle-modular 
  
-  correct : Correct AbortTheory AbortHandler 
+  correct : □-Correct AbortTheory AbortHandler 
   correct (here refl) = refl
 
   handle-abort-is-nothing : (σ : Abort ∙ ε ≈ ε′) → handleAbort {A = A} σ (abort ⦃ _ , σ ⦄) ≡ pure nothing

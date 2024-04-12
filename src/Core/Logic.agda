@@ -85,12 +85,11 @@ module Core.Logic {c ℓ} {Carrier : Set c} ⦃ w : HasRel₃ Carrier ℓ ⦄  w
     constructor necessary 
     field
       □⟨_⟩_ : ∀ {x′} → x ≲ x′ → P x′
-  
+      
   open □ public 
 
-
-
-
+  nec : ∀ {P x} → (∀ {x′} → ⦃ x ≲ x′ ⦄ → P x′) → □ P x 
+  nec f = necessary (λ i → f ⦃ i ⦄)
 
 
 

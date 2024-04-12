@@ -6,9 +6,11 @@ open import Core.Functor
 open import Core.Functor.NaturalTransformation
 open import Core.Functor.Monad
 
+open import Core.Ternary
 open import Core.Container
 open import Core.Signature
 open import Core.Extensionality
+open import Core.Logic
 
 open import Effect.Syntax.Free
 open import Effect.Syntax.Hefty
@@ -18,9 +20,8 @@ open import Data.Empty
 open import Data.Product
 open import Data.Sum
 
-open import Effect.Separation
-open import Effect.Inclusion
-open import Effect.Logic as Logic
+open import Effect.Relation.Ternary.FirstOrderSeparation
+open import Effect.Relation.Binary.FirstOrderInclusion
 open import Effect.Theory.FirstOrder
 
 open import Function hiding (_⇔_)
@@ -32,8 +33,7 @@ open import Effect.Handle
 
 module Effect.Elaborate where
 
-open import Core.MonotonePredicate Effect _≲_ (≲-preorder .Preorder.isPreorder)
-open Logic.Connectives
+open import Core.MonotonePredicate Effect _≲_ 
 
 {- Semantics for higher-order effects -}
 
@@ -45,7 +45,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     elab : □ (S (Algebra ∘ ξ) Free)  ε
 
   elaborate : ∀[ Hefty (ξ ε) ⇒ Free ε ]
-  elaborate = fold-hefty pure (□-extract elab)  
+  elaborate = fold-hefty pure (□⟨ elab ⟩ ≲-refl)   
 
   elaborate′ : ⦃ ε ≲ ε′ ⦄ → ∀[ Hefty (ξ ε′) ⇒ Free ε′ ]
   elaborate′ ⦃ i ⦄ = fold-hefty pure (□⟨ elab ⟩ i)
@@ -80,11 +80,6 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
       → (k₂ : A → Free ε′ B)
         -------------------------------------------------------------------------------
       → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
-
-  
-  record _≼_ (e₁ : Elaboration ξ₁ ε) (e₂ : Elaboration ξ₂ ε) : Set₁ where
-    
- 
 
   elab-natural : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → Natural ℰ⟦_⟧ 
   elab-natural ⦃ i ⦄ .commute = commute-elab
@@ -170,7 +165,7 @@ open □
 open _✴_
 
 instance elab-monotone : Monotone (Elaboration ξ)
-elab-monotone .weaken i e .elab             = weaken i (e .elab)
+elab-monotone .weaken i e .elab             = necessary (λ i′ → □⟨ e .elab ⟩ ≲-trans i i′)
 elab-monotone .weaken i e .commutes x ⦃ i′ ⦄ = e .commutes x ⦃ ≲-trans i i′ ⦄ 
 elab-monotone .weaken i e .coherent   ⦃ i′ ⦄ = λ k₁ k₂ → e .coherent ⦃ ≲-trans i i′ ⦄ k₁ k₂ 
 
@@ -189,14 +184,15 @@ _⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ�
 compose-elab : ∀[ (Elaboration ξ₁ ✴ Elaboration ξ₂) ⇒ Elaboration (ξ₁ ·⊕ ξ₂)  ]
 compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫ weaken (≲-∙-right σ) e₂
 
--- The adjoint relation between separating conjuntion and implication gives us
--- an equivalent operation that, given an elaboration, returns an "extension
--- operation" that captures the concept of extending other elaborations with a
--- known/given elaboration. The separating implication operation deals with the
--- different lower bounds these elaborations assume on the algebraic effects
--- they elaborate into.
---
--- Or, in other words, we can curry (and thus partially apply) the heterogeneous
--- composition operation.
-extend-with : ∀[ Elaboration ξ₁ ⇒ (Elaboration ξ₂ ─✴ Elaboration (ξ₁ ·⊕ ξ₂)) ]
-extend-with = ✴-curry compose-elab
+
+-- -- The adjoint relation between separating conjuntion and implication gives us
+-- -- an equivalent operation that, given an elaboration, returns an "extension
+-- -- operation" that captures the concept of extending other elaborations with a
+-- -- known/given elaboration. The separating implication operation deals with the
+-- -- different lower bounds these elaborations assume on the algebraic effects
+-- -- they elaborate into.
+-- --
+-- -- Or, in other words, we can curry (and thus partially apply) the heterogeneous
+-- -- composition operation.
+-- extend-with : ∀[ Elaboration ξ₁ ⇒ (Elaboration ξ₂ ─✴ Elaboration (ξ₁ ·⊕ ξ₂)) ]
+-- extend-with = ✴-curry compose-elab
