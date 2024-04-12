@@ -88,6 +88,19 @@ module Core.Logic {c ℓ} {Carrier : Set c} ⦃ w : HasRel₃ Carrier ℓ ⦄  w
   
   open □ public 
 
+
+
+
+
+
+
+
+  {- TODO: definitions below hinge on the fact that the carrier and ternary
+  relation live in the same universe. This is the case for (h.o.) effects, but
+  question remains how can we bring back these defs. for the current more
+  general definition? -}
+
+
   -- □-extract : ∀[ □ P ⇒ P ]
   -- □-extract px = □⟨ px ⟩ ≲-refl 
 
