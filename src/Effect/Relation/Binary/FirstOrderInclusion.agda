@@ -24,7 +24,9 @@ open import Data.Product
 open import Function
 open import Level
 
-module Effect.Inclusion where
+-- Properties of the binary extension order on first-order effects derrived from
+-- the ternary relation defined in Effect.Separation.FirstOrder
+module Effect.Relation.Binary.FirstOrderInclusion where
 
 module R₃ = Relation Effect ⦃ effect-rel₃ ⦄
 

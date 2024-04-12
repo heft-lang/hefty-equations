@@ -39,13 +39,13 @@ open Logic.Connectives
 
 S : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} → (A → B → C) → (A → B) → A → C
 S = λ x y z → x z (y z) 
-
+  
 record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   field
     elab : □ (S (Algebra ∘ ξ) Free)  ε
 
   elaborate : ∀[ Hefty (ξ ε) ⇒ Free ε ]
-  elaborate = fold-hefty pure (□-extract elab)
+  elaborate = fold-hefty pure (□-extract elab)  
 
   elaborate′ : ⦃ ε ≲ ε′ ⦄ → ∀[ Hefty (ξ ε′) ⇒ Free ε′ ]
   elaborate′ ⦃ i ⦄ = fold-hefty pure (□⟨ elab ⟩ i)
@@ -58,9 +58,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   -- signatures `ξ` and `ε` defines a functor between the Kleisli categories of
   -- respectively the monads `Hefty (ξ ε)` and `Free ε`.
   ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (ξ ε′) B) → (A → Free ε′ B)
-  ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧
-
-  
+  ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧   
    
   field
     -- Establishes that elaboration algebras commute with fmap in a suitable
@@ -83,8 +81,10 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
         -------------------------------------------------------------------------------
       → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
 
+  
+  record _≼_ (e₁ : Elaboration ξ₁ ε) (e₂ : Elaboration ξ₂ ε) : Set₁ where
     
-
+ 
 
   elab-natural : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → Natural ℰ⟦_⟧ 
   elab-natural ⦃ i ⦄ .commute = commute-elab

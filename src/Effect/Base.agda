@@ -49,35 +49,7 @@ embed-free : ∀[ Free ε ⇒ Hefty (↑ ε) ]
 embed-free = fold-free pure λ where .αᶜ x → impure (embed x)
 
 -- Signature/highe-order effect morphisms
-
-record _⊑_ (η₁ η₂ : Effectᴴ) : Set₁ where
-  field
-    injᴴ : ∀[ ⟦ η₁ ⟧ F ⇒ ⟦ η₂ ⟧ F ]
-
-open _⊑_ ⦃...⦄ public 
-
-_·⊑_ : ∀ {a} {A : Set a} → (ξ₁ ξ₂ : A → Effectᴴ) → Set (a ⊔ suc 0ℓ)
-ξ₁ ·⊑ ξ₂ = ∀ {x} → ξ₁ x ⊑ ξ₂ x
-
 free-resp-⇿ : ε₁ ⇿ ε₂ → ∀[ Free ε₁ ⇒ Free ε₂ ]
 free-resp-⇿ eq = hmap-free (eq .equivalence _ .Inverse.to) 
-
-injectᴴ : ⦃ η₁ ⊑ η₂ ⦄ → Algebra η₁ (Hefty η₂)
-injectᴴ .α v = impure (injᴴ v)  
-
-♯ᴴ : ⦃ η₁ ⊑ η₂ ⦄ → ∀[ Hefty η₁ ⇒ Hefty η₂ ]
-♯ᴴ = fold-hefty {F = Hefty _} pure injectᴴ
-
-⊑-refl : η ⊑ η
-⊑-refl = record { injᴴ = id }
-
-⊑-trans : η₁ ⊑ η₂ → η₂ ⊑ η₃ → η₁ ⊑ η₃
-⊑-trans px qx = record { injᴴ = qx .injᴴ ∘ px .injᴴ }
-
-⊑-⊕-left : η₁ ⊑ (η₁ ⊕ η₂)
-_⊑_.injᴴ ⊑-⊕-left ⟪ c , k , s ⟫ = ⟪ inj₁ c , k , s ⟫
-
-⊑-⊕-right : η₂ ⊑ (η₁ ⊕ η₂)
-_⊑_.injᴴ ⊑-⊕-right ⟪ c , k , s ⟫ = ⟪ inj₂ c , k , s ⟫
 
 

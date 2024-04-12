@@ -20,8 +20,18 @@ _⇔_ : ∀ {a b} {A : Set a} → (P Q : Pred A b) → Pred A b
 Rel₃ : (c ℓ : Level) (Carrier : Set c) → Set (suc ℓ ⊔ c)
 Rel₃ _ ℓ Carrier = (c₁ c₂ c : Carrier) → Set ℓ 
 
+record HasRel₂ {ℓ} {c} (Carrier : Set c) : Set (suc ℓ ⊔ c) where
+  field
+    _≲_ : Rel Carrier ℓ 
+    
+record HasRel₃ {c} (Carrier : Set c) ℓ : Set (suc ℓ ⊔ c) where
+  field
+    _∙_≈_ : Rel₃ c ℓ Carrier 
 
-module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) where 
+open HasRel₂ ⦃...⦄ public 
+open HasRel₃ ⦃...⦄ public 
+
+module Relation {ℓ} {c} (Carrier : Set c) ⦃ _ : HasRel₃ Carrier ℓ ⦄ where 
 
   _∙_ : (c₁ c₂ : Carrier) → Pred Carrier ℓ
   c₁ ∙ c₂ = c₁ ∙ c₂ ≈_
@@ -36,17 +46,17 @@ module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) 
 
   Commutative : Set (ℓ ⊔ c)
   Commutative =
-    ∀ {c₁ c₂ c} → c₁ ∙ c₂ ≈ c → c₂ ∙ c₁ ≈ c
+    ∀ {c₁ c₂ c : Carrier} → c₁ ∙ c₂ ≈ c → c₂ ∙ c₁ ≈ c
 
   RightAssociative : Set (ℓ ⊔ c)
   RightAssociative =
-    ∀ {a b ab c abc}
-      → a ∙ b ≈ ab → ab ∙ c ≈ abc
-      → ∃ λ bc → a ∙ bc ≈ abc × b ∙ c ≈ bc
+    ∀ {a b ab c abc : Carrier}
+    → a ∙ b ≈ ab → ab ∙ c ≈ abc
+    → ∃ λ bc → a ∙ bc ≈ abc × b ∙ c ≈ bc
   
   LeftAssociative : Set (ℓ ⊔ c)
   LeftAssociative =
-    ∀ {a bc b c abc}
+    ∀ {a bc b c abc : Carrier}
     → a ∙ bc ≈ abc → b ∙ c ≈ bc →
     ∃ λ ab → ab ∙ c ≈ abc × a ∙ b ≈ ab
 
@@ -68,6 +78,9 @@ module Relation {ℓ} {c} (Carrier : Set c) (_∙_≈_ : Rel₃ c ℓ Carrier ) 
 
   Ext : Rel Carrier _
   Ext c₁ c = ∃ λ c₂ → c₁ ∙ c₂ ≈ c
+
+  instance rel₃⇒rel₂ : HasRel₂ Carrier
+  rel₃⇒rel₂ = record { _≲_ = Ext } 
 
   Ext-reflexive : ∃⟨ RightIdentity ⟩ → Reflexive Ext
   Ext-reflexive (_ , σ) = _ , σ 

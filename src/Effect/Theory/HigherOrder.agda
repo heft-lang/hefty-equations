@@ -69,6 +69,17 @@ Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra
 Respectsᴴ _~_ alg (lhs ≗ᴴ rhs) =
   ∀ {δ γ} → fold-hefty pure alg (lhs δ γ) ~ fold-hefty pure alg (rhs δ γ)
 
+-- Necessity for predicates over higher order effect signatures. We hack it
+-- here, since we dont' use the associated logic much otherwise 
+record □ᴴ (P : (Effect → Effectᴴ) → Set₁) (ξ : Effect → Effectᴴ) : Set₁ where 
+  constructor necessaryᴴ 
+  field □ᴴ⟨_⟩_ : ∀ {ξ′} → ξ ·⊑ ξ′ → P ξ′
+
+open □ᴴ public
+
+□ᴴ-weaken : ∀ {P} → ξ₁ ·⊑ ξ₂ → □ᴴ P ξ₁ → □ᴴ P ξ₂
+□ᴴ-weaken i px = necessaryᴴ (λ i′ → □ᴴ⟨ px ⟩ ⊑-trans i i′)
+
 -- Theories of higher-order effects are collections of equations
 record Theoryᴴ (ξ : Effect → Effectᴴ) : Set₁ where
   no-eta-equality
@@ -78,29 +89,31 @@ record Theoryᴴ (ξ : Effect → Effectᴴ) : Set₁ where
 
 open Theoryᴴ public
 
-
 variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ ξ 
 
 -- A predicate asserting that a given equation is part of a theory
 _◃ᴴ_ : Equationᴴ ξ → Theoryᴴ ξ → Set₁
 eq ◃ᴴ Th = eq ∈ Th .equationsᴴ
 
+
 -- Theory inclusion for higher-order theories
 _⊆ᴴ_ : Theoryᴴ ξ → Theoryᴴ ξ → Set₁
 Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th₂
 
-embed-theory : Theory ε → Theoryᴴ (const $ ↑ ε)
-embed-theory T .equationsᴴ = map embed-equation (map □-extract $ T .equations)
+-- 
+-- embed-theory : Theory ε → Theoryᴴ (const $ ↑ ε)
+-- embed-theory T .equationsᴴ = map embed-equation (map □-extract $ T .equations)
+--
 
-wk-theoryᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε ⦄ → Theoryᴴ ξ₁ → Theoryᴴ ξ₂ 
-wk-theoryᴴ eq = ∥ map wk-equationᴴ (eq .equationsᴴ) ∥ᴴ
+wk-theoryᴴ : ξ₁ ·⊑ ξ₂ → Theoryᴴ ξ₁ → Theoryᴴ ξ₂ 
+wk-theoryᴴ i Th = ∥ map (wk-equationᴴ ⦃ i ⦄) (Th .equationsᴴ) ∥ᴴ
 
 -- Coproduct of higher-order effect theories
 _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
 (Th₁ ⟨+⟩ᴴ Th₂) .equationsᴴ = Th₁ .equationsᴴ ++ Th₂ .equationsᴴ
 
 _[+]ᴴ_ : Theoryᴴ ξ₁ → Theoryᴴ ξ₂ → Theoryᴴ (ξ₁ ·⊕ ξ₂)
-Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⦃ ⊑-⊕-left ⦄ Th₁ ⟨+⟩ᴴ wk-theoryᴴ ⦃ ⊑-⊕-right ⦄ Th₂
+Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⊑-⊕-left Th₁ ⟨+⟩ᴴ wk-theoryᴴ ⊑-⊕-right Th₂
 
 -- Syntactic equivalence of programs with higher order effects, with respect to
 -- a given theory `Th`. Analagous to how we defined syntactic equivalence for
@@ -163,12 +176,16 @@ Correctᴴ Th T e =
   → (T′ : Theory ε′) → (sub : T ≪ T′) 
   → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ sub .inc) eq 
 
+□-Correctᴴ : □ᴴ Theoryᴴ ξ → Theory ε → Elaboration ξ ε → Set₁
+□-Correctᴴ Th T e = Correctᴴ {!!} T {!!}
+
+
 -- Equations that occur in a composed theory can be found in either of the
 -- argument theories
 [+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (ξ₁ ·⊕ ξ₂)}
          → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
-         →   (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑-⊕-left  ⦄ Th₁ )
-           ⊎ (eq ◃ᴴ wk-theoryᴴ ⦃ ⊑-⊕-right ⦄ Th₂ )
+         →   (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-left  Th₁ )
+           ⊎ (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-right Th₂ )
 [+]ᴴ-injective Th₁ Th₂ {eq} px with Th₁ .equationsᴴ
 ... | []      = inj₂ px
 ... | x ∷ eqs =
@@ -180,10 +197,10 @@ Correctᴴ Th T e =
               ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
 
 -- Equations of a weakened theory are themselves weakened equations 
-◃ᴴ-weaken-lemma : ∀ Th (w : ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε)
+◃ᴴ-weaken-lemma : ∀ Th (i : ξ₁ ·⊑ ξ₂)
        → (eq : Equationᴴ ξ₂)
-       → eq ◃ᴴ wk-theoryᴴ ⦃ w ⦄ Th
-       → ∃ λ (eq′ : Equationᴴ ξ₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ w ⦄ eq′ 
+       → eq ◃ᴴ wk-theoryᴴ i Th
+       → ∃ λ (eq′ : Equationᴴ ξ₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ i ⦄ eq′
 ◃ᴴ-weaken-lemma Th w eq px with Th .equationsᴴ
 ... | eq′ ∷ eqs =
   case px of

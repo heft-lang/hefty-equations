@@ -16,9 +16,10 @@ open import Relation.Unary
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
 
 open import Function
+open import Level
 open import Function.Construct.Identity using (↔-id)
 
-module Effect.Separation where
+module Effect.Relation.Ternary.FirstOrderSeparation where
 
 record Union (ε₁ ε₂ ε : Effect) : Set₁ where
   field
@@ -56,8 +57,8 @@ record Union (ε₁ ε₂ ε : Effect) : Set₁ where
   proj⁻¹-natural : Natural proj⁻¹
   proj⁻¹-natural = union .natural .to-natural
 
--- infix notation
-_∙_≈_ = Union 
+instance effect-rel₃ : Ternary.HasRel₃ Effect (suc zero)
+effect-rel₃ = record { _∙_≈_ = Union } 
 
 open Union
 open Inverse
@@ -65,7 +66,7 @@ open Inverse
 -- Prove some properties about disjoint unions of effects 
 module _ where
 
-  open Ternary.Relation Effect Union
+  open Ternary.Relation Effect ⦃ effect-rel₃ ⦄
 
   union-unitˡ : LeftIdentity ⊥ᶜ
   union-unitˡ {ε} .union .equivalence _ = record
