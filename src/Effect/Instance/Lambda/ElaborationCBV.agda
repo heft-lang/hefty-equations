@@ -118,16 +118,13 @@ CBVCorrect {T = T} e′ (there (here refl)) {γ = f} =
     ℰ⟦ pure f ⟧
   ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality $ sym ∘ >>=-idʳ ∘ f)) ⟫
     ℰ⟦ pure (λ x → f x >>= pure) ⟧ 
-  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure (λ x → ○ x >>= (f >=> pure)) ⟧) (extensionality λ x → sym $ use-elab-def _)) ⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure (λ x → ○ x >>= (f >=> pure)) ⟧) (extensionality λ x → sym $ use-elab-def _)) ⟫
     ℰ⟦ pure (λ x → ℰ⟦ var x ⟧ >>= (f >=> pure)) ⟧ 
   ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality λ x → sym $ use-elab-def _))  ⟫ 
     ℰ⟦ pure (λ x → ℰ⟦ app f (var x) ⟧) ⟧ 
   ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫ 
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
---   begin
---     ℰ⟦ pure f ⟧
-
   where
     open ≈-Reasoning (□⟨ T .theory ⟩ _)
     open Elaboration e′

@@ -155,8 +155,8 @@ module _ where
   -- Use a record to help type inference 
   record _≪_ (T₁ : ExtensibleTheory ε₁) (T₂ : ExtensibleTheory ε₂) : Set₁ where
     field
-      inc : ε₁ ≲ ε₂
-      sub : ∀ {ε′} {eq} → (i′ : ε₂ ≲ ε′) → eq ◃ □⟨ T₁ .theory ⟩ ≲-trans inc i′ → eq ◃ □⟨ T₂ .theory ⟩ i′
+      ⦃ inc ⦄ : ε₁ ≲ ε₂
+      sub     : ∀ {ε′} {eq} → (i′ : ε₂ ≲ ε′) → eq ◃ □⟨ T₁ .theory ⟩ ≲-trans inc i′ → eq ◃ □⟨ T₂ .theory ⟩ i′
 
   open _≪_ public 
 
@@ -299,6 +299,20 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
           
 _≈[_]_ : ⦃ ε₁ ≲ ε₂ ⦄ → Free ε₂ A → ExtensibleTheory ε₁ → Free ε₂ A → Set₁
 _≈[_]_ ⦃ i ⦄ m₁ T m₂ = m₁ ≈⟨ □⟨ T .theory ⟩ i ⟩ m₂
+
+≈-weaken :
+  ∀ {T : ExtensibleTheory ε₁} {T′ : ExtensibleTheory ε₂}
+  → (i : T ≪ T′)
+  → ⦃ i′ : ε₂ ≲ ε′ ⦄
+  → (m₁ m₂ : Free ε′ A)
+  → _≈[_]_ ⦃ ≲-trans (i .inc) i′ ⦄ m₁ T  m₂
+    ---------------------------------------
+  → m₁ ≈[ T′ ] m₂
+≈-weaken i₁ m₁                   .m₁                  ≈-refl             = ≈-refl
+≈-weaken i₁ m₁                   m₂                   (≈-sym eq)         = ≈-sym (≈-weaken i₁ m₂ m₁ eq)
+≈-weaken i₁ m₁                   m₂                   (≈-trans eq₁ eq₂)  = ≈-trans (≈-weaken i₁ m₁ _ eq₁) (≈-weaken i₁ _ _ eq₂)
+≈-weaken i₁ .(impure ⟨ s , p₁ ⟩) .(impure ⟨ s , p₂ ⟩) (≈-cong s p₁ p₂ k) = ≈-cong s p₁ p₂ (≈-weaken i₁ _ _ k)
+≈-weaken i₁ .(eq .lhs δ γ >>= k) .(eq .rhs δ γ >>= k) (≈-eq eq px δ γ k) = ≈-eq eq (i₁ .sub _ px) δ γ k
 
 -- Propositional equality of effect trees can (clearly) be reflected as a
 -- syntactic equivalence
