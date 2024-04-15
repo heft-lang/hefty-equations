@@ -17,6 +17,8 @@ open import Relation.Unary
 open import Relation.Binary using (Reflexive; Transitive)
 
 open import Function
+open import Function.Construct.Identity
+
 open import Level
 
 
@@ -45,8 +47,16 @@ injectᴴ .α = impure ∘ injᴴ
 instance ho-apply : ⦃ η₁ ≲ η₂ ⦄ → ∀ {ε} → η₁ ε ≲ η₂ ε
 ho-apply ⦃ _ , u ⦄ = _ , u 
 
-postulate ⊑-⊕-left : σ₁ ≲ (σ₁ ⊕ σ₂)
-postulate ·⊑-⊕-left : η₁ ≲ (η₁ ·⊕ η₂) 
+⊑-⊕-left : σ₁ ≲ (σ₁ ⊕ σ₂)
+⊑-⊕-left {σ₂ = σ₂} = σ₂ , record { unionᴴ = record { equivalenceᴴ = λ _ _ → ↔-id _ } }
 
-postulate ⊑-⊕-right : σ₂ ≲ (σ₁ ⊕ σ₂)
-postulate ·⊑-⊕-right : η₂ ≲ (η₁ ·⊕ η₂)
+·⊑-⊕-left : η₁ ≲ (η₁ ·⊕ η₂) 
+·⊑-⊕-left {η₁} =
+  (λ x → ⊑-⊕-left {η₁ x} {_} .proj₁) , record { unionᴴ = ⊑-⊕-left .proj₂ .unionᴴ }
+
+⊑-⊕-right : σ₂ ≲ (σ₁ ⊕ σ₂)
+⊑-⊕-right {σ₂} {σ₁} = σ₁ , record { unionᴴ = swap-sig-⇿ᴴ }
+
+·⊑-⊕-right : η₂ ≲ (η₁ ·⊕ η₂)
+·⊑-⊕-right {η₂} {η₁} =
+  (λ x → ⊑-⊕-right {η₂ x} {η₁ x} .proj₁) , record { unionᴴ = ⊑-⊕-right .proj₂ .unionᴴ }
