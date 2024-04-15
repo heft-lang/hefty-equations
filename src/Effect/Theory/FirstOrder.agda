@@ -22,7 +22,7 @@ open import Data.Nat
 open import Data.Vec hiding (map ; _++_)
 open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
-open import Relation.Unary hiding (_∈_ ; _⊆_)
+open import Relation.Unary hiding (_∈_ ; _⊆_ ; _⟨⊎⟩_)
 open import Relation.Binary using (Preorder)
 open import Relation.Binary.PropositionalEquality hiding (_≗_)
 open import Data.Empty
@@ -241,9 +241,9 @@ _⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
 (T₁ ⟨+⟩ T₂) .equations = T₁ .equations ++ T₂ .equations
 
 -- Coproduct of extensible theories
-_⟨⊕⟩_ : ∀[ ExtensibleTheory ⇒ ExtensibleTheory ⇒ ExtensibleTheory ]
-theory (T₁ ⟨⊕⟩ T₂) = necessary λ i → (□⟨ T₁ .theory ⟩ i) ⟨+⟩ (□⟨ T₂ .theory ⟩ i)
-respects-⇔≲ (lawful (T₁ ⟨⊕⟩ T₂)) i₁ i₂ x
+_⟨⊎⟩_ : ∀[ ExtensibleTheory ⇒ ExtensibleTheory ⇒ ExtensibleTheory ]
+theory (T₁ ⟨⊎⟩ T₂) = necessary λ i → (□⟨ T₁ .theory ⟩ i) ⟨+⟩ (□⟨ T₂ .theory ⟩ i)
+respects-⇔≲ (lawful (T₁ ⟨⊎⟩ T₂)) i₁ i₂ x
   rewrite T₁ .lawful .respects-⇔≲ i₁ i₂ x
   | T₂ .lawful .respects-⇔≲ i₁ i₂ x = refl
 
@@ -262,7 +262,7 @@ compose-theory : ∀[ (Theory ✴ Theory) ⇒ Theory ]
 compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩ weaken (≲-∙-right σ) T₂
 
 compose-ext-theory : ∀[ (ExtensibleTheory ✴ ExtensibleTheory) ⇒ ExtensibleTheory ]
-compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨⊕⟩ weaken (≲-∙-right σ) T₂
+compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨⊎⟩ weaken (≲-∙-right σ) T₂
 
 variable T T₁ T₂ T₃ T′ : Theory ε
 
@@ -444,3 +444,4 @@ impure-injectiveʳ refl = refl
   → T₂ ≪ compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)
 ≪-compose-right T₁ T₂ σ .inc    = ≲-∙-right σ 
 ≪-compose-right T₁ T₂ σ .sub px = ◃-⟨+⟩-right (□⟨ T₁ .theory ⟩ _) (□⟨ T₂ .theory ⟩ _)
+

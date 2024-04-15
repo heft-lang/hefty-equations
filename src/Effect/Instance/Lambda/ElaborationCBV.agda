@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type --without-K #-} 
+{-# OPTIONS --type-in-type --without-K --instance-search-dept=2 #-} 
 
 open import Core.Functor
 open import Core.Functor.Monad
@@ -7,6 +7,8 @@ open import Core.Signature
 open import Core.Container
 open import Core.Extensionality
 open import Core.MonotonePredicate 
+open import Core.Ternary
+open import Core.Logic
 
 open import Effect.Base
 open import Effect.Syntax.Free
@@ -14,12 +16,15 @@ open import Effect.Syntax.Hefty
 
 open import Effect.Handle
 open import Effect.Elaborate
-open import Effect.Separation
-open import Effect.Inclusion
-open import Effect.Logic 
 
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
+
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Effect.Instance.Empty.Syntax
 
@@ -36,8 +41,6 @@ open import Data.Vec hiding ([_])
 open import Relation.Unary hiding (Empty ; _⊆_)
 
 module Effect.Instance.Lambda.ElaborationCBV where
-
-open Connectives
 
 open import Effect.Instance.Lambda.Syntax id (λ A ε B → A → Free ε B)
 open import Effect.Instance.Lambda.Theory id (λ A ε B → A → Free ε B) 
@@ -87,46 +90,44 @@ LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
     open ≡-Reasoning
     elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
 
+CBVCorrect : {T : ExtensibleTheory ε} → □-Correctᴴ LambdaTheory T LambdaElabCBV 
 
-
-CBVCorrect : Correctᴴ LambdaTheory T LambdaElabCBV
-CBVCorrect (here refl) T′ sub {γ = f , m} =
+ 
+CBVCorrect {T = T} e′ (here refl) {γ = f , m} =
   begin
     ℰ⟦ (abs f >>= λ f′ → app f′ m) ⟧
-  ≈⟪ ≡-to-≈ $ elab-∘′ (abs f) (λ f′ → app f′ m) ⟫
-    ℰ⟦ abs f ⟧ >>= (λ f′ → ℰ⟦ app f′ m ⟧) 
+  ≈⟪ ≡-to-≈ (elab-∘′ (abs f) λ f′ → app f′ m) ⟫
+    ℰ⟦ abs f ⟧ >>= (λ f′ → ℰ⟦ app f′ m ⟧)  
+  ≈⟪ >>=-resp-≈ˡ (λ f′ → ℰ⟦ app f′ m ⟧) (≡-to-≈ (use-elab-def _)) ⟫  
+    pure ℰ⟪ f ⟫ >>= (λ f′ → ℰ⟦ app f′ m ⟧) 
   ≈⟪⟫
-    pure (λ x → ℰ⟦ f x ⟧) >>= (λ f′ → ℰ⟦ app f′ m ⟧)
-  ≈⟪⟫
-    ℰ⟦ app (ℰ⟦_⟧ ∘ f) m ⟧
-  ≈⟪⟫
-    ℰ⟦ m ⟧ >>= ((ℰ⟦_⟧ ∘ f) >=> pure)
-  ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (λ x → >>=-idʳ-≈ ℰ⟦ f x ⟧) ⟫
-    ℰ⟦ m ⟧ >>= (λ x → ℰ⟦ f x ⟧)
+    ℰ⟦ app ℰ⟪ f ⟫ m ⟧
+  ≈⟪ ≡-to-≈ (use-elab-def _) ⟫ 
+    ℰ⟦ m ⟧ >>= (ℰ⟪ f ⟫ >=> pure) 
+  ≈⟪ >>=-resp-≈ʳ ℰ⟦ m ⟧ (>>=-idʳ-≈ ∘ ℰ⟪ f ⟫) ⟫
+    ℰ⟦ m ⟧ >>= ℰ⟪ f ⟫  
   ≈⟪ ≡-to-≈ (sym $ elab-∘′ m f) ⟫ 
     ℰ⟦ m >>= f ⟧
   ∎
   where
-    instance inst : _ ≲ _
-    inst = sub .inc
-    open ≈-Reasoning T′
-    open Elaboration LambdaElabCBV
-
-CBVCorrect (there (here refl)) T′ sub {γ = f} =
+    open ≈-Reasoning (□⟨ T .theory ⟩ _)
+    open Elaboration e′
+    
+CBVCorrect {T = T} e′ (there (here refl)) {γ = f} =
   begin
     ℰ⟦ pure f ⟧
   ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality $ sym ∘ >>=-idʳ ∘ f)) ⟫
     ℰ⟦ pure (λ x → f x >>= pure) ⟧ 
-  ≈⟪⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure (λ x → ○ x >>= (f >=> pure)) ⟧) (extensionality λ x → sym $ use-elab-def _)) ⟫ 
     ℰ⟦ pure (λ x → ℰ⟦ var x ⟧ >>= (f >=> pure)) ⟧ 
-  ≈⟪⟫ 
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality λ x → sym $ use-elab-def _))  ⟫ 
     ℰ⟦ pure (λ x → ℰ⟦ app f (var x) ⟧) ⟧ 
-  ≈⟪⟫ 
+  ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫ 
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
-  where
-    instance inst : _ ≲ _
-    inst = sub .inc
-    open ≈-Reasoning T′
-    open Elaboration LambdaElabCBV
+--   begin
+--     ℰ⟦ pure f ⟧
 
+  where
+    open ≈-Reasoning (□⟨ T .theory ⟩ _)
+    open Elaboration e′

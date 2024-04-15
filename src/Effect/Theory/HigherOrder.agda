@@ -3,6 +3,8 @@
 open import Core.Functor
 open import Core.Functor.Monad
 
+open import Core.Ternary
+open import Core.Logic
 open import Core.Signature
 open import Core.Extensionality
 open import Core.MonotonePredicate 
@@ -10,12 +12,14 @@ open import Core.MonotonePredicate
 open import Effect.Base
 open import Effect.Theory.FirstOrder
 open import Effect.Elaborate
-open import Effect.Separation
-open import Effect.Logic
-open import Effect.Inclusion
 
 open import Effect.Syntax.Free
 open import Effect.Syntax.Hefty
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
@@ -36,17 +40,15 @@ paper, but adapted for use with Hefty algebras -}
 
 module Effect.Theory.HigherOrder where
 
-open Connectives
-
 --
 -- TODO: this notion of equation seems to be too weak!!!!!!
 -- 
-record Equationᴴ (ξ : Effect → Effectᴴ) : Set₁ where
+record Equationᴴ (η : Effectᴴ) : Set₁ where
   constructor _≗ᴴ_
   field
     {Δ′}      : ℕ
     {Γ′ R′}   : Effect → TypeContext Δ′ → Set 
-    lhsᴴ rhsᴴ : {ε : Effect} → Π[ Γ′ ε ⇒ R′ ε ⊢ Hefty (ξ ε) ]
+    lhsᴴ rhsᴴ : {ε : Effect} → Π[ Γ′ ε ⇒ R′ ε ⊢ Hefty (η ε) ]
 
 open Equationᴴ public
 
@@ -55,9 +57,8 @@ embed-equation eq = (embed-free ∘₂ eq .lhs) ≗ᴴ (embed-free ∘₂ eq .lh
 
 -- Weakening of equations (for higher-order effects). That is, `Equationᴴ`
 -- defines a functor over the category of h.o. effects
-wk-equationᴴ : ⦃ ∀ {ε} → ξ₁ ε ⊑ ξ₂ ε ⦄ → Equationᴴ ξ₁ → Equationᴴ ξ₂ 
+wk-equationᴴ : ⦃ η₁ ≲ η₂ ⦄ → Equationᴴ η₁ → Equationᴴ η₂ 
 wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ) 
-
 
 -- Again, an algebra respects an equation if folding lhs and rhs gives the same
 -- result, where "sameness" is with respect a given binary relation that is kept
@@ -65,39 +66,34 @@ wk-equationᴴ eq = (♯ᴴ ∘₂ eq .lhsᴴ) ≗ᴴ (♯ᴴ ∘₂ eq .rhsᴴ)
 -- 
 -- We opt for this generalization (rather than using propositional equality)
 -- here, because later we define correctness of elaborations as
-Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra (ξ ε) (Free ε) → Equationᴴ ξ → Set₁
+Respectsᴴ : (_~_ : ∀ {A} → Free ε A → Free ε A → Set₁) → Algebra (η ε) (Free ε) → Equationᴴ η → Set₁
 Respectsᴴ _~_ alg (lhs ≗ᴴ rhs) =
   ∀ {δ γ} → fold-hefty pure alg (lhs δ γ) ~ fold-hefty pure alg (rhs δ γ)
 
--- Necessity for predicates over higher order effect signatures. We hack it
--- here, since we dont' use the associated logic much otherwise 
-record □ᴴ (P : (Effect → Effectᴴ) → Set₁) (ξ : Effect → Effectᴴ) : Set₁ where 
-  constructor necessaryᴴ 
-  field □ᴴ⟨_⟩_ : ∀ {ξ′} → ξ ·⊑ ξ′ → P ξ′
-
-open □ᴴ public
-
-□ᴴ-weaken : ∀ {P} → ξ₁ ·⊑ ξ₂ → □ᴴ P ξ₁ → □ᴴ P ξ₂
-□ᴴ-weaken i px = necessaryᴴ (λ i′ → □ᴴ⟨ px ⟩ ⊑-trans i i′)
-
 -- Theories of higher-order effects are collections of equations
-record Theoryᴴ (ξ : Effect → Effectᴴ) : Set₁ where
+record Theoryᴴ (η : Effectᴴ) : Set₁ where
   no-eta-equality
   constructor ∥_∥ᴴ
   field
-    equationsᴴ : List (Equationᴴ ξ) 
+    equationsᴴ : List (Equationᴴ η) 
 
 open Theoryᴴ public
 
-variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ ξ 
+record ExtensibleTheoryᴴ (η : Effectᴴ)  : Set₁ where
+  field
+    theoryᴴ : □ Theoryᴴ η 
+
+open ExtensibleTheoryᴴ public 
+
+variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ η
 
 -- A predicate asserting that a given equation is part of a theory
-_◃ᴴ_ : Equationᴴ ξ → Theoryᴴ ξ → Set₁
+_◃ᴴ_ : Equationᴴ η → Theoryᴴ η → Set₁
 eq ◃ᴴ Th = eq ∈ Th .equationsᴴ
 
 
 -- Theory inclusion for higher-order theories
-_⊆ᴴ_ : Theoryᴴ ξ → Theoryᴴ ξ → Set₁
+_⊆ᴴ_ : Theoryᴴ η → Theoryᴴ η → Set₁
 Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th₂
 
 -- 
@@ -105,15 +101,15 @@ Th₁ ⊆ᴴ Th₂ = {eq : Equationᴴ _} → eq ◃ᴴ Th₁ → eq ◃ᴴ Th�
 -- embed-theory T .equationsᴴ = map embed-equation (map □-extract $ T .equations)
 --
 
-wk-theoryᴴ : ξ₁ ·⊑ ξ₂ → Theoryᴴ ξ₁ → Theoryᴴ ξ₂ 
+wk-theoryᴴ : η₁ ≲ η₂ → Theoryᴴ η₁ → Theoryᴴ η₂ 
 wk-theoryᴴ i Th = ∥ map (wk-equationᴴ ⦃ i ⦄) (Th .equationsᴴ) ∥ᴴ
 
 -- Coproduct of higher-order effect theories
 _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
 (Th₁ ⟨+⟩ᴴ Th₂) .equationsᴴ = Th₁ .equationsᴴ ++ Th₂ .equationsᴴ
 
-_[+]ᴴ_ : Theoryᴴ ξ₁ → Theoryᴴ ξ₂ → Theoryᴴ (ξ₁ ·⊕ ξ₂)
-Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ⊑-⊕-left Th₁ ⟨+⟩ᴴ wk-theoryᴴ ⊑-⊕-right Th₂
+_[+]ᴴ_ : Theoryᴴ η₁ → Theoryᴴ η₂ → Theoryᴴ (η₁ ·⊕ η₂)
+Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ·⊑-⊕-left Th₁ ⟨+⟩ᴴ wk-theoryᴴ ·⊑-⊕-right Th₂
 
 -- Syntactic equivalence of programs with higher order effects, with respect to
 -- a given theory `Th`. Analagous to how we defined syntactic equivalence for
@@ -147,8 +143,7 @@ data _≅⟨_⟩_ {ε} {ξ} : (m₁ : Hefty (ξ ε) A) → Theoryᴴ ξ → (m�
           → (γ : eq .Γ′ ε δ)
           → (k : eq .R′ ε δ → Hefty (ξ ε) B)
             -----------------------------------------------
-          → eq .rhsᴴ δ γ >>= k ≅⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)
-
+          → eq .rhsᴴ δ γ >>= k ≅⟨ Th ⟩ (eq .rhsᴴ δ γ >>= k)          
 
 {- Correctness of elaborations -} 
 open Elaboration 
@@ -168,157 +163,162 @@ open Elaboration
 -- TODO: this looks remarkably similar to how we close over "value extensions"
 -- when defining extensible langauge fragments in the OOPSLA paper. Can we
 -- factor those, and the "theory extensions" used here into a common pattern?
-Correctᴴ : Theoryᴴ ξ → Theory ε → Elaboration ξ ε → Set₁ 
-Correctᴴ Th T e =
+Correctᴴ : Theoryᴴ η  → ExtensibleTheory ε → Elaboration η ε → Set₁ 
+Correctᴴ {ε = ε} Th T e =
   ∀ {eq : Equationᴴ _}
   → eq ◃ᴴ Th
-  → ∀ {ε′} 
-  → (T′ : Theory ε′) → (sub : T ≪ T′) 
-  → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ e .elab ⟩ sub .inc) eq 
+  → {ε′ : Effect}
+  → ⦃ i : ε ≲ ε′ ⦄
+    -----------------------------------------
+  → Respectsᴴ (_≈[ T ]_) (□⟨ e .elab ⟩ i) eq  
 
-□-Correctᴴ : □ᴴ Theoryᴴ ξ → Theory ε → Elaboration ξ ε → Set₁
-□-Correctᴴ Th T e = Correctᴴ {!!} T {!!}
+□-Correctᴴ : ExtensibleTheoryᴴ η → ExtensibleTheory ε → Elaboration η ε → Set₁
+□-Correctᴴ {η = η} {ε} Th T e =
+  ∀ {η′}
+  → (e′ : Elaboration η′ ε)
+  → ⦃ ζ : e ⊑ e′ ⦄
+    -----------------------------------------
+  → Correctᴴ (□⟨ Th .theoryᴴ ⟩ ζ .≲-eff) T e′
 
+-- -- Equations that occur in a composed theory can be found in either of the
+-- -- argument theories
+-- [+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (ξ₁ ·⊕ ξ₂)}
+--          → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
+--          →   (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-left  Th₁ )
+--            ⊎ (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-right Th₂ )
+-- [+]ᴴ-injective Th₁ Th₂ {eq} px with Th₁ .equationsᴴ
+-- ... | []      = inj₂ px
+-- ... | x ∷ eqs =
+--   case px of
+--     λ where (here refl) → inj₁ (here refl)
+--             (there px′) →
+--               [ inj₁ ∘ there
+--               , inj₂
+--               ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
 
--- Equations that occur in a composed theory can be found in either of the
--- argument theories
-[+]ᴴ-injective : ∀ Th₁ Th₂ {eq : Equationᴴ (ξ₁ ·⊕ ξ₂)}
-         → eq ◃ᴴ (Th₁ [+]ᴴ Th₂)
-         →   (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-left  Th₁ )
-           ⊎ (eq ◃ᴴ wk-theoryᴴ ⊑-⊕-right Th₂ )
-[+]ᴴ-injective Th₁ Th₂ {eq} px with Th₁ .equationsᴴ
-... | []      = inj₂ px
-... | x ∷ eqs =
-  case px of
-    λ where (here refl) → inj₁ (here refl)
-            (there px′) →
-              [ inj₁ ∘ there
-              , inj₂
-              ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
+-- -- Equations of a weakened theory are themselves weakened equations 
+-- ◃ᴴ-weaken-lemma : ∀ Th (i : ξ₁ ·⊑ ξ₂)
+--        → (eq : Equationᴴ ξ₂)
+--        → eq ◃ᴴ wk-theoryᴴ i Th
+--        → ∃ λ (eq′ : Equationᴴ ξ₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ i ⦄ eq′
+-- ◃ᴴ-weaken-lemma Th w eq px with Th .equationsᴴ
+-- ... | eq′ ∷ eqs =
+--   case px of
+--     λ where (here refl) → _ , here refl , refl
+--             (there px′) →
+--               case ◃ᴴ-weaken-lemma (λ where .equationsᴴ → eqs) w eq px′ of
+--                 λ where (a , px′′ , refl) → a , there px′′ , refl 
 
--- Equations of a weakened theory are themselves weakened equations 
-◃ᴴ-weaken-lemma : ∀ Th (i : ξ₁ ·⊑ ξ₂)
-       → (eq : Equationᴴ ξ₂)
-       → eq ◃ᴴ wk-theoryᴴ i Th
-       → ∃ λ (eq′ : Equationᴴ ξ₁) → eq′ ◃ᴴ Th × eq ≡ wk-equationᴴ ⦃ i ⦄ eq′
-◃ᴴ-weaken-lemma Th w eq px with Th .equationsᴴ
-... | eq′ ∷ eqs =
-  case px of
-    λ where (here refl) → _ , here refl , refl
-            (there px′) →
-              case ◃ᴴ-weaken-lemma (λ where .equationsᴴ → eqs) w eq px′ of
-                λ where (a , px′′ , refl) → a , there px′′ , refl 
+-- map-id : (m : Hefty η A) → map-hefty id m ≡ m
+-- map-id (pure x)               = refl
+-- map-id (impure ⟪ c , r , s ⟫) =
+--   cong₂
+--     (λ □₁ □₂ → impure ⟪ c , □₁ , □₂ ⟫)
+--     (extensionality (map-id ∘ r))
+--     refl
 
-map-id : (m : Hefty η A) → map-hefty id m ≡ m
-map-id (pure x)               = refl
-map-id (impure ⟪ c , r , s ⟫) =
-  cong₂
-    (λ □₁ □₂ → impure ⟪ c , □₁ , □₂ ⟫)
-    (extensionality (map-id ∘ r))
-    refl
+-- ⟨⊕⟩-fold-left : ∀ (m : Hefty η A)
+--                   {f : Algebra η F} {g : Algebra η′ F}
+--                   {k : ∀[ id ⇒ F ]}
+--                 →   fold-hefty k f m
+--                   ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-left ⦄ m)
+-- ⟨⊕⟩-fold-left (pure _)                           = refl
+-- ⟨⊕⟩-fold-left (impure ⟪ c , r , s ⟫) {f} {g} {k} =
+--   cong₂
+--     (λ □₁ □₂ → f .α ⟪ c , □₁ , □₂ ⟫)
+--     ( extensionality λ x → ⟨⊕⟩-fold-left $ r x )
+--     ( extensionality λ x → ⟨⊕⟩-fold-left $ s x )
 
-⟨⊕⟩-fold-left : ∀ (m : Hefty η A)
-                  {f : Algebra η F} {g : Algebra η′ F}
-                  {k : ∀[ id ⇒ F ]}
-                →   fold-hefty k f m
-                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-left ⦄ m)
-⟨⊕⟩-fold-left (pure _)                           = refl
-⟨⊕⟩-fold-left (impure ⟪ c , r , s ⟫) {f} {g} {k} =
-  cong₂
-    (λ □₁ □₂ → f .α ⟪ c , □₁ , □₂ ⟫)
-    ( extensionality λ x → ⟨⊕⟩-fold-left $ r x )
-    ( extensionality λ x → ⟨⊕⟩-fold-left $ s x )
-
-⟨⊕⟩-fold-right : ∀ (m : Hefty η A)
-                  {f : Algebra η′ F} {g : Algebra η F}
-                  {k : ∀[ id ⇒ F ]}
-                →   fold-hefty k g m
-                  ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-right ⦄ m)
-⟨⊕⟩-fold-right (pure _)                           = refl
-⟨⊕⟩-fold-right (impure ⟪ c , r , s ⟫) {f} {g} {k} =
-  cong₂
-    (λ □₁ □₂ → g .α ⟪ c , □₁ , □₂ ⟫)
-    ( extensionality λ x → ⟨⊕⟩-fold-right $ r x )
-    ( extensionality λ x → ⟨⊕⟩-fold-right $ s x )
+-- ⟨⊕⟩-fold-right : ∀ (m : Hefty η A)
+--                   {f : Algebra η′ F} {g : Algebra η F}
+--                   {k : ∀[ id ⇒ F ]}
+--                 →   fold-hefty k g m
+--                   ≡ fold-hefty k (f ⟨⊕⟩ g) (♯ᴴ ⦃ ⊑-⊕-right ⦄ m)
+-- ⟨⊕⟩-fold-right (pure _)                           = refl
+-- ⟨⊕⟩-fold-right (impure ⟪ c , r , s ⟫) {f} {g} {k} =
+--   cong₂
+--     (λ □₁ □₂ → g .α ⟪ c , □₁ , □₂ ⟫)
+--     ( extensionality λ x → ⟨⊕⟩-fold-right $ r x )
+--     ( extensionality λ x → ⟨⊕⟩-fold-right $ s x )
     
 
 
-module _ {T : Theory ε} where
+-- module _ {T : Theory ε} where
 
-  -- "Homogeneous" composition of correctness proofs for h.o. effect theories.
-  --
-  -- This theorem establishes that correctness of composed elaborations follows
-  -- from correctness of their components, provided they assume the same lower
-  -- bound on the algebraic effects for elaboration, and establish correctness
-  -- w.r.t. the same first-order effect theory.
-  ⟪⊕⟫-correct
-    : ∀ {e₁ e₂} 
-      → Correctᴴ Th₁ T e₁
-      → Correctᴴ Th₂ T e₂
-        -------------------------------------
-      → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
+--   -- "Homogeneous" composition of correctness proofs for h.o. effect theories.
+--   --
+--   -- This theorem establishes that correctness of composed elaborations follows
+--   -- from correctness of their components, provided they assume the same lower
+--   -- bound on the algebraic effects for elaboration, and establish correctness
+--   -- w.r.t. the same first-order effect theory.
+--   ⟪⊕⟫-correct
+--     : ∀ {e₁ e₂} 
+--       → Correctᴴ Th₁ T e₁
+--       → Correctᴴ Th₂ T e₂
+--         -------------------------------------
+--       → Correctᴴ (Th₁ [+]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
 
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
-    with [+]ᴴ-injective Th₁ Th₂ px
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
-    | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑-⊕-left _ px′
-  ... | eq′ , px′′ , refl = begin
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .lhsᴴ _ _))
-    ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
-      fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₁ px′′ T′ it ⟫
-      fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
-    ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .rhsᴴ _ _))
-    ∎
-    where open ≈-Reasoning T′
-  ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
-    | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑-⊕-right _ px′
-  ... | eq′ , px′′ , refl = begin
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .lhsᴴ _ _))
-    ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
-      fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
-    ≈⟪ c₂ px′′ T′ it ⟫ 
-      fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
-    ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
-      fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
-        (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .rhsᴴ _ _))
-    ∎
-    where open ≈-Reasoning T′ 
-
-
-weaken-correct :
-  ∀ {T : Theory ε} e (Th : Theoryᴴ ξ) (T′ : Theory ε′)
-  → (sub : T ≪ T′)
-  → Correctᴴ Th T e
-    ---------------------------
-  → Correctᴴ Th T′ (weaken (sub .inc) e)
-weaken-correct e Th T′ sub₁ c px T′′ sub₂
-  = c px  T′′ $ ≪-trans sub₁ sub₂ 
+--   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
+--     with [+]ᴴ-injective Th₁ Th₂ px
+--   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
+--     | inj₁ px′ with ◃ᴴ-weaken-lemma Th₁ ⊑-⊕-left _ px′
+--   ... | eq′ , px′′ , refl = begin
+--       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
+--         (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .lhsᴴ _ _))
+--     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-left (eq′ .lhsᴴ _ _) ⟫
+--       fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
+--     ≈⟪ c₁ px′′ T′ it ⟫
+--       fold-hefty pure (□⟨ e₁ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
+--     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-left (eq′ .rhsᴴ _ _) ⟫ 
+--       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
+--         (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-left ⦄) (eq′ .rhsᴴ _ _))
+--     ∎
+--     where open ≈-Reasoning T′
+--   ⟪⊕⟫-correct {Th₁ = Th₁} {Th₂ = Th₂} {e₁ = e₁} {e₂ = e₂} c₁ c₂ px T′ it
+--     | inj₂ px′ with ◃ᴴ-weaken-lemma Th₂ ⊑-⊕-right _ px′
+--   ... | eq′ , px′′ , refl = begin
+--       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
+--         (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .lhsᴴ _ _))
+--     ≈⟪ ≡-to-≈ $ sym $ ⟨⊕⟩-fold-right (eq′ .lhsᴴ _ _) ⟫
+--       fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .lhsᴴ _ _)
+--     ≈⟪ c₂ px′′ T′ it ⟫ 
+--       fold-hefty pure (□⟨ e₂ .elab ⟩ it .inc) (eq′ .rhsᴴ _ _) 
+--     ≈⟪ ≡-to-≈ $ ⟨⊕⟩-fold-right (eq′ .rhsᴴ _ _) ⟫
+--       fold-hefty pure ((□⟨ e₁ .elab ⟩ it .inc) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ it .inc))
+--         (fold-hefty pure (injectᴴ ⦃ ⊑-⊕-right ⦄) (eq′ .rhsᴴ _ _))
+--     ∎
+--     where open ≈-Reasoning T′ 
 
 
-compose-elab-correct
-  : ∀ (e₁ : Elaboration ξ₁ ε₁) (e₂ : Elaboration ξ₂ ε₂)
-    → Correctᴴ Th₁ T₁ e₁
-    → Correctᴴ Th₂ T₂ e₂
-    → (σ : ε₁ ∙ ε₂ ≈ ε)
-      -------------------------------------------------------------------------------------
-    → Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (compose-elab (e₁ ✴⟨ σ ⟩ e₂))
+-- weaken-correct :
+--   ∀ {T : Theory ε} e (Th : Theoryᴴ ξ) (T′ : Theory ε′)
+--   → (sub : T ≪ T′)
+--   → Correctᴴ Th T e
+--     ---------------------------
+--   → Correctᴴ Th T′ (weaken (sub .inc) e)
+-- weaken-correct e Th T′ sub₁ c px T′′ sub₂
+--   = c px  T′′ $ ≪-trans sub₁ sub₂ 
+
+
+-- compose-elab-correct
+--   : ∀ (e₁ : Elaboration ξ₁ ε₁) (e₂ : Elaboration ξ₂ ε₂)
+--     → Correctᴴ Th₁ T₁ e₁
+--     → Correctᴴ Th₂ T₂ e₂
+--     → (σ : ε₁ ∙ ε₂ ≈ ε)
+--       -------------------------------------------------------------------------------------
+--     → Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory (T₁ ✴⟨ σ ⟩ T₂)) (compose-elab (e₁ ✴⟨ σ ⟩ e₂))
     
-compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e₂ c₁ c₂ σ =
-  ⟪⊕⟫-correct
-    {T = compose-theory (T₁ ✴⟨ σ ⟩ T₂)} {Th₁ = Th₁} {Th₂ = Th₂}
-    {e₁ = weaken (≲-∙-left σ) e₁}
-    {e₂ = weaken (≲-∙-right σ) e₂}
-    ( weaken-correct {T = T₁} e₁ Th₁
-        ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
-        ( ≪-compose-left  T₁ T₂ σ )
-      c₁ )
-    ( weaken-correct {T = T₂} e₂ Th₂
-        ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
-        ( ≪-compose-right T₁ T₂ σ)
-      c₂ ) 
+-- compose-elab-correct {Th₁ = Th₁} {T₁ = T₁} {Th₂} {T₂ = T₂} e₁ e₂ c₁ c₂ σ =
+--   ⟪⊕⟫-correct
+--     {T = compose-theory (T₁ ✴⟨ σ ⟩ T₂)} {Th₁ = Th₁} {Th₂ = Th₂}
+--     {e₁ = weaken (≲-∙-left σ) e₁}
+--     {e₂ = weaken (≲-∙-right σ) e₂}
+--     ( weaken-correct {T = T₁} e₁ Th₁
+--         ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
+--         ( ≪-compose-left  T₁ T₂ σ )
+--       c₁ )
+--     ( weaken-correct {T = T₂} e₂ Th₂
+--         ( compose-theory (T₁ ✴⟨ σ ⟩ T₂) )
+--         ( ≪-compose-right T₁ T₂ σ)
+--       c₂ ) 
 

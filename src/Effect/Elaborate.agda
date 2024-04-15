@@ -22,6 +22,9 @@ open import Data.Sum
 
 open import Effect.Relation.Ternary.FirstOrderSeparation
 open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.HigherOrderSeparation
+open import Effect.Relation.Binary.HigherOrderInclusion
+
 open import Effect.Theory.FirstOrder
 
 open import Function hiding (_⇔_)
@@ -40,14 +43,14 @@ open import Core.MonotonePredicate Effect _≲_
 S : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} → (A → B → C) → (A → B) → A → C
 S = λ x y z → x z (y z) 
   
-record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
+record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
   field
-    elab : □ (S (Algebra ∘ ξ) Free)  ε
+    elab : □ (S (Algebra ∘ η) Free)  ε
 
-  elaborate : ∀[ Hefty (ξ ε) ⇒ Free ε ]
+  elaborate : ∀[ Hefty (η ε) ⇒ Free ε ]
   elaborate = fold-hefty pure (□⟨ elab ⟩ ≲-refl)   
 
-  elaborate′ : ⦃ ε ≲ ε′ ⦄ → ∀[ Hefty (ξ ε′) ⇒ Free ε′ ]
+  elaborate′ : ⦃ ε ≲ ε′ ⦄ → ∀[ Hefty (η ε′) ⇒ Free ε′ ]
   elaborate′ ⦃ i ⦄ = fold-hefty pure (□⟨ elab ⟩ i)
 
   ℰ⟦_⟧ = elaborate′
@@ -55,9 +58,9 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   -- Map `Hefty` continuations to `Free` continuations.
   --
   -- This witnesses that (the fold of) an elaboration algebra characterized by
-  -- signatures `ξ` and `ε` defines a functor between the Kleisli categories of
-  -- respectively the monads `Hefty (ξ ε)` and `Free ε`.
-  ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (ξ ε′) B) → (A → Free ε′ B)
+  -- signatures `η` and `ε` defines a functor between the Kleisli categories of
+  -- respectively the monads `Hefty (η ε)` and `Free ε`.
+  ℰ⟪_⟫ : ⦃ ε ≲ ε′ ⦄ → (A → Hefty (η ε′) B) → (A → Free ε′ B)
   ℰ⟪ f ⟫ = λ x → ℰ⟦ f x ⟧   
    
   field
@@ -66,7 +69,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     -- transformations.
     commutes :
       ∀ {A B : Set} {f : A → B}
-      → (x : ⟦ ξ ε′ ⟧ (Free ε′) A)
+      → (x : ⟦ η ε′ ⟧ (Free ε′) A)
         --------------------------------------------------------------------------
       → ⦃ i : ε ≲ ε′ ⦄ → (□⟨ elab ⟩ i) .α (fmap f x) ≡ fmap f ((□⟨ elab ⟩ i) .α x) 
 
@@ -76,7 +79,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     -- monad morhpisms between Hefty trees and the free monad.
     coherent :
       ∀ {A B ε′ c s} → ⦃ i : ε ≲ ε′ ⦄
-      → (k₁ : response (ξ _) c → Free ε′ A)
+      → (k₁ : response (η _) c → Free ε′ A)
       → (k₂ : A → Free ε′ B)
         -------------------------------------------------------------------------------
       → (□⟨ elab ⟩ i) .α ⟪ c , k₁ >=> k₂ , s ⟫ ≡ (□⟨ elab ⟩ i) .α ⟪ c , k₁ , s ⟫ >>= k₂
@@ -86,7 +89,7 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     where
       open ≡-Reasoning
 
-      commute-elab :  ∀ {X Y} {f : X → Y} → (x : Hefty (ξ _) X) → ℰ⟦ (fmap f x) ⟧ ≡  fmap f ℰ⟦ x ⟧ 
+      commute-elab :  ∀ {X Y} {f : X → Y} → (x : Hefty (η _) X) → ℰ⟦ (fmap f x) ⟧ ≡  fmap f ℰ⟦ x ⟧ 
       commute-elab (pure x) = refl
       commute-elab {f = f} (impure ⟪ c , k , s ⟫) =
         begin
@@ -113,8 +116,8 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
   mutual
     elab-∘′ : ∀ {B C : Set}
               → ⦃ _ : ε ≲ ε′ ⦄
-              → (m :  Hefty (ξ ε′) B)
-              → (k : B → Hefty (ξ ε′) C)
+              → (m :  Hefty (η ε′) B)
+              → (k : B → Hefty (η ε′) C)
                 ------------------------------------
               → ℰ⟦ m >>= k ⟧ ≡ ℰ⟦ m ⟧ >>= ℰ⟪ k ⟫
     elab-∘′ (pure x) k = refl
@@ -144,14 +147,14 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
     -- Elaboration 
     elab-∘ : ∀ {A B C : Set}
              → ⦃ _ : ε ≲ ε′ ⦄
-             → (k₁ : A → Hefty (ξ ε′) B)
-             → (k₂ : B → Hefty (ξ ε′) C)
+             → (k₁ : A → Hefty (η ε′) B)
+             → (k₂ : B → Hefty (η ε′) C)
                ------------------------------------
              → ℰ⟪ k₁ >=> k₂ ⟫ ≡ ℰ⟪ k₁ ⟫ >=> ℰ⟪ k₂ ⟫
     elab-∘ ⦃ i ⦄ k₁ k₂ = extensionality λ x → elab-∘′ (k₁ x) k₂     
 
     -- Elaborations are a monad morphism between Hefty trees and the Free monad
-    elab-mm : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → MonadMorphism (Hefty (ξ ε′)) (Free ε′)
+    elab-mm : ∀ {ε′} → ⦃ _ : ε ≲ ε′ ⦄ → MonadMorphism (Hefty (η ε′)) (Free ε′)
     elab-mm = record
       { Ψ         = elaborate′
       ; Ψ-natural = elab-natural
@@ -161,17 +164,70 @@ record Elaboration (ξ : Effect → Effectᴴ) (ε : Effect) : Set₁ where
 
 open Elaboration
 
+--Sub-elaborations
+record _⊑_ (e₁ : Elaboration η₁ ε) (e₂ : Elaboration η₂ ε) : Set₁ where
+  field
+    ⦃ ≲-eff ⦄        : η₁ ≲ η₂
+    preserves-cases :
+      ∀ {ε′ M}
+      → (i : ε ≲ ε′)
+      → (m : ⟦ η₁ ε′ ⟧ M A)
+      → (e′ : ∀[ M ⇒ Free ε′ ])
+        ---------------------------------------------
+      →   (□⟨ e₁ .elab ⟩ i) .α (sig-hmap e′ m)
+        ≡ (□⟨ e₂ .elab ⟩ i) .α (sig-hmap e′ (injᴴ m))  
+
+open _⊑_ public 
+
+⊑-refl : {e : Elaboration η ε} → e ⊑ e
+≲-eff           ⊑-refl = ≲ᴴ-refl
+preserves-cases ⊑-refl = λ i₁ m e′ → refl
+
+⊑-trans :
+    {e₁ : Elaboration η₁ ε}
+  → {e₂ : Elaboration η₂ ε}
+  → {e₃ : Elaboration η₃ ε}
+  → e₁ ⊑ e₂ → e₂ ⊑ e₃
+    -----------------
+  → e₁ ⊑ e₃  
+≲-eff           (⊑-trans ζ₁ ζ₂) = ≲ᴴ-trans (ζ₁ .≲-eff) (ζ₂ .≲-eff)
+preserves-cases (⊑-trans ζ₁ ζ₂) i₁ m e′ rewrite
+    ζ₁ .preserves-cases i₁ m e′
+  | ζ₂ .preserves-cases i₁ (injᴴ m) e′ = refl 
+
+
+module _ {e₁ : Elaboration η₁ ε} {e₂ : Elaboration η₂ ε} where 
+
+  use-elab-def : 
+    ∀ ⦃ i : ε ≲ ε′ ⦄
+    → ⦃ ζ : e₁ ⊑ e₂ ⦄
+    → (m : ⟦ η₁ ε′ ⟧ (Hefty (η₂ ε′)) A)
+      ---------------------------------------------------
+    →   elaborate′ e₂ (impure (injᴴ m))
+      ≡ (□⟨ e₁ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) m)
+  use-elab-def ⦃ i ⦄ ⦃ ζ ⦄ m =
+    begin
+      elaborate′ e₂ (impure (injᴴ m))
+    ≡⟨⟩
+      (□⟨ e₂ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) (injᴴ m)) 
+    ≡⟨ sym $ preserves-cases ζ i m (elaborate′ e₂) ⟩ 
+      (□⟨ e₁ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) m)
+    ∎
+
+    where
+      open ≡-Reasoning
+      
 open □
 open _✴_
 
-instance elab-monotone : Monotone (Elaboration ξ)
+instance elab-monotone : Monotone (Elaboration η)
 elab-monotone .weaken i e .elab             = necessary (λ i′ → □⟨ e .elab ⟩ ≲-trans i i′)
 elab-monotone .weaken i e .commutes x ⦃ i′ ⦄ = e .commutes x ⦃ ≲-trans i i′ ⦄ 
 elab-monotone .weaken i e .coherent   ⦃ i′ ⦄ = λ k₁ k₂ → e .coherent ⦃ ≲-trans i i′ ⦄ k₁ k₂ 
 
 -- "Homogeneous" composition of elaborations. Combines two elaborations that
 -- assume the *same* lower bound on the effects that they elaborate into
-_⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ₁ ·⊕ ξ₂) ]
+_⟪⊕⟫_ : ∀[ Elaboration η₁ ⇒ Elaboration η₂ ⇒ Elaboration (η₁ ·⊕ η₂) ]
 (e₁ ⟪⊕⟫ e₂) .elab                        = necessary λ i → (□⟨ e₁ .elab ⟩ i) ⟨⊕⟩ (□⟨ e₂ .elab ⟩ i)
 (e₁ ⟪⊕⟫ e₂) .commutes ⟪ inj₁ c , k , s ⟫ = e₁ .commutes ⟪ c , k , s ⟫
 (e₁ ⟪⊕⟫ e₂) .commutes ⟪ inj₂ c , k , s ⟫ = e₂ .commutes ⟪ c , k , s ⟫
@@ -181,9 +237,8 @@ _⟪⊕⟫_ : ∀[ Elaboration ξ₁ ⇒ Elaboration ξ₂ ⇒ Elaboration (ξ�
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate
 -- into
-compose-elab : ∀[ (Elaboration ξ₁ ✴ Elaboration ξ₂) ⇒ Elaboration (ξ₁ ·⊕ ξ₂)  ]
+compose-elab : ∀[ (Elaboration η₁ ✴ Elaboration η₂) ⇒ Elaboration (η₁ ·⊕ η₂)  ]
 compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫ weaken (≲-∙-right σ) e₂
-
 
 -- -- The adjoint relation between separating conjuntion and implication gives us
 -- -- an equivalent operation that, given an elaboration, returns an "extension
@@ -194,5 +249,5 @@ compose-elab (e₁ ✴⟨ σ ⟩ e₂) = weaken (≲-∙-left σ) e₁ ⟪⊕⟫
 -- --
 -- -- Or, in other words, we can curry (and thus partially apply) the heterogeneous
 -- -- composition operation.
--- extend-with : ∀[ Elaboration ξ₁ ⇒ (Elaboration ξ₂ ─✴ Elaboration (ξ₁ ·⊕ ξ₂)) ]
+-- extend-with : ∀[ Elaboration η₁ ⇒ (Elaboration η₂ ─✴ Elaboration (η₁ ·⊕ η₂)) ]
 -- extend-with = ✴-curry compose-elab

@@ -104,6 +104,5 @@ module Relation {ℓ} {c} (Carrier : Set c) ⦃ _ : HasRel₃ Carrier ℓ ⦄ wh
   Pointwise _ = λ c₁ c₂ c → ∀ x → c₁ x ∙ c₂ x ≈ c x
 
   
-
 instance rel₃⇒rel₂ : ∀ {c ℓ} {Carrier : Set c} → ⦃ HasRel₃ Carrier ℓ ⦄ → HasRel₂ Carrier
 rel₃⇒rel₂ = record { _≲_ = Relation.Ext _ } 

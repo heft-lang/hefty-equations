@@ -28,9 +28,9 @@ open import Level
 module Effect.Base where 
 
 Effect  = Container 
-Effectᴴ = Signature
+Effectᴴ = Effect → Signature
 
-↑ : Effect → Effectᴴ
+↑ : Effectᴴ
 ↑ ε = record
   { command  = ε .shape
   ; response = ε .position
@@ -40,7 +40,6 @@ Effectᴴ = Signature
 
 variable ε ε₁ ε₂ ε₃ ε′ : Effect
          η η₁ η₂ η₃ η′ : Effectᴴ
-         ξ ξ₁ ξ₂ ξ₃ ξ′    : Effect → Effectᴴ 
 
 embed : ∀[ F ⊢ ⟦ ε ⟧ᶜ ⇒ ⟦ ↑ ε ⟧ F ]
 embed ⟨ s , p ⟩ .reflect = s , p , λ()

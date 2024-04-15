@@ -3,45 +3,50 @@
 open import Effect.Base
 open import Effect.Syntax.Free
 open import Effect.Syntax.Hefty
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Core.Container
 open import Core.Signature
 open import Core.Functor
+open import Core.Ternary
 
 open import Data.Product
 open import Data.Sum
 
 open import Relation.Unary
+open import Relation.Binary using (Reflexive; Transitive)
 
 open import Function
 open import Level
 
+
 module Effect.Relation.Binary.HigherOrderInclusion where
 
-record _⊑_ (η₁ η₂ : Effectᴴ) : Set₁ where
-  field
-    injᴴ : ∀[ ⟦ η₁ ⟧ F ⇒ ⟦ η₂ ⟧ F ]
+open Unionᴴ
+open Inverse
 
-open _⊑_ ⦃...⦄ public 
+module R₃ = Relation Effectᴴ ⦃ effectᴴ-rel₃ ⦄
 
-_·⊑_ : ∀ {a} {A : Set a} → (ξ₁ ξ₂ : A → Effectᴴ) → Set (a ⊔ suc 0ℓ)
-ξ₁ ·⊑ ξ₂ = ∀ {x} → ξ₁ x ⊑ ξ₂ x
+≲ᴴ-refl : Reflexive _≲_
+≲ᴴ-refl {η} = (const ⊥-sig) , (λ {ε} → unionᴴ-unitʳ {η} {ε})
 
+≲ᴴ-trans : Transitive _≲_
+≲ᴴ-trans i₁ i₂ = R₃.Ext-transitive unionᴴ-assocʳ i₁ i₂
 
-injectᴴ : ⦃ η₁ ⊑ η₂ ⦄ → Algebra η₁ (Hefty η₂)
-injectᴴ .α v = impure (injᴴ v)  
+injᴴ : ⦃ σ₁ ≲ σ₂ ⦄ → σ₁ ↦ᴴ σ₂
+injᴴ ⦃ _ , u ⦄ = u .unionᴴ .equivalenceᴴ _ _ .to ∘ injᴴˡ
 
-♯ᴴ : ⦃ η₁ ⊑ η₂ ⦄ → ∀[ Hefty η₁ ⇒ Hefty η₂ ]
+injectᴴ : ⦃ σ₁ ≲ σ₂ ⦄ → Algebra σ₁ (Hefty σ₂)
+injectᴴ .α = impure ∘ injᴴ 
+
+♯ᴴ : ⦃ σ₁ ≲  σ₂ ⦄ → ∀[ Hefty σ₁ ⇒ Hefty σ₂ ]
 ♯ᴴ = fold-hefty {F = Hefty _} pure injectᴴ
 
-⊑-refl : η ⊑ η
-⊑-refl = record { injᴴ = id }
+instance ho-apply : ⦃ η₁ ≲ η₂ ⦄ → ∀ {ε} → η₁ ε ≲ η₂ ε
+ho-apply ⦃ _ , u ⦄ = _ , u 
 
-⊑-trans : η₁ ⊑ η₂ → η₂ ⊑ η₃ → η₁ ⊑ η₃
-⊑-trans px qx = record { injᴴ = qx .injᴴ ∘ px .injᴴ }
+postulate ⊑-⊕-left : σ₁ ≲ (σ₁ ⊕ σ₂)
+postulate ·⊑-⊕-left : η₁ ≲ (η₁ ·⊕ η₂) 
 
-⊑-⊕-left : η₁ ⊑ (η₁ ⊕ η₂)
-_⊑_.injᴴ ⊑-⊕-left ⟪ c , k , s ⟫ = ⟪ inj₁ c , k , s ⟫
-
-⊑-⊕-right : η₂ ⊑ (η₁ ⊕ η₂)
-_⊑_.injᴴ ⊑-⊕-right ⟪ c , k , s ⟫ = ⟪ inj₂ c , k , s ⟫
+postulate ⊑-⊕-right : σ₂ ≲ (σ₁ ⊕ σ₂)
+postulate ·⊑-⊕-right : η₂ ≲ (η₁ ·⊕ η₂)

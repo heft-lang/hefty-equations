@@ -1,13 +1,20 @@
-{-# OPTIONS --without-K #-} 
+{-# OPTIONS --without-K --type-in-type #-} 
 
 open import Core.Functor
 open import Core.Functor.Monad
+open import Core.Ternary
+open import Core.Logic
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
 
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Data.Vec
 open import Data.List
@@ -24,37 +31,23 @@ module Effect.Instance.Lambda.Theory
 
 open import Effect.Instance.Lambda.Syntax c _[_]↦_
 
-instance ⊑-refl-inst : Lam ε ⊑ Lam ε
-⊑-refl-inst = ⊑-refl
+module _ {η : Effectᴴ} ⦃ i : Lam ≲ η ⦄ where 
 
-beta : Equationᴴ Lam
-beta = left ≗ᴴ right 
+  beta : Equationᴴ η
+  Δ′   beta               = 2
+  Γ′   beta ε (A , B , _) = (c A → Hefty (η ε) B) × Hefty (η ε) A
+  R′   beta ε (A , B , _) = B
+  lhsᴴ beta _ (f , m)     = abs f >>= λ f′ → app f′ m
+  rhsᴴ beta _ (f , m)     = m >>= f ∘ point
 
-  where
-    ctx ret : Effect → TypeContext 2 → Set
-    ctx ε (A , B , _) = (c A → Hefty (Lam ε) B) × Hefty (Lam ε) A
-    ret ε (A , B , _) = B
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Lam ε) ]
+  eta : Equationᴴ η
+  Δ′   eta = 2
+  Γ′   eta ε (A , B , _) = c A [ ε ]↦ B
+  R′   eta ε (A , B , _) = c A [ ε ]↦ B 
+  lhsᴴ eta _ f = pure f
+  rhsᴴ eta _ f = abs λ x → app f (var x)
+  
+LambdaTheory : ExtensibleTheoryᴴ Lam 
+theoryᴴ LambdaTheory = nec ∥ beta ∷ eta ∷ [] ∥ᴴ
 
-    left  _ (f , m) = abs f >>= λ f′ → app f′ m
-    right _ (f , m) = m >>= f ∘ point 
-
-
-eta : Equationᴴ Lam 
-eta = left ≗ᴴ right 
-
-  where
-    ctx ret : Effect → TypeContext 2 → Set
-    ctx ε (A , B , _) = c A [ ε ]↦ B
-    ret ε (A , B , _) = c A [ ε ]↦ B
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Lam ε) ]
-
-    left _  f = pure f
-    right _ f = abs λ x → app f (var x)
-
-LambdaTheory : Theoryᴴ Lam
-LambdaTheory =
-  ∥ beta
-  ∷ eta
-  ∷ [] ∥ᴴ 
 

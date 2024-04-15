@@ -2,9 +2,12 @@
 
 open import Core.Functor
 open import Core.Signature
+open import Core.Ternary
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Data.Empty
 open import Data.Unit
@@ -22,7 +25,7 @@ data LamC (ε : Effect) : Set where
   `abs : {A B : Set} → LamC ε
   `app : (c A [ ε ]↦ B) → LamC ε
 
-Lam : Effect → Signature
+Lam : Effectᴴ
 Lam ε = record
   { command = LamC ε
   ; response = λ where
@@ -38,12 +41,13 @@ Lam ε = record
     {`app {A} {B} _} tt → A
   } 
 
-var : ⦃ Lam ε ⊑ η ⦄ → c A → Hefty η A 
+var : ⦃ Lam ≲ η ⦄ → c A → Hefty (η ε) A 
 var x = impure (injᴴ ⟪ `var x , pure , (λ()) ⟫) 
 
-abs : ⦃ Lam ε ⊑ η ⦄ → (c A → Hefty η B) → Hefty η (c A [ ε ]↦ B) 
+abs : ⦃ Lam ≲ η ⦄ → (c A → Hefty (η ε) B) → Hefty (η ε) (c A [ ε ]↦ B) 
 abs f = impure (injᴴ ⟪ `abs , pure , f  ⟫)
 
-app :  ⦃ Lam ε ⊑ η ⦄ → (c A [ ε ]↦ B) → Hefty η A → Hefty η B
+app :  ⦃ Lam ≲ η ⦄ → (c A [ ε ]↦ B) → Hefty (η ε) A → Hefty (η ε) B
 app f m = impure (injᴴ ⟪ `app f , pure , (λ where tt → m) ⟫)
+
 
