@@ -39,6 +39,10 @@ open Inverse
 ≲-preorder : Preorder _ _ _
 ≲-preorder = R₃.Ext-preorder (⊥ᶜ , union-unitʳ) union-assocʳ 
 
+postulate ≲-identityˡ : ∀ (i : ε₁ ≲ ε₂) → ≲-trans ≲-refl i ≡ i
+postulate ≲-identityʳ : ∀ (i : ε₁ ≲ ε₂) → ≲-trans i ≲-refl ≡ i
+postulate ≲-assoc     : ∀ (i₁ : ε₁ ≲ ε₂) (i₂ : ε₂ ≲ ε₃) (i₃ : ε₃ ≲ ε) → ≲-trans (≲-trans i₁ i₂) i₃ ≡ ≲-trans i₁ (≲-trans i₂ i₃) 
+
 -- some properties about effect inclusion 
 module _ where
 

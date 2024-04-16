@@ -19,6 +19,7 @@ open import Effect.Relation.Ternary.HigherOrderSeparation
 open import Data.Vec
 open import Data.List
 open import Data.Unit
+open import Data.Bool
 open import Data.Product
 
 open import Function
@@ -47,7 +48,9 @@ module _ {η : Effectᴴ} ⦃ i : Lam ≲ η ⦄ where
   lhsᴴ eta _ f = pure f
   rhsᴴ eta _ f = abs λ x → app f (var x)
   
-LambdaTheory : ExtensibleTheoryᴴ Lam 
-theoryᴴ LambdaTheory = nec ∥ beta ∷ eta ∷ [] ∥ᴴ
+LambdaTheory : ExtensibleTheoryᴴ Lam
+arity LambdaTheory = Bool
+eqs LambdaTheory false = nec beta
+eqs LambdaTheory true  = nec eta
 
 

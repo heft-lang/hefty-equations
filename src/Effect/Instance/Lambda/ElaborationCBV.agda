@@ -32,6 +32,7 @@ open import Data.Product
 open import Data.Maybe hiding (_>>=_)
 open import Data.Sum
 open import Data.Unit
+open import Data.Bool
 open import Data.Empty
 
 open import Data.List.Relation.Unary.Any
@@ -88,12 +89,13 @@ LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
   ∎
   where
     open ≡-Reasoning
-    elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α 
+    elab = (□⟨ Elaboration.elab LambdaElabCBV ⟩ i) .α
+
+instance refl-inst : ε ≲ ε
+refl-inst = ≲-refl 
 
 CBVCorrect : {T : ExtensibleTheory ε} → □-Correctᴴ LambdaTheory T LambdaElabCBV 
-
- 
-CBVCorrect {T = T} e′ (here refl) {γ = f , m} =
+CBVCorrect {T = T} e′ (false , refl) {γ = f , m} =
   begin
     ℰ⟦ (abs f >>= λ f′ → app f′ m) ⟧
   ≈⟪ ≡-to-≈ (elab-∘′ (abs f) λ f′ → app f′ m) ⟫
@@ -112,19 +114,19 @@ CBVCorrect {T = T} e′ (here refl) {γ = f , m} =
   where
     open ≈-Reasoning (□⟨ T .theory ⟩ _)
     open Elaboration e′
-    
-CBVCorrect {T = T} e′ (there (here refl)) {γ = f} =
+CBVCorrect {T = T} e′ (true  , refl) {γ = f} =
   begin
     ℰ⟦ pure f ⟧
   ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality $ sym ∘ >>=-idʳ ∘ f)) ⟫
     ℰ⟦ pure (λ x → f x >>= pure) ⟧ 
   ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure (λ x → ○ x >>= (f >=> pure)) ⟧) (extensionality λ x → sym $ use-elab-def _)) ⟫
-    ℰ⟦ pure (λ x → ℰ⟦ var x ⟧ >>= (f >=> pure)) ⟧ 
-  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality λ x → sym $ use-elab-def _))  ⟫ 
-    ℰ⟦ pure (λ x → ℰ⟦ app f (var x) ⟧) ⟧ 
-  ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫ 
+    ℰ⟦ pure (λ x → ℰ⟦ var x ⟧ >>= (f >=> pure)) ⟧
+  ≈⟪ ≡-to-≈ (cong (λ ○ → ℰ⟦ pure ○ ⟧) (extensionality λ x → sym $ use-elab-def _))  ⟫
+    ℰ⟦ pure (λ x → ℰ⟦ app f (var x) ⟧) ⟧
+  ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
   where
     open ≈-Reasoning (□⟨ T .theory ⟩ _)
     open Elaboration e′
+

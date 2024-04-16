@@ -46,6 +46,7 @@ S = λ x y z → x z (y z)
 record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
   field
     elab : □ (S (Algebra ∘ η) Free)  ε
+    
 
   elaborate : ∀[ Hefty (η ε) ⇒ Free ε ]
   elaborate = fold-hefty pure (□⟨ elab ⟩ ≲-refl)   
@@ -165,58 +166,43 @@ record Elaboration (η : Effectᴴ) (ε : Effect) : Set₁ where
 open Elaboration
 
 --Sub-elaborations
-record _⊑_ (e₁ : Elaboration η₁ ε) (e₂ : Elaboration η₂ ε) : Set₁ where
+record _⊑_ (e₁ : Elaboration η₁ ε₁) (e₂ : Elaboration η₂ ε₂) : Set₁ where
   field
-    ⦃ ≲-eff ⦄        : η₁ ≲ η₂
+    ⦃ ≲-eff  ⦄        : ε₁ ≲ ε₂
+    ⦃ ≲-effᴴ ⦄        : η₁ ≲ η₂
     preserves-cases :
-      ∀ {ε′ M}
-      → (i : ε ≲ ε′)
-      → (m : ⟦ η₁ ε′ ⟧ M A)
-      → (e′ : ∀[ M ⇒ Free ε′ ])
+      ∀ {M}
+      → (m : ⟦ η₁ ε₂ ⟧ M A)
+      → (e′ : ∀[ M ⇒ Free ε₂ ])
         ---------------------------------------------
-      →   (□⟨ e₁ .elab ⟩ i) .α (sig-hmap e′ m)
-        ≡ (□⟨ e₂ .elab ⟩ i) .α (sig-hmap e′ (injᴴ m))  
+      →   (□⟨ e₁ .elab ⟩ ≲-eff ) .α (sig-hmap e′ m)
+        ≡ (□⟨ e₂ .elab ⟩ ≲-refl) .α (sig-hmap e′ (injᴴ m))
 
 open _⊑_ public 
 
+
 ⊑-refl : {e : Elaboration η ε} → e ⊑ e
-≲-eff           ⊑-refl = ≲ᴴ-refl
-preserves-cases ⊑-refl = λ i₁ m e′ → refl
+≲-eff           ⊑-refl         = ≲-refl 
+≲-effᴴ          ⊑-refl         = ≲ᴴ-refl
+preserves-cases ⊑-refl m e′    = refl
 
-⊑-trans :
-    {e₁ : Elaboration η₁ ε}
-  → {e₂ : Elaboration η₂ ε}
-  → {e₃ : Elaboration η₃ ε}
-  → e₁ ⊑ e₂ → e₂ ⊑ e₃
-    -----------------
-  → e₁ ⊑ e₃  
-≲-eff           (⊑-trans ζ₁ ζ₂) = ≲ᴴ-trans (ζ₁ .≲-eff) (ζ₂ .≲-eff)
-preserves-cases (⊑-trans ζ₁ ζ₂) i₁ m e′ rewrite
-    ζ₁ .preserves-cases i₁ m e′
-  | ζ₂ .preserves-cases i₁ (injᴴ m) e′ = refl 
-
-
-module _ {e₁ : Elaboration η₁ ε} {e₂ : Elaboration η₂ ε} where 
+module _ {e₁ : Elaboration η₁ ε₁} {e₂ : Elaboration η₂ ε₂} where 
 
   use-elab-def : 
-    ∀ ⦃ i : ε ≲ ε′ ⦄
-    → ⦃ ζ : e₁ ⊑ e₂ ⦄
-    → (m : ⟦ η₁ ε′ ⟧ (Hefty (η₂ ε′)) A)
+    ∀  ⦃ ζ : e₁ ⊑ e₂ ⦄
+    → (m : ⟦ η₁ ε₂ ⟧ (Hefty (η₂ ε₂)) A)
       ---------------------------------------------------
-    →   elaborate′ e₂ (impure (injᴴ m))
-      ≡ (□⟨ e₁ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) m)
-  use-elab-def ⦃ i ⦄ ⦃ ζ ⦄ m =
+    →   elaborate e₂ (impure (injᴴ m))
+      ≡ (□⟨ e₁ .elab ⟩ ζ .≲-eff) .α (sig-hmap (elaborate e₂) m)
+  use-elab-def ⦃ ζ ⦄ m =
     begin
-      elaborate′ e₂ (impure (injᴴ m))
-    ≡⟨⟩
-      (□⟨ e₂ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) (injᴴ m)) 
-    ≡⟨ sym $ preserves-cases ζ i m (elaborate′ e₂) ⟩ 
-      (□⟨ e₁ .elab ⟩ i) .α (sig-hmap (elaborate′ e₂) m)
+      elaborate e₂ (impure (injᴴ m))
+    ≡⟨ (sym $ ζ .preserves-cases m (elaborate e₂)) ⟩
+      (□⟨ e₁ .elab ⟩ ζ .≲-eff) .α (sig-hmap (elaborate e₂) m)
     ∎
-
     where
       open ≡-Reasoning
-      
+
 open □
 open _✴_
 
@@ -233,6 +219,16 @@ _⟪⊕⟫_ : ∀[ Elaboration η₁ ⇒ Elaboration η₂ ⇒ Elaboration (η�
 (e₁ ⟪⊕⟫ e₂) .commutes ⟪ inj₂ c , k , s ⟫ = e₂ .commutes ⟪ c , k , s ⟫
 (e₁ ⟪⊕⟫ e₂) .coherent {c = inj₁ x}       = e₁ .coherent
 (e₁ ⟪⊕⟫ e₂) .coherent {c = inj₂ y}       = e₂ .coherent
+
+⊑-⟪⊕⟫-left : ∀ {e₁ : Elaboration η₁ ε} → {e₂ : Elaboration η₂ ε} → e₁ ⊑ (e₁ ⟪⊕⟫ e₂)
+≲-eff           ⊑-⟪⊕⟫-left        = ≲-refl  
+≲-effᴴ          ⊑-⟪⊕⟫-left        = ·⊑-⊕-left
+preserves-cases ⊑-⟪⊕⟫-left _ _  = refl 
+
+⊑-⟪⊕⟫-right : ∀ {e₁ : Elaboration η₁ ε} → {e₂ : Elaboration η₂ ε} → e₂ ⊑ (e₁ ⟪⊕⟫ e₂)
+≲-eff           ⊑-⟪⊕⟫-right        = ≲-refl  
+≲-effᴴ          ⊑-⟪⊕⟫-right        = ·⊑-⊕-right
+preserves-cases ⊑-⟪⊕⟫-right _ _      = refl
 
 -- "Heterogeneous" composition of elaborations. Combines two elaborations that
 -- assume a *different* lower bound on the algebraic effects that they elaborate

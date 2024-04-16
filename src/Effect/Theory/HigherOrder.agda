@@ -29,6 +29,7 @@ open import Data.Vec hiding (map ; _++_ ; [_])
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Nat
+open import Data.List using (map)
 
 open import Relation.Unary hiding (_∈_ ; _⊆_)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; sym ; trans ; cong ; cong₂)
@@ -81,7 +82,8 @@ open Theoryᴴ public
 
 record ExtensibleTheoryᴴ (η : Effectᴴ)  : Set₁ where
   field
-    theoryᴴ : □ Theoryᴴ η 
+    arity : Set 
+    eqs   : arity → □ Equationᴴ η
 
 open ExtensibleTheoryᴴ public 
 
@@ -90,6 +92,9 @@ variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ η
 -- A predicate asserting that a given equation is part of a theory
 _◃ᴴ_ : Equationᴴ η → Theoryᴴ η → Set₁
 eq ◃ᴴ Th = eq ∈ Th .equationsᴴ
+
+_◂ᴴ_ : □ Equationᴴ η → ExtensibleTheoryᴴ η → Set₁
+eq ◂ᴴ Th = ∃ λ a → eq ≡ Th .eqs a 
 
 
 -- Theory inclusion for higher-order theories
@@ -100,15 +105,16 @@ wk-theoryᴴ : η₁ ≲ η₂ → Theoryᴴ η₁ → Theoryᴴ η₂
 wk-theoryᴴ i Th = ∥ map (wk-equationᴴ ⦃ i ⦄) (Th .equationsᴴ) ∥ᴴ
 
 wk-ext-theoryᴴ : η₁ ≲ η₂ → ExtensibleTheoryᴴ η₁ → ExtensibleTheoryᴴ η₂
-theoryᴴ (wk-ext-theoryᴴ i Th) = necessary λ i′ → □⟨ Th .theoryᴴ ⟩ ≲ᴴ-trans i i′
+arity (wk-ext-theoryᴴ i Th) = Th .arity
+eqs   (wk-ext-theoryᴴ i Th) = λ a → necessary λ i′ → □⟨ Th .eqs a ⟩ ≲ᴴ-trans i i′
 
 -- Coproduct of higher-order effect theories
 _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
 (Th₁ ⟨+⟩ᴴ Th₂) .equationsᴴ = Th₁ .equationsᴴ ++ Th₂ .equationsᴴ
 
 _⟨⊎⟩ᴴ_ : ∀[ ExtensibleTheoryᴴ ⇒ ExtensibleTheoryᴴ ⇒ ExtensibleTheoryᴴ ]
-theoryᴴ (Th₁ ⟨⊎⟩ᴴ Th₂) = necessary λ i →
-  (□⟨ Th₁ .theoryᴴ ⟩ i) ⟨+⟩ᴴ (□⟨ Th₂ .theoryᴴ ⟩ i)
+arity (Th₁ ⟨⊎⟩ᴴ Th₂) = Th₁ .arity ⊎ Th₂ .arity
+eqs   (Th₁ ⟨⊎⟩ᴴ Th₂) = [ Th₁ .eqs , Th₂ .eqs ]
 
 _[+]ᴴ_ : Theoryᴴ η₁ → Theoryᴴ η₂ → Theoryᴴ (η₁ ·⊕ η₂)
 Th₁ [+]ᴴ Th₂ = wk-theoryᴴ ·⊑-⊕-left Th₁ ⟨+⟩ᴴ wk-theoryᴴ ·⊑-⊕-right Th₂
@@ -179,11 +185,13 @@ Correctᴴ {ε = ε} Th T e =
 
 □-Correctᴴ : ExtensibleTheoryᴴ η → ExtensibleTheory ε → Elaboration η ε → Set₁
 □-Correctᴴ {η = η} {ε} Th T e =
-  ∀ {η′}
-  → (e′ : Elaboration η′ ε)
+  ∀ {ε′ η′}
+  → (e′ : Elaboration η′ ε′)
   → ⦃ ζ : e ⊑ e′ ⦄
-    -----------------------------------------
-  → Correctᴴ (□⟨ Th .theoryᴴ ⟩ ζ .≲-eff) T e′
+  → {eq : □ Equationᴴ η}
+  → eq ◂ᴴ Th
+    ---------------------------------------------------------
+  → Respectsᴴ (_≈[ T ]_) (□⟨ e′ .elab ⟩ ≲-refl) (□⟨ eq ⟩ ζ .≲-effᴴ)
 
 -- Equations that occur in a composed theory can be found in either of the
 -- argument theories
@@ -200,6 +208,7 @@ Correctᴴ {ε = ε} Th T e =
               [ inj₁ ∘ there
               , inj₂
               ] $ [+]ᴴ-injective (λ where .equationsᴴ → eqs) Th₂ px′
+
 
 -- Equations of a weakened theory are themselves weakened equations 
 ◃ᴴ-weaken-lemma : ∀ Th (i : η₁ ≲ η₂)
@@ -246,7 +255,6 @@ map-id (impure ⟪ c , r , s ⟫) =
     ( extensionality λ x → ⟨⊕⟩-fold-right $ r x )
     ( extensionality λ x → ⟨⊕⟩-fold-right $ s x )
     
-
 
  -- "Homogeneous" composition of correctness proofs for h.o. effect theories.
  --
@@ -295,6 +303,32 @@ map-id (impure ⟪ c , r , s ⟫) =
   ∎
   where open ≈-Reasoning _  
 
+
+-- The same lemma, now for extensible theories
+[⊎]ᴴ-correct :
+  ∀ {e₁ e₂}
+  → {Th₁ : ExtensibleTheoryᴴ η₁}
+  → {Th₂ : ExtensibleTheoryᴴ η₂}
+  → (T : ExtensibleTheory ε)
+  → □-Correctᴴ Th₁ T e₁
+  → □-Correctᴴ Th₂ T e₂
+    -------------------------------------
+  → □-Correctᴴ (Th₁ [⊎]ᴴ Th₂) T (e₁ ⟪⊕⟫ e₂)
+[⊎]ᴴ-correct {e₁ = e₁} {e₂ = e₂} {Th₁ = Th₁} {Th₂ = Th₂} T C₁ C₂ e′ ⦃ ζ ⦄ {eq} (inj₁ a , refl) 
+  = C₁ e′ ⦃ ζ′ ⦄ (a , refl)
+  where
+    ζ′ : e₁ ⊑ e′
+    ≲-eff           ζ′          = ζ .≲-eff
+    ≲-effᴴ          ζ′          = ≲ᴴ-trans ·⊑-⊕-left $ ζ .≲-effᴴ
+    preserves-cases ζ′ m e′′    = ζ .preserves-cases (injᴴ ⦃ ⊑-⊕-left ⦄ m) e′′
+[⊎]ᴴ-correct {e₁ = e₁} {e₂ = e₂} {Th₁ = Th₁} {Th₂ = Th₂} T C₁ C₂ e′ ⦃ ζ ⦄ {eq} (inj₂ a , refl) 
+  = C₂ e′ ⦃ ζ′  ⦄ (a , refl)
+  where
+    ζ′ : e₂ ⊑ e′
+    ≲-eff           ζ′          = ζ .≲-eff
+    ≲-effᴴ          ζ′          = ≲ᴴ-trans ·⊑-⊕-right $ ζ .≲-effᴴ
+    preserves-cases ζ′ m e′′    = ζ .preserves-cases  (injᴴ ⦃ ⊑-⊕-right ⦄ m) e′′
+
 weaken-correct :
   ∀ {T : ExtensibleTheory ε} e (Th : Theoryᴴ η) (T′ : ExtensibleTheory ε′)
   → (sub : T ≪ T′)
@@ -303,6 +337,18 @@ weaken-correct :
   → Correctᴴ Th T′ (weaken (sub .inc) e)
 weaken-correct e Th T′ sub₁ C px ⦃ i′ ⦄
   = ≈-weaken sub₁ ⦃ i′ ⦄ _ _ (C px ⦃ ≲-trans (sub₁ .inc) i′ ⦄)
+
+weaken-ext-correct :
+  ∀ {T : ExtensibleTheory ε} e (Th : ExtensibleTheoryᴴ η) (T′ : ExtensibleTheory ε′)
+  → (sub : T ≪ T′)
+  → □-Correctᴴ Th T e
+    --------------------------------------
+  → □-Correctᴴ Th T′ (weaken (sub .inc) e)
+weaken-ext-correct e Th T′ sub C e′ ⦃ ζ ⦄ px = ≈-weaken sub _ _ (C e′ ⦃ ζ′ ⦄ px) 
+  where ζ′ : e ⊑ e′
+        ≲-eff ζ′ = ≲-trans (sub .inc) (ζ .≲-eff)
+        ≲-effᴴ ζ′ = ζ .≲-effᴴ
+        preserves-cases ζ′ m e′′ = (ζ .preserves-cases m e′′)
 
 compose-elab-correct :
   ∀ (e₁ : Elaboration η₁ ε₁)
@@ -325,3 +371,20 @@ compose-elab-correct e₁ e₂ T₁ T₂ Th₁ Th₂ C₁ C₂ σ =
     (weaken-correct e₁ Th₁ (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)) (≪-compose-left T₁ T₂ σ) C₁)
     (weaken-correct e₂ Th₂ (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)) (≪-compose-right T₁ T₂ σ) C₂)
 
+compose-ext-elab-correct :
+  ∀ (e₁ : Elaboration η₁ ε₁)
+  → (e₂ : Elaboration η₂ ε₂)
+  → (T₁ : ExtensibleTheory ε₁)
+  → (T₂ : ExtensibleTheory ε₂) 
+  → (Th₁ : ExtensibleTheoryᴴ η₁)
+  → (Th₂ : ExtensibleTheoryᴴ η₂) 
+  → □-Correctᴴ Th₁ T₁ e₁
+  → □-Correctᴴ Th₂ T₂ e₂
+  → (σ : ε₁ ∙ ε₂ ≈ ε)
+    -----------------------------------------------------------------------------------------
+  → □-Correctᴴ (Th₁ [⊎]ᴴ Th₂) (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)) (compose-elab (e₁ ✴⟨ σ ⟩ e₂))
+compose-ext-elab-correct e₁ e₂ T₁ T₂ Th₁ Th₂ C₁ C₂ σ =
+  [⊎]ᴴ-correct
+    (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂))
+     (weaken-ext-correct e₁ Th₁ (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)) (≪-compose-left T₁ T₂ σ) C₁)
+     (weaken-ext-correct e₂ Th₂ (compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)) (≪-compose-right T₁ T₂ σ) C₂) 
