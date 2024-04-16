@@ -2,10 +2,13 @@
 
 open import Core.Functor
 open import Core.Signature
-
+open import Core.Ternary
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
+
+open import Effect.Relation.Ternary.HigherOrderSeparation
+open import Effect.Relation.Binary.HigherOrderInclusion
 
 open import Data.Empty
 open import Data.Unit
@@ -32,10 +35,10 @@ Catch _ = record
   ; returns  = λ where {(`catch A)} → [ (λ where tt → A) , (λ where tt → A) ]
   }
 
-throw : ⦃ Catch ≲ η ⦄ → Hefty η A
+throw : ⦃ Catch ≲ η ⦄ → Hefty (η ε) A
 throw = ♯ᴴ (impure ⟪ `throw , (λ()) , (λ()) ⟫)
 
-catch : ⦃ Catch ≲ η ⦄ → Hefty η A → Hefty η A → Hefty η A 
+catch : ⦃ Catch ≲ η ⦄ → Hefty (η ε) A → Hefty (η ε) A → Hefty (η ε) A 
 catch m₁ m₂ = impure (injᴴ ⟪ `catch _ , pure , [ const m₁ , const m₂ ] ⟫)
 
-    
+   

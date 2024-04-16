@@ -1,8 +1,10 @@
-{-# OPTIONS --without-K #-} 
+{-# OPTIONS --without-K --type-in-type #-} 
 
 open import Core.Functor
 open import Core.Functor.Monad
 open import Core.Signature
+open import Core.Ternary
+open import Core.Logic
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
@@ -11,75 +13,54 @@ open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
 open import Effect.Instance.Catch.Syntax
 
+open import Effect.Relation.Ternary.HigherOrderSeparation
+open import Effect.Relation.Binary.HigherOrderInclusion
+
 open import Data.Vec
 open import Data.List
 open import Data.Unit
 open import Data.Product
+open import Data.Fin
 
 open import Relation.Unary
 
 module Effect.Instance.Catch.Theory  where
 
--- This lets us use smart constructors when writing equations
-instance ⊑-refl-inst : Catch ε ⊑ Catch ε
-⊑-refl-inst = ⊑-refl 
+module _ {η : Effectᴴ} ⦃ i : Catch ≲ η ⦄ where
+  
+  bind-throw : Equationᴴ η
+  Δ′   bind-throw               = 2
+  Γ′   bind-throw ε (A , B , _) = A → Hefty (η ε) B
+  R′   bind-throw ε (A , B , _) = B
+  lhsᴴ bind-throw _ k           = throw >>= k
+  rhsᴴ bind-throw _ _           = throw
 
-bind-throw : Equationᴴ Catch
-bind-throw = left ≗ᴴ right
+  catch-return : Equationᴴ η
+  Δ′   catch-return           = 1
+  Γ′   catch-return ε (A , _) = Hefty (η ε) A × A
+  R′   catch-return ε (A , _) = A
+  lhsᴴ catch-return _ (m , x) = catch (return x) m
+  rhsᴴ catch-return _ (_ , x) = return x
 
-  where 
-    ctx ret  : Effect → TypeContext 2 → Set
-    ctx ε (A , B , _) = A → Hefty (Catch ε) B
-    ret ε (A , B , _) = B
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Catch ε) ]
+  catch-throw₁ : Equationᴴ η
+  Δ′   catch-throw₁           = 1
+  Γ′   catch-throw₁ ε (A , _) = Hefty (η ε) A
+  R′   catch-throw₁ ε (A , _) = A
+  lhsᴴ catch-throw₁ _ m       = catch throw m
+  rhsᴴ catch-throw₁ _ m       = m
 
-    left  _ k = throw >>= k 
-    right _ _ = throw 
+  catch-throw₂ : Equationᴴ η
+  Δ′   catch-throw₂ = 1
+  Γ′   catch-throw₂ ε (A , _) = Hefty (η ε) A
+  R′   catch-throw₂ ε (A , _) = A
+  lhsᴴ catch-throw₂ _ m = catch m throw
+  rhsᴴ catch-throw₂ _ m = m
 
-catch-return : Equationᴴ Catch
-catch-return = left ≗ᴴ right
-
-  where
-    ctx ret : Effect → TypeContext 1 → Set
-    ctx ε (A , _) = Hefty (Catch ε) A × A
-    ret ε (A , _) = A
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Catch ε) ]
-
-    left  _ (m , x) = catch (return x) m
-    right _ (_ , x) = return x 
-
-
-catch-throw₁ : Equationᴴ Catch 
-catch-throw₁ = left ≗ᴴ right 
-
-  where
-    ctx ret : Effect → TypeContext 1 → Set
-    ctx ε (A , _) = Hefty (Catch ε) A
-    ret ε (A , _) = A 
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Catch ε) ]
-
-    left  _ m = catch throw m 
-    right _ m = m 
+CatchTheory : ExtensibleTheoryᴴ Catch
+arity CatchTheory = Fin 4
+eqs CatchTheory zero                   = nec bind-throw
+eqs CatchTheory (suc zero)             = nec catch-return
+eqs CatchTheory (suc (suc zero))       = nec catch-throw₁
+eqs CatchTheory (suc (suc (suc zero))) = nec catch-throw₂
 
 
-catch-throw₂ : Equationᴴ Catch
-catch-throw₂ = left ≗ᴴ right
-
-  where
-    ctx ret : Effect → TypeContext 1 → Set
-    ctx ε (A , _) = Hefty (Catch ε) A
-    ret ε (A , _) = A
-    left right : {ε : Effect} → Π[ ctx ε ⇒ ret ε ⊢ Hefty (Catch ε) ]
-
-    left  _ m = catch m throw 
-    right _ m = m 
-
-
-CatchTheory : Theoryᴴ Catch
-CatchTheory =
-  ∥ bind-throw
-  ∷ catch-return
-  ∷ catch-throw₁
-  ∷ catch-throw₂
---  ∷ catch-catch
-  ∷ [] ∥ᴴ 

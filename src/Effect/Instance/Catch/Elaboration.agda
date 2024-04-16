@@ -1,8 +1,10 @@
-{-# OPTIONS --without-K #-} 
+{-# OPTIONS --without-K --type-in-type #-} 
 
 open import Core.Functor
 open import Core.Functor.Monad
 open import Core.Functor.NaturalTransformation
+open import Core.Ternary
+open import Core.Logic
 
 open import Core.Signature
 open import Core.Container
@@ -15,9 +17,11 @@ open import Effect.Syntax.Hefty
 
 open import Effect.Handle
 open import Effect.Elaborate
-open import Effect.Separation
-open import Effect.Inclusion
-open import Effect.Logic 
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder
@@ -36,6 +40,7 @@ open import Data.Maybe hiding (_>>=_)
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
+open import Data.Fin
 
 open import Data.List.Relation.Unary.Any
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
@@ -45,9 +50,8 @@ open import Relation.Unary hiding (Empty ; _⊆_)
 
 module Effect.Instance.Catch.Elaboration where
 
-open Connectives
-
 open Handler AbortHandler
+
 
 CatchElab : Elaboration Catch Abort
 CatchElab .Elaboration.elab = necessary λ i → CatchElabAlg ⦃ i ⦄
@@ -139,89 +143,85 @@ CatchElab .Elaboration.coherent {ε′ = ε′} {c = `catch t} {s = s} ⦃ i ⦄
     open ≡-Reasoning
     elab = (□⟨ Elaboration.elab CatchElab ⟩ i) .α
 
-CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
-CatchElabCorrect px {ε′ = ε′} T′ ζ {γ = k} = go px ζ 
+instance refl-inst : ε ≲ ε
+refl-inst = ≲-refl 
+
+CatchElabCorrect : □-Correctᴴ CatchTheory AbortTheory CatchElab
+CatchElabCorrect e′ ⦃ ζ ⦄ (zero , refl) {γ = k}  =
+  begin
+    ℰ⟦ throw >>= k ⟧
+  ≈⟪ ≡-to-≈ $ elab-∘′ throw k ⟫ 
+    ℰ⟦ throw ⟧ >>= ℰ⟪ k ⟫ 
+  ≈⟪ >>=-resp-≈ˡ ℰ⟪ k ⟫ (≡-to-≈ (use-elab-def _)) ⟫ 
+    abort >>= ℰ⟪ k ⟫
+  ≈⟪ ≈-eq′ bind-abort (here refl) ⟫
+    abort 
+  ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫ 
+    ℰ⟦ throw ⟧
+  ∎
   where
-    open ≈-Reasoning T′
-    open Elaboration CatchElab
-    instance inst : proj₁ (ζ .inc) ≲ ε′
-    inst = _ , (union-comm $ proj₂ (ζ .inc))
-    instance inst′ : _ ≲ _
-    inst′ = ζ .inc
+    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open Elaboration e′
+  
+CatchElabCorrect e′ ⦃ ζ ⦄ (suc zero , refl) {γ = m , x} = 
+  begin
+    ℰ⟦ catch (return x) m ⟧
+  ≈⟪ ≡-to-≈ (use-elab-def _) ⟫
+    ℋ⟦ return x ⟧ tt >>= (λ v → ℰ⟦ maybe′ return m v ⟧)
+  ≈⟪⟫
+    pure x >>= ((λ v → ℰ⟦ maybe′ return m (just v) ⟧)) 
+  ≈⟪⟫
+    ℰ⟦ maybe′ return m (just x) ⟧ 
+  ≈⟪⟫ 
+    ℰ⟦ return x ⟧
+  ∎
+  where
+    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open Elaboration e′
 
+CatchElabCorrect e′ ⦃ ζ ⦄ (suc (suc zero) , refl) {γ = m} =
 
-    go : ∀ {eq : Equationᴴ _}
-         → eq ◃ᴴ CatchTheory
-         → AbortTheory ≪ T′
-           --------------------------------------
-         → Respectsᴴ (_≈⟨ T′ ⟩_) (□⟨ elab ⟩ (ζ .inc)) eq
+  begin
+    ℰ⟦ catch throw m ⟧
+  ≈⟪ ≡-to-≈ (use-elab-def _) ⟫
+    ℋ⟦ ℰ⟦ throw ⟧ ⟧ tt >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
+  ≈⟪ >>=-resp-≈ˡ (maybe′ pure (ℰ⟦ m ⟧ >>= pure)) (≡-to-≈ $ cong (λ ○ → ℋ⟦ ○ ⟧ tt) (use-elab-def _)) ⟫
+    ℋ⟦ abort ⟧ tt >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
+  ≈⟪ >>=-resp-≈ˡ _ (≡-to-≈ ℋ-lemma) ⟫
+    pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
+  ≈⟪⟫ {- Definition of >>= and maybe′ -} 
+    ℰ⟦ m ⟧ >>= pure 
+  ≈⟪ ≡-to-≈ identity-fold-lemma ⟫   
+    ℰ⟦ m ⟧
+  ∎
+  where
+    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open Elaboration e′
 
-    -- bind-throw 
-    go (here refl) _ {γ = k} =
-    
-      begin
-        ℰ⟦ throw >>= k ⟧
-      ≈⟪⟫ {- Definition of >>= and throw -}
-        abort 
-      ≈⟪⟫ {- Definition of throw -} 
-        ℰ⟦ throw ⟧
-      ∎
-      
-    -- catch-return 
-    go (there (here refl)) sub {γ = m , x} =
-      begin
-        ℰ⟦ catch (return x) m ⟧
-      ≈⟪⟫ {- Definition of catch -} 
-         ℋ⟦ return x ⟧ tt >>= (λ v → ℰ⟦ maybe′ return m v ⟧)
-      ≈⟪⟫ {- Definition of abort handler -} 
-        pure x >>= (λ v → ℰ⟦ maybe′ return m (just v) ⟧)
-      ≈⟪⟫ {- Definition of >>= -} 
-        ℰ⟦ maybe′ return m (just x) ⟧
-      ≈⟪⟫ {- Definition of maybe′ -} 
-        ℰ⟦ return x ⟧
-      ∎
-
-    -- catch-throw-1 
-    go (there (there (here refl))) sub {δ = A , _} {γ = m} =
-      begin
-        ℰ⟦ catch throw m ⟧
-      ≈⟪⟫ {- definition of ℰ⟦-⟧ -} 
-        ℋ⟦ ℰ⟦ throw ⟧ ⟧ tt >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
-      ≈⟪⟫ {- -} 
-        ℋ⟦ abort ⟧ tt >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure) 
-      ≈⟪ >>=-resp-≈ˡ _ (≡-to-≈ ℋ-lemma) ⟫
-        pure nothing >>= maybe′ pure (ℰ⟦ m ⟧ >>= pure)
-      ≈⟪⟫ {- Definition of >>= and maybe′ -} 
-        ℰ⟦ m ⟧ >>= pure 
-      ≈⟪ ≡-to-≈ identity-fold-lemma ⟫ 
-        ℰ⟦ m ⟧
-      ∎
+    ℋ-lemma : ℋ⟦ abort ⟧ tt ≡ pure nothing 
+    ℋ-lemma =
+      ≡-begin
+        ℋ⟦ abort ⟧ tt
+      ≡⟨⟩
+        ♯ ⦃ Abort , union-comm (ζ .≲-eff .proj₂) ⦄ (handleAbort ((ζ .≲-eff .proj₂)) abort)
+      ≡⟨ cong (♯ ⦃ Abort , union-comm ((ζ .≲-eff .proj₂)) ⦄) (Properties.handle-abort-is-nothing ((ζ .≲-eff .proj₂))) ⟩ 
+        ♯ ⦃ Abort , union-comm ((ζ .≲-eff .proj₂)) ⦄ (pure nothing) 
+      ≡⟨⟩
+        pure nothing
+      QED
       where
         open ≡-Reasoning renaming (begin_ to ≡-begin_ ; _∎ to _QED) 
 
-        ℋ-lemma : ℋ⟦ abort ⟧ tt ≡ pure nothing 
-        ℋ-lemma =
-          ≡-begin
-            ℋ⟦ abort ⟧ tt
-          ≡⟨⟩
-            ♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄ (handleAbort (ζ .inc .proj₂) abort)
-          ≡⟨ cong (♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄) (Properties.handle-abort-is-nothing (ζ .inc .proj₂)) ⟩ 
-            ♯ ⦃ Abort , union-comm (ζ .inc .proj₂) ⦄ (pure nothing) 
-          ≡⟨⟩
-            pure nothing
-          QED
-
-    {- catch-throw-2 -}
-    go (there (there (there (here refl)))) sub {γ = m} =
-      begin
-        ℰ⟦ catch m throw ⟧
-      ≈⟪⟫ {- Definition of elabCatch -}  
-        ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure)
-      ≈⟪⟫
-        ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (abort >>= pure)  
-      ≈⟪ ≡-to-≈ $ Properties.catch-throw-lemma ℰ⟦ m ⟧ ⟫ 
-        ℰ⟦ m ⟧
-      ∎
-      where
-
-        open Union (ζ .inc .proj₂)
+CatchElabCorrect e′ ⦃ ζ ⦄ (suc (suc (suc zero)) , refl) {γ = m} = 
+  begin
+    ℰ⟦ catch m throw ⟧
+  ≈⟪ ≡-to-≈ (use-elab-def _) ⟫ {- Definition of elabCatch -}  
+    ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (ℰ⟦ throw ⟧ >>= pure)
+  ≈⟪ >>=-resp-≈ʳ (ℋ⟦ ℰ⟦ m ⟧ ⟧ tt) (λ x → ≡-to-≈ (cong (λ ○ → maybe′ pure (○ >>= pure) x) (use-elab-def _))) ⟫
+    ℋ⟦ ℰ⟦ m ⟧ ⟧ tt >>= maybe′ pure (abort >>= pure)  
+  ≈⟪ ≡-to-≈ $ Properties.catch-throw-lemma ℰ⟦ m ⟧ ⟫ 
+    ℰ⟦ m ⟧
+  ∎
+  where
+    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open Elaboration e′
