@@ -17,6 +17,7 @@ open import Data.Product
 open import Data.List
 open import Data.Sum
 open import Data.List.Relation.Unary.All
+open import Data.Unit
 
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; sym ; trans ; cong)
 open import Relation.Unary
@@ -37,7 +38,8 @@ module _ {ε : Effect} ⦃ _ : Abort ≲ ε ⦄ where
   rhs bind-abort _ k         = abort
 
  
-AbortTheory : ExtensibleTheory Abort
-theory AbortTheory = nec ∥ bind-abort ∷ [] ∥
+AbortTheory : Theory Abort
+arity AbortTheory    = ⊤
+eqs   AbortTheory tt = nec bind-abort  
 respects-⇔≲ (lawful AbortTheory) i₁ i₂ eq = {!!}
 

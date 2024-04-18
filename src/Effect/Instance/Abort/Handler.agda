@@ -106,8 +106,8 @@ module Properties where
   modular : Modular
   modular = handle-modular 
  
-  correct : □-Correct AbortTheory AbortHandler 
-  correct (here refl) = refl
+  correct : Correct AbortTheory AbortHandler 
+  correct (tt , refl) = refl
 
   handle-abort-is-nothing : (σ : Abort ∙ ε ≈ ε′) → handleAbort {A = A} σ (abort ⦃ _ , σ ⦄) ≡ pure nothing
   handle-abort-is-nothing {ε} σ =

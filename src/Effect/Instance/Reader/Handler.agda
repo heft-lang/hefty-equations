@@ -6,16 +6,19 @@ open import Core.Functor.NaturalTransformation
 
 open import Core.Container
 open import Core.Extensionality
+open import Core.Ternary
+open import Core.Logic
 
 open import Data.Product
 open import Data.Sum
+open import Data.Fin
 
 open import Effect.Base
 open import Effect.Handle
-open import Effect.Separation
-open import Effect.Inclusion
-open import Effect.Logic
 open import Effect.Syntax.Free 
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
 
 open import Function
 
@@ -31,8 +34,6 @@ module Effect.Instance.Reader.Handler (R : Set) where
 
 open import Effect.Instance.Reader.Syntax R
 open import Effect.Instance.Reader.Theory R
-
-open Connectives hiding (_⟨_⟩_)
 
 module _ where 
 
@@ -65,9 +66,7 @@ module _ where
   ReaderHandler : Handler Reader R id
   Handler.F-functor ReaderHandler = id-functor
   Handler.M-monad   ReaderHandler = readerT-monad 
-
-  Handler.hdl ReaderHandler .αᶜ ⟨ `ask , k ⟩ r = k r r
-
+  Handler.hdl ReaderHandler .αᶜ ⟨ `ask , k ⟩ = λ r → k r r 
   Handler.M-apply     ReaderHandler                = refl
   Handler.hdl-commute ReaderHandler f ⟨ `ask , k ⟩ = refl
   
@@ -80,12 +79,12 @@ module Properties where
 
   modular : Modular ReaderHandler
   modular = handle-modular ReaderHandler
-  
+
   correct : Correct ReaderTheory ReaderHandler
-  correct (here refl)                                                              = refl
-  correct (there (here refl))                                                      = refl 
-  correct (there (there (here refl))) {δ = δ} {γ = pure x , k} {k′}                = refl
-  correct (there (there (here refl))) {δ = δ} {γ = impure ⟨ `ask , k′′ ⟩ , k} {k′} = extensionality $ λ r → 
+  correct (zero , refl)           = refl
+  correct (suc zero , refl)       = refl
+  correct (suc (suc zero) , refl) {δ = δ} {γ = pure x , k} {k′}                = refl
+  correct (suc (suc zero) , refl) {δ = δ} {γ = impure ⟨ `ask , k′′ ⟩ , k} {k′} = extensionality $ λ r → 
     begin
       handle' (impure ⟨ `ask , k′′ ⟩ >>= (λ x → ask >>= λ r → k x r)) r
     ≡⟨⟩
