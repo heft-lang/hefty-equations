@@ -11,7 +11,7 @@ open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
 open import Data.Unit
 
-open import Data.List
+open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties
 open import Data.List.Relation.Unary.Any hiding (map)
@@ -19,12 +19,12 @@ open import Data.List.Relation.Unary.All renaming (map to map-all ; lookup to lo
 open import Data.List.Relation.Unary.All.Properties using (++⁺)
 
 open import Data.Nat
-open import Data.Vec hiding (map ; _++_)
+open import Data.Vec hiding (map ; _++_ ; [_])
 open import Data.Maybe using (Maybe ; just ; nothing ; maybe′)
 
 open import Relation.Unary hiding (_∈_ ; _⊆_ ; _⟨⊎⟩_)
 open import Relation.Binary using (Preorder)
-open import Relation.Binary.PropositionalEquality hiding (_≗_)
+open import Relation.Binary.PropositionalEquality hiding (_≗_ ; [_])
 open import Data.Empty
 
 open import Core.Functor
@@ -109,85 +109,77 @@ open Respects-⇔≲
 --
 -- 
 record Theory (ε : Effect) : Set₁ where
-  no-eta-equality
-  constructor ∥_∥
   field
-    equations : List $ Equation ε
+    arity  : Set 
+    eqs    : arity → □ Equation ε
+    lawful : ∀[ eqs ⊢ Respects-⇔≲ ]
 
 open Theory public
 
-record ExtensibleTheory (ε : Effect) : Set₁ where
-  field
-    theory : □ Theory ε
-    lawful : Respects-⇔≲ theory   
+instance ext-theory-monotone : Monotone Theory
+arity  (ext-theory-monotone .weaken i T)                       = T .arity
+eqs    (ext-theory-monotone .weaken i T)                       = λ a → necessary λ i′ → □⟨ T .eqs a ⟩ ≲-trans i i′
+lawful (ext-theory-monotone .weaken i T) .respects-⇔≲ i₁ i₂ eq = T .lawful .respects-⇔≲ _ _ (⇔≲-trans-congᵣ i i₁ i₂ eq)
 
-open ExtensibleTheory public
-
-instance ext-theory-monotone : Monotone ExtensibleTheory
-theory (ext-theory-monotone .weaken i T) = necessary (λ i′ → □⟨ T .theory ⟩ ≲-trans i i′)
-respects-⇔≲ (lawful (ext-theory-monotone .weaken i T)) i₁ i₂ x = T .lawful .respects-⇔≲ _ _ $ ⇔≲-trans-congᵣ i i₁ i₂ x
-
-infix 2 _◃_
+infix 2 _◂_
 -- A predicate asserting that a given equation is part of a theory
-_◃_ : Equation ε → Theory ε → Set₁
-eq ◃ T = eq ∈ T .equations
-
--- Theory inclusion
-_⊆_ : Theory ε → Theory ε → Set₁
-T₁ ⊆ T₂ = ∀ {eq} → eq ◃ T₁ → eq ◃ T₂ 
-
--- Effect theories are monotone predicates over effects 
-instance theory-monotone : Monotone Theory
-theory-monotone .weaken i T =
-  ∥ (map (weaken i) $ T .equations)
-  --∣ weaken-all-lawful i (T .equations) (T .lawful)
-  ∥
-
-◃-weaken : {eq : Equation ε} → ∀ T → eq ◃ T → (i : ε ≲ ε′) → weaken i eq ◃ weaken i T
-◃-weaken T px i with T .equations 
-◃-weaken T (here refl) _ | _ ∷ _  = here refl
-◃-weaken T (there px)  i | _ ∷ xs = there (◃-weaken ∥ xs  ∥ px i)
-
+_◂_ : □ Equation ε → Theory ε → Set₁ 
+eq ◂ T = ∃ λ a → T .eqs a ≡ eq
 
 -- Heterogeneous theory inclusion
 module _ where
 
   -- Use a record to help type inference 
-  record _≪_ (T₁ : ExtensibleTheory ε₁) (T₂ : ExtensibleTheory ε₂) : Set₁ where
+  record _≪_ (T₁ : Theory ε₁) (T₂ : Theory ε₂) : Set₁ where
     field
-      ⦃ inc ⦄ : ε₁ ≲ ε₂
-      sub     : ∀ {ε′} {eq} → (i′ : ε₂ ≲ ε′) → eq ◃ □⟨ T₁ .theory ⟩ ≲-trans inc i′ → eq ◃ □⟨ T₂ .theory ⟩ i′
+      ⦃ ≲-eff ⦄ : ε₁ ≲ ε₂
+      sub     : ∀ {eq} 
+              → eq ◂ T₁
+              → necessary (λ i → □⟨ eq ⟩ ≲-trans ≲-eff i) ◂ T₂ 
 
   open _≪_ public 
+
 
   -- The following two lemmas witness that heterogeneous theory inclusion
   -- is a preorder
 
-  module _ {T : ExtensibleTheory ε} where
-  
-    ≪-refl : T ≪ T
-    inc ≪-refl      = ≲-refl
-    sub ≪-refl i′ x =
-      subst (λ ○ → _ ◃ ○)
-        (respects-⇔≲ (T .lawful) (≲-trans ≲-refl i′) i′ (⇔≲-identityˡ i′))
-        x
+  module _ {T : Theory ε} where
 
-  module _ {T₁ : ExtensibleTheory ε₁} {T₂ : ExtensibleTheory ε₂} {T₃ : ExtensibleTheory ε₃} where
+
+    ≪-refl : T ≪ T
+    ≲-eff ≪-refl = ≲-refl
+    sub ≪-refl (a , refl) = a , (
+      begin
+        T .eqs a
+      ≡⟨⟩
+        (necessary λ i → □⟨ T .eqs a ⟩ i) 
+      ≡⟨ cong (λ ○ → necessary λ {ε} → ○ ε) (pfext _ _ λ ε → pfext _ _ λ i → respects-⇔≲ (T .lawful) i _ (⇔≲-sym _ _ $ (⇔≲-identityˡ i))) ⟩
+        necessary (λ i′ → □⟨ T .eqs a ⟩ ≲-trans (≲-eff ≪-refl) i′)
+      ∎ ) 
+      where open ≡-Reasoning 
+
+  module _ {T₁ : Theory ε₁} {T₂ : Theory ε₂} {T₃ : Theory ε₃} where
 
     ≪-trans : T₁ ≪ T₂ → T₂ ≪ T₃ → T₁ ≪ T₃
-    inc (≪-trans sub₁ sub₂)      = ≲-trans (sub₁ .inc) (sub₂ .inc)
-    sub (≪-trans sub₁ sub₂) i′ x =
-      sub₂ .sub i′
-        ( sub₁ .sub (≲-trans (sub₂ .inc) i′)
-          ( subst
-            ( λ ○ → _ ◃ ○ )
-            ( respects-⇔≲
-                (T₁ .lawful)
-                (≲-trans (≲-trans (inc sub₁) (inc sub₂)) i′)
-                (≲-trans (inc sub₁) (≲-trans (sub₂ .inc) i′))
-                (⇔≲-assoc (sub₁ .inc) (sub₂ .inc) i′)
-            ) x ))
- 
+    ≲-eff (≪-trans sub₁ sub₂) = ≲-trans (sub₁ .≲-eff) (sub₂ .≲-eff)
+    sub   (≪-trans sub₁ sub₂) (a , refl) with sub₁ .sub (a , refl)
+    sub   (≪-trans sub₁ sub₂) (a  , refl)
+      | a′ , eq′ with sub₂ .sub (a′ , eq′)
+    ... | a′′ , eq′′ = a′′ , (
+      begin
+        T₃ .eqs a′′
+      ≡⟨⟩
+        necessary (λ i → □⟨ T₃ .eqs a′′ ⟩ i)
+      ≡⟨ eq′′ ⟩ 
+        (necessary λ i → □⟨ T₁ .eqs a ⟩ ≲-trans (sub₁ .≲-eff) (≲-trans (sub₂ .≲-eff) i))
+      ≡⟨ cong
+           (λ ○ → necessary λ {ε} → ○ ε)
+           (pfext _ _ λ ε → pfext _ _ λ i → respects-⇔≲ (T₁ .lawful) _ _ (⇔≲-sym _ _ $ ⇔≲-assoc (sub₁ .≲-eff) (sub₂ .≲-eff) i)) 
+        ⟩ 
+        necessary (λ i → □⟨ T₁ .eqs a ⟩ ≲-trans (≲-trans (sub₁ .≲-eff) (sub₂ .≲-eff)) i)
+      ∎ )
+      where open ≡-Reasoning 
+  
 -- eq-lawful :
 --   ∀ {ε}
 --   → {ctx ret : {Effect} → TypeContext Δ → Set}
@@ -235,41 +227,22 @@ open _⇔≲_
   → m i₁ >>= k i₁ ≡ m i₂ >>= k i₂
 >>=-resp-⇔≲ x m k px qx = cong₂ _>>=_ px (extensionality qx)
 
-
--- Coproduct of effect theories
-_⟨+⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
-(T₁ ⟨+⟩ T₂) .equations = T₁ .equations ++ T₂ .equations
-
 -- Coproduct of extensible theories
-_⟨⊎⟩_ : ∀[ ExtensibleTheory ⇒ ExtensibleTheory ⇒ ExtensibleTheory ]
-theory (T₁ ⟨⊎⟩ T₂) = necessary λ i → (□⟨ T₁ .theory ⟩ i) ⟨+⟩ (□⟨ T₂ .theory ⟩ i)
-respects-⇔≲ (lawful (T₁ ⟨⊎⟩ T₂)) i₁ i₂ x
-  rewrite T₁ .lawful .respects-⇔≲ i₁ i₂ x
-  | T₂ .lawful .respects-⇔≲ i₁ i₂ x = refl
+_⟨⊎⟩_ : ∀[ Theory ⇒ Theory ⇒ Theory ]
+arity  (T₁ ⟨⊎⟩ T₂)          = T₁ .arity ⊎ T₂ .arity
+eqs    (T₁ ⟨⊎⟩ T₂)          = [ T₁ .eqs , T₂ .eqs ]
+lawful (T₁ ⟨⊎⟩ T₂) {inj₁ _} = T₁ .lawful
+lawful (T₁ ⟨⊎⟩ T₂) {inj₂ _} = T₂ .lawful
 
--- Sum of effect theories
-_[+]_ : Theory ε₁ → Theory ε₂ → Theory (ε₁ ⊕ᶜ ε₂) 
-_[+]_ {ε₁} {ε₂} T₁ T₂ = weaken (≲-⊕ᶜ-left ε₂) T₁ ⟨+⟩ weaken (≲-⊕ᶜ-right ε₁) T₂
-
-◃-⟨+⟩-left : ∀ {eq : Equation ε} → (T₁ T₂ : Theory ε) → eq ◃ T₁ → eq ◃ (T₁ ⟨+⟩ T₂)
-◃-⟨+⟩-left T₁ T₂ px = ∈-++⁺ˡ px
-
-◃-⟨+⟩-right : ∀ {eq : Equation ε} → (T₁ T₂ : Theory ε) → eq ◃ T₂ → eq ◃ (T₁ ⟨+⟩ T₂)
-◃-⟨+⟩-right T₁ T₂ px = ∈-++⁺ʳ (T₁ .equations) px
-
--- "Heterogeneous" composition of effect theories" 
 compose-theory : ∀[ (Theory ✴ Theory) ⇒ Theory ]
-compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨+⟩ weaken (≲-∙-right σ) T₂
-
-compose-ext-theory : ∀[ (ExtensibleTheory ✴ ExtensibleTheory) ⇒ ExtensibleTheory ]
-compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨⊎⟩ weaken (≲-∙-right σ) T₂
+compose-theory (T₁ ✴⟨ σ ⟩ T₂) = weaken (≲-∙-left σ) T₁ ⟨⊎⟩ weaken (≲-∙-right σ) T₂
 
 variable T T₁ T₂ T₃ T′ : Theory ε
 
 -- The following data type defines syntactic equality of computations with
 -- effects `ε` with respect to a given effect theory `T` of `ε`.
 infix 2 _≈⟨_⟩_
-data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A) → Set₁ where
+data _≈⟨_⟩_ {ε ε′} ⦃ i : ε ≲ ε′ ⦄ : (c₁ : Free ε′ A) → Theory ε → (c₂ : Free ε′ A) → Set₁ where
 
   ≈-refl  : ----------
             c ≈⟨ T ⟩ c
@@ -283,53 +256,53 @@ data _≈⟨_⟩_ {ε} : (c₁ : Free ε A) → Theory ε → (c₂ : Free ε A)
             -----------------
           → c₁ ≈⟨ T ⟩ c₃
 
-  ≈-cong  : (s : ε .shape)
-          → (p₁ p₂ : ε .position s → Free ε A)
+  ≈-cong  : (s : ε′ .shape)
+          → (p₁ p₂ : ε′ .position s → Free ε′ A)
           → (∀ {x} → p₁ x ≈⟨ T ⟩ p₂ x)
             ------------------------------------------
           → impure ⟨ s , p₁ ⟩ ≈⟨ T ⟩ impure ⟨ s , p₂ ⟩   
 
-  ≈-eq    : (eq : Equation ε)
-          → (px : eq ◃ T)  
-          → (δ  : TypeContext (eq .Δ′))
-          → (γ  : eq .Γ′ δ)
-          → (k  : R′ eq δ → Free ε A) 
-            -------------------------------------------
-          → eq .lhs δ γ >>= k ≈⟨ T ⟩ eq .rhs δ γ >>= k
-          
-_≈[_]_ : ⦃ ε₁ ≲ ε₂ ⦄ → Free ε₂ A → ExtensibleTheory ε₁ → Free ε₂ A → Set₁
-_≈[_]_ ⦃ i ⦄ m₁ T m₂ = m₁ ≈⟨ □⟨ T .theory ⟩ i ⟩ m₂
+  ≈-eq    : (eq : □ Equation ε)
+          → (px : eq ◂ T)
+          → (δ  : TypeContext ((□⟨ eq ⟩ i) .Δ′))
+          → (γ  : (□⟨ eq ⟩ i) .Γ′ δ)
+          → (k  : (□⟨ eq ⟩ i) .R′ δ → Free ε′ A) 
+            -------------------------------------------------------------
+          → (□⟨ eq ⟩ i) .lhs δ γ >>= k ≈⟨ T ⟩ (□⟨ eq ⟩ i) .rhs δ γ >>= k
 
 ≈-weaken :
-  ∀ {T : ExtensibleTheory ε₁} {T′ : ExtensibleTheory ε₂}
+  ∀ {T : Theory ε₁} {T′ : Theory ε₂}
   → (i : T ≪ T′)
   → ⦃ i′ : ε₂ ≲ ε′ ⦄
   → (m₁ m₂ : Free ε′ A)
-  → _≈[_]_ ⦃ ≲-trans (i .inc) i′ ⦄ m₁ T  m₂
-    ---------------------------------------
-  → m₁ ≈[ T′ ] m₂
-≈-weaken i₁ m₁                   .m₁                  ≈-refl             = ≈-refl
-≈-weaken i₁ m₁                   m₂                   (≈-sym eq)         = ≈-sym (≈-weaken i₁ m₂ m₁ eq)
-≈-weaken i₁ m₁                   m₂                   (≈-trans eq₁ eq₂)  = ≈-trans (≈-weaken i₁ m₁ _ eq₁) (≈-weaken i₁ _ _ eq₂)
-≈-weaken i₁ .(impure ⟨ s , p₁ ⟩) .(impure ⟨ s , p₂ ⟩) (≈-cong s p₁ p₂ k) = ≈-cong s p₁ p₂ (≈-weaken i₁ _ _ k)
-≈-weaken i₁ .(eq .lhs δ γ >>= k) .(eq .rhs δ γ >>= k) (≈-eq eq px δ γ k) = ≈-eq eq (i₁ .sub _ px) δ γ k
+  → _≈⟨_⟩_ ⦃ ≲-trans (i .≲-eff) i′ ⦄ m₁ T m₂
+    ----------------------------------------
+  → m₁ ≈⟨ T′ ⟩ m₂
+≈-weaken i₁ m₁                   .m₁                  ≈-refl              = ≈-refl
+≈-weaken i₁ m₁                   m₂                   (≈-sym eq)          = ≈-sym (≈-weaken i₁ m₂ m₁ eq)
+≈-weaken i₁ m₁                   m₂                   (≈-trans eq₁ eq₂)   = ≈-trans (≈-weaken i₁ m₁ _ eq₁) (≈-weaken i₁ _ _ eq₂)
+≈-weaken i₁ .(impure ⟨ s , p₁ ⟩) .(impure ⟨ s , p₂ ⟩) (≈-cong s p₁ p₂ k)  = ≈-cong s p₁ p₂ (≈-weaken i₁ _ _ k)
+≈-weaken i₁ ._                   ._                   (≈-eq eq px₁ δ γ k) = ≈-eq (necessary λ i → □⟨ eq ⟩ ≲-trans _ i) (i₁ .sub px₁) δ γ k
 
--- Propositional equality of effect trees can (clearly) be reflected as a
--- syntactic equivalence
-≡-to-≈ : {c₁ c₂ : Free ε A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
-≡-to-≈ refl = ≈-refl
 
-{- Reflect the monad laws for Free as syntactic equivalences -}
+module _ {T : Theory ε} ⦃ _ : ε ≲ ε′ ⦄ where 
 
->>=-idˡ-≈ : ∀ (k : A → Free ε B) x → return x >>= k ≈⟨ T ⟩ k x
->>=-idˡ-≈ k x = ≡-to-≈ (>>=-idˡ x k) 
+  -- Propositional equality of effect trees can (clearly) be reflected as a
+  -- syntactic equivalence
+  ≡-to-≈ : {c₁ c₂ : Free ε′ A} → c₁ ≡ c₂ → c₁ ≈⟨ T ⟩ c₂
+  ≡-to-≈ refl = ≈-refl
 
->>=-idʳ-≈ : (m : Free ε A) → m >>= pure ≈⟨ T ⟩ m
->>=-idʳ-≈ m = ≡-to-≈ (>>=-idʳ m) 
+  {- Reflect the monad laws for Free as syntactic equivalences -}
 
->>=-assoc-≈ : ∀ {D : Set} (k₁ : A → Free ε B) (k₂ : B → Free ε D) (m : Free ε A)
-             → flip (free-monad Monad.∗) (flip (free-monad Monad.∗) m k₁) k₂ ≈⟨ T ⟩ m >>= (k₁ >=> k₂)
->>=-assoc-≈ k₁ k₂ m = ≡-to-≈ (>>=-assoc k₁ k₂ m)
+  >>=-idˡ-≈ : ∀ (k : A → Free ε′ B) x → return x >>= k ≈⟨ T ⟩ k x
+  >>=-idˡ-≈ k x = ≡-to-≈ (>>=-idˡ x k) 
+  
+  >>=-idʳ-≈ : (m : Free ε′ A) → m >>= pure ≈⟨ T ⟩ m
+  >>=-idʳ-≈ m = ≡-to-≈ (>>=-idʳ m) 
+  
+  >>=-assoc-≈ : ∀ {D : Set} (k₁ : A → Free ε′ B) (k₂ : B → Free ε′ D) (m : Free ε′ A)
+              → flip (free-monad Monad.∗) (flip (free-monad Monad.∗) m k₁) k₂ ≈⟨ T ⟩ m >>= (k₁ >=> k₂)
+  >>=-assoc-≈ k₁ k₂ m = ≡-to-≈ (>>=-assoc k₁ k₂ m)
 
 
 open Handler
@@ -343,33 +316,30 @@ open Handler
 -- Correctness of handlers: we say that a handler is correct with respect to a
 -- given theory `T` of the effect it handlers iff it's algebra respects all
 -- equations of `T`.
+
 Correct : {P : Set} → Theory ε → Handler ε P F → Set₁
-Correct T h =
-  ∀ {A ε′}
-  → {eq : Equation _}
-  → eq ◃ T
-    --------------------------------------
-  → Respects (h .hdl {A = A} {ε′ = ε′}) eq 
+Correct {ε = ε} T H =
+  ∀ {A ε′} {eq : □ Equation ε}
+  → eq ◂ T
+  → Respects (H .hdl {A = A} {ε′ = ε′}) (□⟨ eq ⟩ ≲-refl)
 
-□-Correct : {P : Set} → ExtensibleTheory ε → Handler ε P F → Set₁
-□-Correct T H = Correct (□⟨ T .theory ⟩ ≲-refl) H
 
-module ≈-Reasoning (T : Theory ε) where
+module ≈-Reasoning (T : Theory ε) ⦃ _ : ε ≲ ε′ ⦄ where
 
   infix 3 _≈_
-  _≈_ : Free ε A → Free ε A → Set₁
+  _≈_ : Free ε′ A → Free ε′ A → Set₁
   c₁ ≈ c₂ = c₁ ≈⟨ T ⟩ c₂
 
-  begin_ : {c₁ c₂ : Free ε A} → c₁ ≈ c₂ → c₁ ≈ c₂ 
+  begin_ : {c₁ c₂ : Free ε′ A} → c₁ ≈ c₂ → c₁ ≈ c₂ 
   begin eq = eq 
 
-  _∎ : (c : Free ε A) → c ≈ c
+  _∎ : (c : Free ε′ A) → c ≈ c
   c ∎ = ≈-refl
 
-  _≈⟪⟫_ : (c₁ : Free ε A) {c₂ : Free ε A} → c₁ ≈ c₂ → c₁ ≈ c₂  
+  _≈⟪⟫_ : (c₁ : Free ε′ A) {c₂ : Free ε′ A} → c₁ ≈ c₂ → c₁ ≈ c₂  
   c₁ ≈⟪⟫ eq = eq
 
-  _≈⟪_⟫_  : (c₁ {c₂ c₃} : Free ε A) → c₁ ≈ c₂ → c₂ ≈ c₃ → c₁ ≈ c₃
+  _≈⟪_⟫_  : (c₁ {c₂ c₃} : Free ε′ A) → c₁ ≈ c₂ → c₂ ≈ c₃ → c₁ ≈ c₃
   c₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
 
   infix 1 begin_
@@ -377,59 +347,61 @@ module ≈-Reasoning (T : Theory ε) where
   infix 3 _∎
 
 -- Equivalence following from equations of the theory, specialized to empty continuations
-≈-eq′ : (eq : Equation ε)
-      → eq ◃ T → {δ : TypeContext (eq .Δ′)}
-      → {γ : eq .Γ′ δ}
-        -------------------------------
-      → eq .lhs δ γ ≈⟨ T ⟩ eq .rhs δ γ
-      
-≈-eq′ eq px {δ} {γ} =
+≈-eq′ : (eq : □ Equation ε)
+      → eq ◂ T
+      → {ε′ : Effect} → ⦃ i : ε ≲ ε′ ⦄
+      → {δ : TypeContext ((□⟨ eq ⟩ i) .Δ′)}
+      → {γ : (□⟨ eq ⟩ i) .Γ′ δ}
+        ------------------------------------------------
+      → (□⟨ eq ⟩ i) .lhs δ γ ≈⟨ T ⟩ (□⟨ eq ⟩ i) .rhs δ γ
+≈-eq′ eq px {δ = δ} {γ = γ} =
   begin
-    eq .lhs δ γ
+    (□⟨ eq ⟩ _) .lhs δ γ
   ≈⟪ ≈-sym (>>=-idʳ-≈ _) ⟫
-    eq .lhs δ γ >>= pure
+    (□⟨ eq ⟩ _) .lhs δ γ >>= pure
   ≈⟪ ≈-eq eq px δ γ pure ⟫
-    eq .rhs δ γ >>= pure 
-  ≈⟪ >>=-idʳ-≈ _ ⟫
-    eq .rhs δ γ
-  ∎ 
-  where open ≈-Reasoning _
-
-
--- monadic bind respects syntactic equivalence of effect trees in the left position 
->>=-resp-≈ˡ : {m₁ m₂ : Free ε A} (k : A → Free ε B) → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
->>=-resp-≈ˡ k ≈-refl                      = ≈-refl
->>=-resp-≈ˡ k (≈-sym eq)                  = ≈-sym (>>=-resp-≈ˡ k eq)
->>=-resp-≈ˡ k (≈-trans eq₁ eq₂)           = ≈-trans (>>=-resp-≈ˡ k eq₁) (>>=-resp-≈ˡ k eq₂)
->>=-resp-≈ˡ k (≈-cong s p₁ p₂ x)          = ≈-cong s ((_>>= k) ∘ p₁) ((_>>= k) ∘ p₂) λ {v} → >>=-resp-≈ˡ k (x {v})
->>=-resp-≈ˡ k (≈-eq eq px δ γ k′)         =
-  begin
-    (eq .lhs δ γ >>= k′) >>= k
-  ≈⟪ >>=-assoc-≈ k′ k (eq .lhs δ γ) ⟫
-    eq .lhs δ γ >>= (k′ >=> k)
-  ≈⟪ ≈-eq eq px δ γ (k′ >=> k) ⟫
-    eq .rhs δ γ >>= (k′ >=> k)
-  ≈⟪ ≈-sym (>>=-assoc-≈ k′ k (eq .rhs δ γ)) ⟫
-    (eq .rhs δ γ >>= k′) >>= k 
+    (□⟨ eq ⟩ _) .rhs δ γ >>= pure 
+  ≈⟪ >>=-idʳ-≈ _ ⟫ 
+    (□⟨ eq ⟩ _) .rhs δ γ
   ∎
   where open ≈-Reasoning _
 
 
--- monadic bind respects syntactic equivalence of effect trees in the right position 
->>=-resp-≈ʳ : {k₁ k₂ : A → Free ε B} (m : Free ε A) → (∀ a → k₁ a ≈⟨ T ⟩ k₂ a) → m >>= k₁ ≈⟨ T ⟩ m >>= k₂ 
->>=-resp-≈ʳ (pure x) eq = eq _
->>=-resp-≈ʳ {k₁ = k₁} {k₂} (impure ⟨ c , r ⟩) eq =
-  begin
-    impure ⟨ c , r ⟩ >>= k₁
-  ≈⟪⟫ {- Definition of >>= -} 
-    impure ⟨ c , (_>>= k₁) ∘ r ⟩  
-  ≈⟪ ≈-cong c ((_>>= k₁) ∘ r) ((_>>= k₂) ∘ r) (>>=-resp-≈ʳ (r _) eq) ⟫
-    impure ⟨ c , (_>>= k₂) ∘ r ⟩  
-  ≈⟪⟫ {- Definition of >>= -}  
-    impure ⟨ c , r ⟩ >>= k₂
-  ∎
-  where open ≈-Reasoning _ 
-
+module _ {T : Theory ε} ⦃ _ : ε ≲ ε′ ⦄ where 
+  
+  -- monadic bind respects syntactic equivalence of effect trees in the left position 
+  >>=-resp-≈ˡ : {m₁ m₂ : Free ε′ A} (k : A → Free ε′ B) → m₁ ≈⟨ T ⟩ m₂ → m₁ >>= k ≈⟨ T ⟩ m₂ >>= k
+  >>=-resp-≈ˡ k ≈-refl                      = ≈-refl
+  >>=-resp-≈ˡ k (≈-sym eq)                  = ≈-sym (>>=-resp-≈ˡ k eq)
+  >>=-resp-≈ˡ k (≈-trans eq₁ eq₂)           = ≈-trans (>>=-resp-≈ˡ k eq₁) (>>=-resp-≈ˡ k eq₂)
+  >>=-resp-≈ˡ k (≈-cong s p₁ p₂ x)          = ≈-cong s ((_>>= k) ∘ p₁) ((_>>= k) ∘ p₂) λ {v} → >>=-resp-≈ˡ k (x {v})
+  >>=-resp-≈ˡ k (≈-eq eq px δ γ k′)         =
+    begin
+      ((□⟨ eq ⟩ _) .lhs δ γ >>= k′) >>= k
+    ≈⟪ >>=-assoc-≈ k′ k ((□⟨ eq ⟩ _) .lhs δ γ) ⟫
+      (□⟨ eq ⟩ _) .lhs δ γ >>= (k′ >=> k)
+    ≈⟪ ≈-eq eq px δ γ (k′ >=> k) ⟫
+      (□⟨ eq ⟩ _) .rhs δ γ >>= (k′ >=> k)
+    ≈⟪ ≈-sym (>>=-assoc-≈ k′ k ((□⟨ eq ⟩ _) .rhs δ γ)) ⟫
+      ((□⟨ eq ⟩ _) .rhs δ γ >>= k′) >>= k 
+    ∎
+    where open ≈-Reasoning _
+  
+  -- monadic bind respects syntactic equivalence of effect trees in the right position 
+  >>=-resp-≈ʳ : {k₁ k₂ : A → Free ε′ B} (m : Free ε′ A) → (∀ a → k₁ a ≈⟨ T ⟩ k₂ a) → m >>= k₁ ≈⟨ T ⟩ m >>= k₂ 
+  >>=-resp-≈ʳ (pure x) eq = eq _
+  >>=-resp-≈ʳ {k₁ = k₁} {k₂} (impure ⟨ c , r ⟩) eq =
+    begin
+      impure ⟨ c , r ⟩ >>= k₁
+    ≈⟪⟫ {- Definition of >>= -} 
+      impure ⟨ c , (_>>= k₁) ∘ r ⟩  
+    ≈⟪ ≈-cong c ((_>>= k₁) ∘ r) ((_>>= k₂) ∘ r) (>>=-resp-≈ʳ (r _) eq) ⟫
+      impure ⟨ c , (_>>= k₂) ∘ r ⟩  
+    ≈⟪⟫ {- Definition of >>= -}  
+      impure ⟨ c , r ⟩ >>= k₂
+    ∎
+    where open ≈-Reasoning _ 
+  
 impure-injectiveˡ :
   ∀ {ε} {c₁ c₂ : ε .shape} {k₁ : ε .position c₁ → Free ε A} {k₂ : ε .position c₂ → Free ε A}
   → impure ⟨ c₁ , k₁ ⟩ ≡ impure ⟨ c₂ , k₂ ⟩ → c₁ ≡ c₂
@@ -443,19 +415,18 @@ impure-injectiveʳ refl = refl
 
 -- Heterogeneous theory inclusion respects heterogeneous composition in both positions
 ≪-compose-left :
-  ∀ (T₁ : ExtensibleTheory ε₁) (T₂ : ExtensibleTheory ε₂)
+  ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂)
   → (σ : ε₁ ∙ ε₂ ≈ ε)
      -----------------------------------------------
-  → T₁ ≪ compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)
-≪-compose-left T₁ T₂ σ .inc    = ≲-∙-left σ
-≪-compose-left T₁ T₂ σ .sub px = ◃-⟨+⟩-left (□⟨ T₁ .theory ⟩ _) (□⟨ T₂ .theory ⟩ _) 
-
+  → T₁ ≪ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+≲-eff (≪-compose-left T₁ T₂ σ)            = ≲-∙-left σ
+sub   (≪-compose-left T₁ T₂ σ) (a , refl) = (inj₁ a) , refl
 
 ≪-compose-right :
-  ∀ (T₁ : ExtensibleTheory ε₁) (T₂ : ExtensibleTheory ε₂)
+  ∀ (T₁ : Theory ε₁) (T₂ : Theory ε₂)
   → (σ : ε₁ ∙ ε₂ ≈ ε)
     -------------------------------------------------
-  → T₂ ≪ compose-ext-theory (T₁ ✴⟨ σ ⟩ T₂)
-≪-compose-right T₁ T₂ σ .inc    = ≲-∙-right σ 
-≪-compose-right T₁ T₂ σ .sub px = ◃-⟨+⟩-right (□⟨ T₁ .theory ⟩ _) (□⟨ T₂ .theory ⟩ _)
+  → T₂ ≪ compose-theory (T₁ ✴⟨ σ ⟩ T₂)
+≲-eff (≪-compose-right T₁ T₂ σ) = ≲-∙-right σ
+sub   (≪-compose-right T₁ T₂ σ) (a , refl) = (inj₂ a) , refl
 
