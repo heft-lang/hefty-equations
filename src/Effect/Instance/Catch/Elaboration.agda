@@ -146,7 +146,7 @@ CatchElab .Elaboration.coherent {ε′ = ε′} {c = `catch t} {s = s} ⦃ i ⦄
 instance refl-inst : ε ≲ ε
 refl-inst = ≲-refl 
 
-CatchElabCorrect : □-Correctᴴ CatchTheory AbortTheory CatchElab
+CatchElabCorrect : Correctᴴ CatchTheory AbortTheory CatchElab
 CatchElabCorrect e′ ⦃ ζ ⦄ (zero , refl) {γ = k}  =
   begin
     ℰ⟦ throw >>= k ⟧
@@ -154,13 +154,13 @@ CatchElabCorrect e′ ⦃ ζ ⦄ (zero , refl) {γ = k}  =
     ℰ⟦ throw ⟧ >>= ℰ⟪ k ⟫ 
   ≈⟪ >>=-resp-≈ˡ ℰ⟪ k ⟫ (≡-to-≈ (use-elab-def _)) ⟫ 
     abort >>= ℰ⟪ k ⟫
-  ≈⟪ ≈-eq′ bind-abort (here refl) ⟫
+  ≈⟪ ≈-eq′ (nec bind-abort) (tt , refl) ⟫
     abort 
   ≈⟪ ≈-sym (≡-to-≈ (use-elab-def _)) ⟫ 
     ℰ⟦ throw ⟧
   ∎
   where
-    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open ≈-Reasoning _
     open Elaboration e′
   
 CatchElabCorrect e′ ⦃ ζ ⦄ (suc zero , refl) {γ = m , x} = 
@@ -176,7 +176,7 @@ CatchElabCorrect e′ ⦃ ζ ⦄ (suc zero , refl) {γ = m , x} =
     ℰ⟦ return x ⟧
   ∎
   where
-    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open ≈-Reasoning _
     open Elaboration e′
 
 CatchElabCorrect e′ ⦃ ζ ⦄ (suc (suc zero) , refl) {γ = m} =
@@ -195,7 +195,7 @@ CatchElabCorrect e′ ⦃ ζ ⦄ (suc (suc zero) , refl) {γ = m} =
     ℰ⟦ m ⟧
   ∎
   where
-    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open ≈-Reasoning _
     open Elaboration e′
 
     ℋ-lemma : ℋ⟦ abort ⟧ tt ≡ pure nothing 
@@ -223,5 +223,5 @@ CatchElabCorrect e′ ⦃ ζ ⦄ (suc (suc (suc zero)) , refl) {γ = m} =
     ℰ⟦ m ⟧
   ∎
   where
-    open ≈-Reasoning (□⟨ AbortTheory .theory ⟩ ζ .≲-eff)
+    open ≈-Reasoning _
     open Elaboration e′

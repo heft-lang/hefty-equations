@@ -26,7 +26,7 @@ open import Relation.Unary
 
 module Effect.Instance.Catch.Theory  where
 
-module _ {η : Effectᴴ} ⦃ i : Catch ≲ η ⦄ where
+module _ {η : Effectᴴ} ⦃ _ : Catch ≲ η ⦄ where
   
   bind-throw : Equationᴴ η
   Δ′   bind-throw               = 2
@@ -56,7 +56,7 @@ module _ {η : Effectᴴ} ⦃ i : Catch ≲ η ⦄ where
   lhsᴴ catch-throw₂ _ m = catch m throw
   rhsᴴ catch-throw₂ _ m = m
 
-CatchTheory : ExtensibleTheoryᴴ Catch
+CatchTheory : Theoryᴴ Catch
 arity CatchTheory = Fin 4
 eqs CatchTheory zero                   = nec bind-throw
 eqs CatchTheory (suc zero)             = nec catch-return
