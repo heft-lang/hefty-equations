@@ -46,9 +46,9 @@ module _ {ε : Effect} ⦃ _ : Reader ≲ ε ⦄ where
   rhs ask-ask _ k = ask >>= λ r → k r r
 
   ask-bind : Equation ε
-  Δ′ ask-bind = 2
-  Γ′ ask-bind (A , B , _) = Free ε A × (A → R → Free ε B)
-  R′ ask-bind (A , B , _) = B
+  Δ′  ask-bind = 2
+  Γ′  ask-bind (A , B , _) = Free ε A × (A → R → Free ε B)
+  R′  ask-bind (A , B , _) = B
   lhs ask-bind _ (m , k) = m >>= λ x → ask >>= λ r → k x r
   rhs ask-bind _ (m , k) = ask >>= λ r → m >>= λ x → k x r
 

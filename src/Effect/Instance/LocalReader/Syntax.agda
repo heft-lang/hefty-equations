@@ -1,10 +1,14 @@
 {-# OPTIONS --type-in-type --without-K #-} 
 
 open import Core.Functor
-open import Core.Signature 
+open import Core.Signature
+open import Core.Ternary
 
 open import Effect.Base
 open import Effect.Syntax.Hefty
+
+open import Effect.Relation.Binary.HigherOrderInclusion
+open import Effect.Relation.Ternary.HigherOrderSeparation
 
 open import Data.Empty
 open import Data.Unit
@@ -32,8 +36,9 @@ LocalReader _ = record
   ; returns  = λ where {`local t f} tt → t
   }
 
-askl : ⦃ LocalReader ε ⊑ η ⦄ → Hefty η R
+askl : ⦃ LocalReader ≲ η ⦄ → Hefty (η ε) R
 askl = ♯ᴴ (impure ⟪ `ask , pure , (λ()) ⟫)
 
-local : ⦃ LocalReader ε ⊑ η ⦄ → (R → R) → Hefty η A → Hefty η A
+local : ⦃ LocalReader ≲ η ⦄ → (R → R) → Hefty (η ε) A → Hefty (η ε) A
 local f m = impure (injᴴ ⟪ `local _ f , pure , (λ where tt → m) ⟫) 
+
