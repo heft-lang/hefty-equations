@@ -94,7 +94,7 @@ LambdaElabCBV .Elaboration.coherent {c = `app f} {s = s} ⦃ i ⦄ k₁ k₂ =
 instance refl-inst : ε ≲ ε
 refl-inst = ≲-refl 
 
-CBVCorrect : {T : ExtensibleTheory ε} → □-Correctᴴ LambdaTheory T LambdaElabCBV 
+CBVCorrect : {T : Theory ε} → Correctᴴ LambdaTheory T LambdaElabCBV 
 CBVCorrect {T = T} e′ (false , refl) {γ = f , m} =
   begin
     ℰ⟦ (abs f >>= λ f′ → app f′ m) ⟧
@@ -112,7 +112,7 @@ CBVCorrect {T = T} e′ (false , refl) {γ = f , m} =
     ℰ⟦ m >>= f ⟧
   ∎
   where
-    open ≈-Reasoning (□⟨ T .theory ⟩ _)
+    open ≈-Reasoning _
     open Elaboration e′
 CBVCorrect {T = T} e′ (true  , refl) {γ = f} =
   begin
@@ -127,6 +127,6 @@ CBVCorrect {T = T} e′ (true  , refl) {γ = f} =
     ℰ⟦ abs (λ x → app f (var x)) ⟧ 
   ∎
   where
-    open ≈-Reasoning (□⟨ T .theory ⟩ _)
+    open ≈-Reasoning _
     open Elaboration e′
 

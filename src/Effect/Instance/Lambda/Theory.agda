@@ -48,7 +48,7 @@ module _ {η : Effectᴴ} ⦃ i : Lam ≲ η ⦄ where
   lhsᴴ eta _ f = pure f
   rhsᴴ eta _ f = abs λ x → app f (var x)
   
-LambdaTheory : ExtensibleTheoryᴴ Lam
+LambdaTheory : Theoryᴴ Lam
 arity LambdaTheory = Bool
 eqs LambdaTheory false = nec beta
 eqs LambdaTheory true  = nec eta
