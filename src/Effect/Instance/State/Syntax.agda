@@ -1,13 +1,15 @@
 {-# OPTIONS --without-K #-} 
 
 open import Core.Container
+open import Core.Ternary
 
 open import Effect.Base
-open import Effect.Separation
-open import Effect.Inclusion
 open import Effect.Theory.FirstOrder
 
 open import Effect.Syntax.Free
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
 
 open import Data.Unit
 open import Data.Product

@@ -5,15 +5,20 @@ open import Core.Functor.Monad
 open import Core.Functor.NaturalTransformation
 open import Core.Container
 open import Core.Extensionality
+open import Core.Ternary
+open import Core.Logic 
 
 open import Effect.Base
-open import Effect.Separation
 open import Effect.Syntax.Free
+
+open import Effect.Relation.Binary.FirstOrderInclusion
+open import Effect.Relation.Ternary.FirstOrderSeparation
 
 open import Data.Unit
 open import Data.Maybe hiding (_>>=_)
 open import Data.Product renaming (map to pmap)
 open import Data.Vec
+open import Data.Fin
 
 open import Function 
 
@@ -89,10 +94,9 @@ handleState : State ∙ ε ≈ ε′ → Free ε′ A → S → Free ε (S × A)
 handleState σ m s = handle StateHandler σ m s 
 
 module Properties where 
-
+ 
   correct : Correct StateTheory StateHandler
-  correct (here refl)                              = refl
-  correct (there (here refl))                      = refl
-  correct (there (there (here refl)))              = refl
-  correct (there (there (there (here refl))))      = refl
-
+  correct (zero                 , refl) = refl
+  correct (suc zero             , refl) = refl
+  correct (suc (suc zero)       , refl) = refl
+  correct (suc (suc (suc zero)) , refl) = refl

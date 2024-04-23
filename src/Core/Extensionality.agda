@@ -5,6 +5,8 @@ module Core.Extensionality where
 open import Level
 open import Axiom.Extensionality.Propositional
 
+
+
 postulate
   polymorphicExtensionality : ∀ a b → Extensionality a b 
 
