@@ -255,13 +255,20 @@ and abstract syntax trees over these:
 \begin{code}
   record Effectᴴ : Set₁ where
     field  Opᴴ     : Set
-           Fork    : Opᴴ → Effect
-           Retᴴ    : Opᴴ → Set
+           Retᴴ    : Opᴴ → Set 
+           Fork    : Opᴴ → Set
+           Ty      : {op : Opᴴ} → (ψ : Fork op) → Set
 \end{code}
 \begin{code}[hide]
   open Effect
   open Effectᴴ
 \end{code}
+
+\begin{code}
+  ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
+  ⟦ H ⟧ᴴ M X = Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
+\end{code}
+
 \end{minipage}
 \hfill\vline\hfill
 \hspace*{-14pt}
@@ -271,10 +278,7 @@ and abstract syntax trees over these:
 \begin{code}
   data Hefty (H : Effectᴴ) (A : Set) : Set where
     pure    : A → Hefty H A
-    impure  : (op : Opᴴ H)
-              (ψ : (a : Op (Fork H op)) → Hefty H (Ret (Fork H op) a))
-              (k : Retᴴ H op → Hefty H A)
-            → Hefty H A
+    impure  : ⟦ H ⟧ᴴ (Hefty H) A → Hefty H A
 \end{code}
 \end{AgdaSuppressSpace}
 \end{AgdaAlign}
@@ -292,9 +296,11 @@ and abstract syntax trees over these:
   infixr 12 _∔_
 
   _∔_ : Effectᴴ → Effectᴴ → Effectᴴ
-  Opᴴ     (H₁ ∔ H₂)                = Opᴴ H₁ ⊎ Opᴴ H₂
-  Fork    (H₁ ∔ H₂)                = [ Fork H₁  , Fork H₂  ]
-  Retᴴ    (H₁ ∔ H₂)                = [ Retᴴ H₁   , Retᴴ H₂   ]
+  Opᴴ (H₁ ∔ H₂) = Opᴴ H₁ ⊎ Opᴴ H₂
+  Retᴴ (H₁ ∔ H₂) = [ Retᴴ H₁ , Retᴴ H₂ ]
+  Fork (H₁ ∔ H₂) = [ Fork H₁ , Fork H₂ ]
+  Ty (H₁ ∔ H₂) {inj₁ _} ψ = Ty H₁ ψ
+  Ty (H₁ ∔ H₂) {inj₂ _} ψ = Ty H₂ ψ
 \end{code}
 %
 This type of \ad{Hefty} trees can be used to define higher-order operations with
@@ -317,16 +323,16 @@ of the \ad{censorₒₚ} operation.
 \begin{code}
   Censor : Effectᴴ
   Opᴴ    Censor = CensorOp
-  Fork  Censor (censor f) = record
-    { Op = ⊤ ; Ret = λ _ → ⊤ }
-  Retᴴ   Censor (censor s) = ⊤
+  Retᴴ   Censor (censor f) = ⊤
+  Fork   Censor (censor f) = ⊤
+  Ty Censor {censor f} tt = ⊤
 \end{code}
 \end{minipage}
 \\
 \hrulefill\\
 \begin{code}
   censorₒₚ : (String → String) → Hefty (Censor ∔ H) ⊤ → Hefty (Censor ∔ H) ⊤
-  censorₒₚ f m = impure (inj₁ (censor f)) (λ _ → m) pure
+  censorₒₚ f m = impure (inj₁ (censor f) , (λ where tt → m) , pure)
 \end{code}
 %
 \caption{A higher-order censor effect and operation, with a single computation
@@ -348,16 +354,16 @@ define monadic bind as a recursive function:
 %
 \begin{code}
   _𝓑_ : Hefty H A → (A → Hefty H B) → Hefty H B
-  pure x         𝓑 g = g x
-  impure op ψ k  𝓑 g = impure op ψ (λ x → k x 𝓑 g)
+  pure x               𝓑 g = g x
+  impure (op , k , s)  𝓑 g = impure (op , (_𝓑 g) ∘ k , s)
 \end{code}
 \begin{code}[hide]
   _>>_ : Hefty H A → Hefty H B → Hefty H B
   m₁ >> m₂ = m₁ 𝓑 λ _ → m₂
 
   hmap : (A → B) → Hefty H A → Hefty H B
-  hmap f (pure x) = pure (f x)
-  hmap f (impure op ψ k) = impure op ψ (hmap f ∘ k)
+  hmap f (pure x)               = pure (f x)
+  hmap f (impure (op , k , s))  = impure (op , hmap f ∘ k , s)
 \end{code}
 %
 The bind behaves similarly to the bind for \ad{Free}; i.e., \ab{m}~\af{𝓑}~\ab{g}
@@ -387,9 +393,10 @@ with no fork (i.e., no computation parameters):
 %
 \begin{code}
   Lift : Effect → Effectᴴ
-  Opᴴ     (Lift Δ)    = Op Δ
-  Fork    (Lift Δ) _  = Nil
-  Retᴴ    (Lift Δ)    = Ret Δ
+  Opᴴ   (Lift Δ) = Op Δ
+  Retᴴ  (Lift Δ) = Ret Δ
+  Fork  (Lift Δ) = λ _ → ⊥
+  Ty    (Lift Δ) = λ()
 \end{code}
 %
 Using this effect signature, and using higher-order effect row insertion
@@ -398,85 +405,87 @@ the following smart constructor lets us represent any algebraic operation as a
 \ad{Hefty} computation:
 %
 \begin{code}[hide]
-  data _∼_▹_ : Effectᴴ → Effectᴴ → Effectᴴ → Set₁ where
-    insert  :                 (H₀ ∔ H′)  ∼ H₀ ▹ H′
-    sift    : H ∼ H₀ ▹ H′  →  (H₁ ∔ H)   ∼ H₀ ▹ (H₁ ∔ H′)
+  record _∙_≋_ (H₁ H₂ H : Effectᴴ) : Set₁ where
+    field
+      reorder : ∀ {M X} → ⟦ H₁ ∔ H₂ ⟧ᴴ M X ↔ ⟦ H ⟧ᴴ M X
+
+  _≲ᴴ_ : (H₁ H₂ : Effectᴴ) → Set₁
+  H₁ ≲ᴴ H₂ = ∃ λ H → H₁ ∙ H ≋ H₂ 
 \end{code}
 %
 \begin{code}[hide]
-  instance  insert▹ : (H₀ ∔ H′) ∼ H₀ ▹ H′
-            insert▹ = insert
+  open _∙_≋_
 
-            sift▹ : ⦃ H ∼ H₀ ▹ H′ ⦄  →  (H₁ ∔ H)   ∼ H₀ ▹ (H₁ ∔ H′)
-            sift▹ ⦃ w ⦄ = sift w
-\end{code}
-%
-\begin{code}[hide]
-  inj▹ₗ  :  ⦃ H ∼ H₀ ▹ H′ ⦄ → Opᴴ H₀  → Opᴴ H
-  inj▹ᵣ  :  ⦃ H ∼ H₀ ▹ H′ ⦄ → Opᴴ H′  → Opᴴ H
-
-  inj▹ₗ ⦃ insert ⦄  = inj₁
-  inj▹ₗ ⦃ sift p ⦄  = inj₂ ∘ inj▹ₗ ⦃ p ⦄
-
-  inj▹ᵣ ⦃ insert ⦄  = inj₂
-  inj▹ᵣ ⦃ sift p ⦄  = [ inj₁ , inj₂ ∘ inj▹ᵣ ⦃ p ⦄ ]
-
-
-  inj▹ₗ-ret≡ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H₀)
-             → Retᴴ H (inj▹ₗ op) ≡ Retᴴ H₀ op
-  inj▹ₗ-ret≡ ⦃ insert ⦄ _  = refl
-  inj▹ₗ-ret≡ ⦃ sift p ⦄    = inj▹ₗ-ret≡ ⦃ p ⦄
-
-  inj▹ᵣ-ret≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H′)
-            → Retᴴ H (inj▹ᵣ op) ≡ Retᴴ H′ op
-  inj▹ᵣ-ret≡ ⦃ insert ⦄ op  = refl
-  inj▹ᵣ-ret≡ ⦃ sift p ⦄     = [ (λ _ → refl) , inj▹ᵣ-ret≡ ⦃ p ⦄ ]
-
-  inj▹ₗ-fork≡ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H₀)
-                → Fork H (inj▹ₗ op) ≡ Fork H₀ op
-  inj▹ₗ-fork≡ ⦃ insert ⦄ _  = refl
-  inj▹ₗ-fork≡ ⦃ sift p ⦄    = inj▹ₗ-fork≡ ⦃ p ⦄
-
-  inj▹ᵣ-fork≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H′)
-                → Fork H (inj▹ᵣ op) ≡ Fork H′ op
-  inj▹ᵣ-fork≡ ⦃ insert ⦄ op  = refl
-  inj▹ᵣ-fork≡ ⦃ sift p ⦄     = [ (λ _ → refl) , inj▹ᵣ-fork≡ ⦃ p ⦄ ]
-
-  inj▹ₗ-prong≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀} (b : Op (Fork H (inj▹ₗ op)))
-                → Ret (Fork H (inj▹ₗ op)) b ≡ Ret (Fork H₀ op) (subst Op (inj▹ₗ-fork≡ ⦃ p ⦄ op) b)
-  inj▹ₗ-prong≡ ⦃ insert ⦄ op  = refl
-  inj▹ₗ-prong≡ ⦃ p = sift p ⦄ {op} b = inj▹ₗ-prong≡ ⦃ p ⦄ b
-
-  -- inj▹ᵣ-prong≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ {op : Op H′} (b : Fork H (inj▹ᵣ op))
-  --               → Prong H b ≡ Prong H′ (subst id (inj▹ᵣ-fork≡ ⦃ p ⦄ op) b)
-  -- inj▹ᵣ-prong≡ ⦃ insert ⦄ op  = refl
-  -- inj▹ᵣ-prong≡ ⦃ p = sift p ⦄ {inj₁ x} b = refl
-  -- inj▹ᵣ-prong≡ ⦃ p = sift p ⦄ {inj₂ y} b = inj▹ᵣ-prong≡ ⦃ p ⦄ b
-
-
-  proj-ret▹ₗ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀} → Retᴴ H (inj▹ₗ op) → Retᴴ H₀ op
-  proj-ret▹ₗ ⦃ w = insert ⦄ = id
-  proj-ret▹ₗ ⦃ w = sift w ⦄ = proj-ret▹ₗ ⦃ w ⦄
+  injᴴˡ : ∀ {M X} → ⟦ H₁ ⟧ᴴ M X → ⟦ H₁ ∔ H₂ ⟧ᴴ M X
+  injᴴˡ (op , k , s) = inj₁ op , k , s
   
-  proj-ret▹ᵣ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H′} → Retᴴ H (inj▹ᵣ op) → Retᴴ H′ op
-  proj-ret▹ᵣ ⦃ w = insert ⦄ = id
-  proj-ret▹ᵣ ⦃ w = sift w ⦄ {op = inj₁ x} = id
-  proj-ret▹ᵣ ⦃ w = sift w ⦄ {op = inj₂ y} = proj-ret▹ᵣ ⦃ w ⦄
-
-  proj-fork▹ₗ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀}
-                → ((b : Op (Fork H₀ op)) → Hefty H (Ret (Fork H₀ op) b))
-                → ((b : Op (Fork H (inj▹ₗ op))) → Hefty H (Ret (Fork H (inj▹ₗ op)) b))
-  proj-fork▹ₗ ⦃ w ⦄ {op} f b  =
-    let x = f (subst Op (inj▹ₗ-fork≡ ⦃ w ⦄ op) b) in
-    subst (Hefty _) (sym $ inj▹ₗ-prong≡ ⦃ w ⦄ b) x
+  injᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → ∀ {M X} → ⟦ H₁ ⟧ᴴ M X → ⟦ H₂ ⟧ᴴ M X  
+  injᴴ {H₂ = _} ⦃ w ⦄ {M} {X} x = w .proj₂ .reorder {M = M} {X = X} .Inverse.to (injᴴˡ {M = M} {X = X} x)
+  
+--   inj▹ₗ  :  ⦃ H ∼ H₀ ▹ H′ ⦄ → Opᴴ H₀  → Opᴴ H
+--   inj▹ᵣ  :  ⦃ H ∼ H₀ ▹ H′ ⦄ → Opᴴ H′  → Opᴴ H
+-- 
+--   inj▹ₗ ⦃ insert ⦄  = inj₁
+--   inj▹ₗ ⦃ sift p ⦄  = inj₂ ∘ inj▹ₗ ⦃ p ⦄
+-- 
+--   inj▹ᵣ ⦃ insert ⦄  = inj₂
+--   inj▹ᵣ ⦃ sift p ⦄  = [ inj₁ , inj₂ ∘ inj▹ᵣ ⦃ p ⦄ ]
+-- 
+-- 
+--   inj▹ₗ-ret≡ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H₀)
+--              → Retᴴ H (inj▹ₗ op) ≡ Retᴴ H₀ op
+--   inj▹ₗ-ret≡ ⦃ insert ⦄ _  = refl
+--   inj▹ₗ-ret≡ ⦃ sift p ⦄    = inj▹ₗ-ret≡ ⦃ p ⦄
+-- 
+--   inj▹ᵣ-ret≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H′)
+--             → Retᴴ H (inj▹ᵣ op) ≡ Retᴴ H′ op
+--   inj▹ᵣ-ret≡ ⦃ insert ⦄ op  = refl
+--   inj▹ᵣ-ret≡ ⦃ sift p ⦄     = [ (λ _ → refl) , inj▹ᵣ-ret≡ ⦃ p ⦄ ]
+-- 
+--   inj▹ₗ-fork≡ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H₀)
+--                 → Fork H (inj▹ₗ op) ≡ Fork H₀ op
+--   inj▹ₗ-fork≡ ⦃ insert ⦄ _  = refl
+--   inj▹ₗ-fork≡ ⦃ sift p ⦄    = inj▹ₗ-fork≡ ⦃ p ⦄
+-- 
+--   inj▹ᵣ-fork≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ (op : Opᴴ H′)
+--                 → Fork H (inj▹ᵣ op) ≡ Fork H′ op
+--   inj▹ᵣ-fork≡ ⦃ insert ⦄ op  = refl
+--   inj▹ᵣ-fork≡ ⦃ sift p ⦄     = [ (λ _ → refl) , inj▹ᵣ-fork≡ ⦃ p ⦄ ]
+-- 
+--   inj▹ₗ-prong≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀} (b : Op (Fork H (inj▹ₗ op)))
+--                 → Ret (Fork H (inj▹ₗ op)) b ≡ Ret (Fork H₀ op) (subst Op (inj▹ₗ-fork≡ ⦃ p ⦄ op) b)
+--   inj▹ₗ-prong≡ ⦃ insert ⦄ op  = refl
+--   inj▹ₗ-prong≡ ⦃ p = sift p ⦄ {op} b = inj▹ₗ-prong≡ ⦃ p ⦄ b
+-- 
+--   -- inj▹ᵣ-prong≡ : ⦃ p : H ∼ H₀ ▹ H′ ⦄ {op : Op H′} (b : Fork H (inj▹ᵣ op))
+--   --               → Prong H b ≡ Prong H′ (subst id (inj▹ᵣ-fork≡ ⦃ p ⦄ op) b)
+--   -- inj▹ᵣ-prong≡ ⦃ insert ⦄ op  = refl
+--   -- inj▹ᵣ-prong≡ ⦃ p = sift p ⦄ {inj₁ x} b = refl
+--   -- inj▹ᵣ-prong≡ ⦃ p = sift p ⦄ {inj₂ y} b = inj▹ᵣ-prong≡ ⦃ p ⦄ b
+-- 
+-- 
+--   proj-ret▹ₗ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀} → Retᴴ H (inj▹ₗ op) → Retᴴ H₀ op
+--   proj-ret▹ₗ ⦃ w = insert ⦄ = id
+--   proj-ret▹ₗ ⦃ w = sift w ⦄ = proj-ret▹ₗ ⦃ w ⦄
+--   
+--   proj-ret▹ᵣ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H′} → Retᴴ H (inj▹ᵣ op) → Retᴴ H′ op
+--   proj-ret▹ᵣ ⦃ w = insert ⦄ = id
+--   proj-ret▹ᵣ ⦃ w = sift w ⦄ {op = inj₁ x} = id
+--   proj-ret▹ᵣ ⦃ w = sift w ⦄ {op = inj₂ y} = proj-ret▹ᵣ ⦃ w ⦄
+-- 
+--   proj-fork▹ₗ : ⦃ w : H ∼ H₀ ▹ H′ ⦄ {op : Opᴴ H₀}
+--                 → ((b : Op (Fork H₀ op)) → Hefty H (Ret (Fork H₀ op) b))
+--                 → ((b : Op (Fork H (inj▹ₗ op))) → Hefty H (Ret (Fork H (inj▹ₗ op)) b))
+--   proj-fork▹ₗ ⦃ w ⦄ {op} f b  =
+--     let x = f (subst Op (inj▹ₗ-fork≡ ⦃ w ⦄ op) b) in
+--     subst (Hefty _) (sym $ inj▹ₗ-prong≡ ⦃ w ⦄ b) x
 \end{code}
 %
 \begin{code}
-  ↑_ : ⦃ w : H ∼ Lift Δ ▹ H′ ⦄ → (op : Op Δ) → Hefty H (Ret Δ op)
+  ↑_ : ⦃ w : Lift Δ ≲ᴴ H ⦄ → (op : Op Δ) → Hefty H (Ret Δ op)
 \end{code}
 \begin{code}[hide]
-  ↑_ ⦃ w ⦄ op =
-    impure (inj▹ₗ ⦃ w ⦄ op) (proj-fork▹ₗ ⦃ w ⦄ (λ b → ⊥-elim b)) (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
+  ↑_ op = impure (injᴴ {M = Hefty _} (op , pure , λ()))
 \end{code}
 %
 Using this notion of lifting, \ad{Hefty} trees can be used to program against
@@ -541,8 +550,8 @@ by reflecting it into Agda's \ad{Set}:
 %
 \begin{code}
   record Universe : Set₁ where
-    field  Ty   : Set
-           ⟦_⟧ᵀ  : Ty → Set
+    field  Type  : Set
+           ⟦_⟧ᵀ  : Type → Set
 \end{code}
 \begin{code}[hide]
   open Universe ⦃ ... ⦄
@@ -556,29 +565,25 @@ computation parameters in the effect signature on the right below:
 \begin{minipage}{0.495\linewidth}
 \begin{code}
   data CatchOp ⦃ u : Universe ⦄ : Set where
-    catch : Ty → CatchOp
+    catch : Type → CatchOp
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
 \begin{minipage}{0.495\linewidth}
 \begin{code}
   Catch : ⦃ u : Universe ⦄ → Effectᴴ
-  Opᴴ    Catch = CatchOp
-  Fork   Catch (catch t)  = record
-    { Op = Bool; Ret = λ _ → ⟦ t ⟧ᵀ }
+  Opᴴ    Catch            = CatchOp
   Retᴴ   Catch (catch t)  = ⟦ t ⟧ᵀ
+  Fork   Catch (catch t)  = Bool
+  Ty     Catch {catch t}  = λ _ → ⟦ t ⟧ᵀ
 \end{code}
 \end{minipage}
 \begin{code}[hide]
-  ‵catch   : ⦃ u : Universe ⦄ ⦃ w : H ∼ Catch ▹ H′ ⦄ {t : Ty} 
+  ‵catch   : ⦃ u : Universe ⦄ ⦃ w : Catch ≲ᴴ H ⦄ {t : Type} 
            → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ  → Hefty H ⟦ t ⟧ᵀ
 \end{code}
 \begin{code}[hide]
-  ‵catch ⦃ w = w ⦄ m₁ m₂  =
-    impure
-      (inj▹ₗ (catch _))
-      (proj-fork▹ₗ ⦃ w ⦄ (λ b → if b then m₁ else m₂))
-      (pure ∘ proj-ret▹ₗ ⦃ w ⦄)
+  ‵catch {t = t} m₁ m₂ = impure (injᴴ {M = Hefty _} {X = ⟦ t ⟧ᵀ} ((catch t) , pure , (if_then m₁ else m₂)))
 \end{code}
 %
 While the universe of types encoding restricts the kind of type that catch can
@@ -611,10 +616,7 @@ end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (o
 %
 \begin{code}
   record Algᴴ (H : Effectᴴ) (F : Set → Set) : Set₁ where
-    field alg  : (op  : Opᴴ H)
-                 (ψ   : (s : Op (Fork H op)) → F (Ret (Fork H op) s))
-                 (k   : Retᴴ H op → F A)
-               → F A
+    field alg  : ⟦ H ⟧ᴴ F A → F A
 \end{code}
 %
 \begin{code}[hide]
@@ -623,8 +625,8 @@ end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (o
 \vspace{-1em}
 \begin{code}
   cataᴴ : (∀ {A} → A → F A) → Algᴴ H F → Hefty H A → F A
-  cataᴴ g a (pure x)         = g x
-  cataᴴ g a (impure op ψ k)  = alg a op (cataᴴ g a ∘ ψ) (cataᴴ g a ∘ k)
+  cataᴴ g a (pure x)               = g x
+  cataᴴ g a (impure (op , k , s))  = alg a (op , ((cataᴴ g a ∘ k) , (cataᴴ g a ∘ s)))
 \end{code}
 %
 Here \ad{Algᴴ} defines how to transform an \ac{impure} node of type
@@ -638,7 +640,8 @@ signature sums:
 \end{code}
 \begin{code}
   _⋎_ : Algᴴ H₁ F → Algᴴ H₂ F → Algᴴ (H₁ ∔ H₂) F
-  alg (A₁ ⋎ A₂) = [ alg A₁ , alg A₂ ]
+  alg (A₁ ⋎ A₂) (inj₁ op , k , s) = alg A₁ (op , k , s)
+  alg (A₁ ⋎ A₂) (inj₂ op , k , s) = alg A₂ (op , k , s)
 \end{code}
 %
 By defining elaborations as hefty algebras (below) we can compose them using \ad{\_⋎\_}.
@@ -675,8 +678,8 @@ module ElabModule where
 \end{code}
 \begin{code}
     eCatch : ⦃ u : Universe ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
-    alg (eCatch ⦃ w = w ⦄) (catch t) ψ k = let m₁ = ψ true; m₂ = ψ false in
-      (♯ ((given hThrow handle m₁) tt)) 𝓑 maybe k (m₂ 𝓑 k)
+    alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
+      (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
 \end{code}
 \begin{code}[hide]
       where postulate instance foo : proj₁ w ≲ _ 
@@ -689,7 +692,7 @@ representations of higher-order operations instead.
 %
 \begin{code}[hide]
   eLift : ⦃ Δ₁ ≲ Δ₂ ⦄ → Elaboration (Lift Δ₁) Δ₂
-  alg (eLift ⦃ w ⦄) op ψ k = impure (inj (op , k))
+  alg (eLift ⦃ w ⦄) (op , k , s) = impure (inj (op , k))
 
   module Transact where
     open HeftyModule using (_𝓑_; _>>_)
@@ -701,7 +704,7 @@ representations of higher-order operations instead.
 
     private instance
       TypeUniverse : Universe
-      Universe.Ty TypeUniverse = Type
+      Universe.Type TypeUniverse = Type
       Universe.⟦ TypeUniverse ⟧ᵀ unit  = ⊤
       Universe.⟦ TypeUniverse ⟧ᵀ num   = ℕ
 \end{code}
@@ -711,10 +714,10 @@ involving the state effect from \cref{fig:state-effect-handler}, the throw
 effect from \cref{sec:free-monad}, and the catch effect defined here:
 %
 \begin{code}
-    transact  :  ⦃ wₛ  : H ∼ Lift State  ▹ H′ ⦄ ⦃ wₜ : H ∼ Lift Throw  ▹ H″ ⦄ ⦃ w : H ∼ Catch ▹ H‴ ⦄
+    transact  :  ⦃ wₛ  : Lift State ≲ᴴ H ⦄ ⦃ wₜ : Lift Throw ≲ᴴ H ⦄ ⦃ w : Catch ≲ᴴ H ⦄
               →  Hefty H ℕ
     transact = do
-      ↑ (put 1)
+      ↑ put 1
       ‵catch (do ↑ (put 2); (↑ throw) 𝓑 ⊥-elim) (pure tt)
       ↑ get
 \end{code}
@@ -730,101 +733,101 @@ for \ad{Lift} and \ad{Nil}, we can elaborate and run the program:
 \end{code}%
 \vspace{-1em}%
 \begin{code}
-    -- test-transact : un (given hSt handle {!given hThrow handle ? $ tt!} $ 0) ≡ ((just 2 , 2))  {- un (  (  given hSt
-    --                           handle (  (  given hThrow
-    --                                        handle (elaborate eTransact transact)))
-    --                                     tt ) 0 ) ≡ (just 2 , 2) -} 
-    -- test-transact = refl
-\end{code}
-%
-\noindent The program above uses a so-called \emph{global} interpretation of
-state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
-the state to be updated globally.  In \cref{sec:optional-transactional} we
-return to this example and show how we can modularly change the elaboration of
-the higher-order effect \ad{Catch} to yield a so-called \emph{transactional}
-interpretation of state where the \ac{put} operation in the try block is rolled
-back when an exception is thrown.
+--     -- test-transact : un (given hSt handle {!given hThrow handle ? $ tt!} $ 0) ≡ ((just 2 , 2))  {- un (  (  given hSt
+--     --                           handle (  (  given hThrow
+--     --                                        handle (elaborate eTransact transact)))
+--     --                                     tt ) 0 ) ≡ (just 2 , 2) -} 
+--     -- test-transact = refl
+-- \end{code}
+-- %
+-- \noindent The program above uses a so-called \emph{global} interpretation of
+-- state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
+-- the state to be updated globally.  In \cref{sec:optional-transactional} we
+-- return to this example and show how we can modularly change the elaboration of
+-- the higher-order effect \ad{Catch} to yield a so-called \emph{transactional}
+-- interpretation of state where the \ac{put} operation in the try block is rolled
+-- back when an exception is thrown.
 
 
-\subsection{Discussion and Limitations}
-\label{sec:limitations}
+-- \subsection{Discussion and Limitations}
+-- \label{sec:limitations}
 
-Which (higher-order) effects can we describe using hefty trees and algebras?
-Since the core mechanism of our approach is modular elaboration of higher-order
-operations into more primitive effects and handlers, it is clear that hefty
-trees and algebras are at least as expressive as standard algebraic effects.
-The crucial benefit of hefty algebras over algebraic effects is that
-higher-order operations can be declared and implemented modularly.  In this
-sense, hefty algebras provide a modular abstraction layer over standard
-algebraic effects that, although it adds an extra layer of indirection by
-requiring both elaborations and handlers to give a semantics to hefty trees, is
-comparatively cheap and implemented using only standard techniques such as
-$F$-algebras.
+-- Which (higher-order) effects can we describe using hefty trees and algebras?
+-- Since the core mechanism of our approach is modular elaboration of higher-order
+-- operations into more primitive effects and handlers, it is clear that hefty
+-- trees and algebras are at least as expressive as standard algebraic effects.
+-- The crucial benefit of hefty algebras over algebraic effects is that
+-- higher-order operations can be declared and implemented modularly.  In this
+-- sense, hefty algebras provide a modular abstraction layer over standard
+-- algebraic effects that, although it adds an extra layer of indirection by
+-- requiring both elaborations and handlers to give a semantics to hefty trees, is
+-- comparatively cheap and implemented using only standard techniques such as
+-- $F$-algebras.
 
-Conceptually, we expect that hefty trees can capture any \emph{monadic}
-higher-order effect whose signature is given by a higher-order functor on
-$\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
-monadic effect can be represented using continuations, and given that we can
-encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
-terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
-\citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
-monadic effect into algebraic effects using hefty algebras.  The current Agda
-implementation, though, is slightly more restrictive.  The type of effect
-signatures, \ad{Effectᴴ}, approximates the set of higher-order functors by
-constructively enforcing that all occurrences of the computation type are
-strictly positive.  Hence, there may be higher-order effects that are
-well-defined semantically, but which cannot be captured in the Agda encoding
-presented here.
+-- Conceptually, we expect that hefty trees can capture any \emph{monadic}
+-- higher-order effect whose signature is given by a higher-order functor on
+-- $\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
+-- monadic effect can be represented using continuations, and given that we can
+-- encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
+-- terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
+-- \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
+-- monadic effect into algebraic effects using hefty algebras.  The current Agda
+-- implementation, though, is slightly more restrictive.  The type of effect
+-- signatures, \ad{Effectᴴ}, approximates the set of higher-order functors by
+-- constructively enforcing that all occurrences of the computation type are
+-- strictly positive.  Hence, there may be higher-order effects that are
+-- well-defined semantically, but which cannot be captured in the Agda encoding
+-- presented here.
 
-When comparing hefty trees to scoped effects, we observe two important
-differences.  The first difference is that the syntax of programs with
-higher-order effects is fundamentally more restrictive when using scoped
-effects.  Specifically, as discussed at the end of \cref{sec:scoped-discussion},
-scoped effects impose a restriction on operations that their computation
-parameters must pass control directly to the continuation of the operation.
-Hefty trees, on the other hand, do not restrict the control flow of computation
-parameters, meaning that they can be used to define a broader class of
-operations.  For instance, in \cref{sec:higher-order-lambda} we define a
-higher-order effect for function abstraction, which is an example of an
-operation where control does not flow from the computation parameter to the
-continuation.
+-- When comparing hefty trees to scoped effects, we observe two important
+-- differences.  The first difference is that the syntax of programs with
+-- higher-order effects is fundamentally more restrictive when using scoped
+-- effects.  Specifically, as discussed at the end of \cref{sec:scoped-discussion},
+-- scoped effects impose a restriction on operations that their computation
+-- parameters must pass control directly to the continuation of the operation.
+-- Hefty trees, on the other hand, do not restrict the control flow of computation
+-- parameters, meaning that they can be used to define a broader class of
+-- operations.  For instance, in \cref{sec:higher-order-lambda} we define a
+-- higher-order effect for function abstraction, which is an example of an
+-- operation where control does not flow from the computation parameter to the
+-- continuation.
 
-The second difference is that hefty algebras and scoped effects and handlers are
-modular in different ways.  Scoped effects are modular because we can modularly
-define, compose, and handle scoped operations, by applying scoped effect
-handlers in sequence; i.e.:
-%
-\begin{equation*}
-\ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1}
-\ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2}
-\cdots
-\xrightarrow{h_n}
-\ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
-\end{equation*}
-%
-As discussed in \cref{sec:weaving}, each handler application modularly
-``weaves'' effects through sub computations, using a dedicated \aF{glue}
-function.  Hefty algebras, on the other hand, work by applying an elaboration
-algebra assembled from modular components in one go.  The program resulting from
-elaboration can then be handled using standard algebraic effect handlers; i.e.:
-%
-\begin{equation*}
-\ad{Hefty}~\as{(}\ab{H₀}~\ad{∔}~\cdots~\ad{∔}~\ab{Hₘ}\as{)}~\ab{A}
-\xrightarrow{\af{elaborate}~\as{(}\ab{E₀}~\ad{⋎}~\cdots~\ad{⋎}~\ab{Eₘ}\as{)}}
-\ad{Free}~Δ~A \xrightarrow{h_1}
-\cdots \xrightarrow{h_k}
-\ad{Free}~\ad{Nil}~\ab{Aₖ}
-\end{equation*}
-%
-Because hefty algebras eagerly elaborate all higher-order effects in one go,
-they do not require similar ``weaving'' as scoped effect handlers.  A
-consequence of this difference is that scoped effect handlers exhibit more
-effect interaction by default; i.e., different permutations of handlers may give
-different semantics.  In contrast, when using hefty algebras we have to be more
-explicit about such effect interactions.  We discuss this difference in more
-detail in \cref{sec:optional-transactional}.
+-- The second difference is that hefty algebras and scoped effects and handlers are
+-- modular in different ways.  Scoped effects are modular because we can modularly
+-- define, compose, and handle scoped operations, by applying scoped effect
+-- handlers in sequence; i.e.:
+-- %
+-- \begin{equation*}
+-- \ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1}
+-- \ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2}
+-- \cdots
+-- \xrightarrow{h_n}
+-- \ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
+-- \end{equation*}
+-- %
+-- As discussed in \cref{sec:weaving}, each handler application modularly
+-- ``weaves'' effects through sub computations, using a dedicated \aF{glue}
+-- function.  Hefty algebras, on the other hand, work by applying an elaboration
+-- algebra assembled from modular components in one go.  The program resulting from
+-- elaboration can then be handled using standard algebraic effect handlers; i.e.:
+-- %
+-- \begin{equation*}
+-- \ad{Hefty}~\as{(}\ab{H₀}~\ad{∔}~\cdots~\ad{∔}~\ab{Hₘ}\as{)}~\ab{A}
+-- \xrightarrow{\af{elaborate}~\as{(}\ab{E₀}~\ad{⋎}~\cdots~\ad{⋎}~\ab{Eₘ}\as{)}}
+-- \ad{Free}~Δ~A \xrightarrow{h_1}
+-- \cdots \xrightarrow{h_k}
+-- \ad{Free}~\ad{Nil}~\ab{Aₖ}
+-- \end{equation*}
+-- %
+-- Because hefty algebras eagerly elaborate all higher-order effects in one go,
+-- they do not require similar ``weaving'' as scoped effect handlers.  A
+-- consequence of this difference is that scoped effect handlers exhibit more
+-- effect interaction by default; i.e., different permutations of handlers may give
+-- different semantics.  In contrast, when using hefty algebras we have to be more
+-- explicit about such effect interactions.  We discuss this difference in more
+-- detail in \cref{sec:optional-transactional}.
 
-%%% Local Variables:
-%%% reftex-default-bibliography: ("../references.bib")
-%%% End:
+-- %%% Local Variables:
+-- %%% reftex-default-bibliography: ("../references.bib")
+-- %%% End:
 
