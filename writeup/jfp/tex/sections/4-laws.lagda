@@ -1,10 +1,9 @@
 \begin{code}[hide]
-{-# OPTIONS --overlappin --instance-search-depth=2 #-}
+{-# OPTIONS --overlapping-instances #-}
 module tex.sections.4-laws where
 
-open import tex.sections.2-algebraic-effects
-open import tex.sections.3-hefty-algebras
-
+open import tex.sections.2-algebraic-effects 
+open import tex.sections.3-hefty-algebras 
 open import Function
 open import Effect.Monad
 open import Relation.Binary.PropositionalEquality
@@ -18,6 +17,7 @@ open import Data.Sum hiding (map)
 open import Relation.Unary hiding (_∈_)
 open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any hiding (map)
+open import Data.Unit
 
 open import Level renaming (suc to sℓ)
 
@@ -170,6 +170,9 @@ and right hand sides is equal to the sole type metavariable:
 \begin{AgdaAlign}
 \begin{code}[hide]
 open Equation
+
+private instance ≲-state-refl : State ≲ State
+≲-state-refl = Nil , ∙-unitᵣ
 \end{code}
 \begin{code}
 get-get : Equation State
@@ -216,8 +219,9 @@ necessity:
 %
 \begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
+  constructor necessary 
   field
-    necessary : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
+    □⟨_⟩ : ∀ {Δ′} → ⦃ Δ ≲ Δ′ ⦄ → P Δ′
 \end{code}
 \begin{code}[hide]
 open □
@@ -247,7 +251,7 @@ witness with a proof of reflexivity.
 %
 \begin{code}
 extract : {P : Effect → Set₁} → □ P Δ → P Δ
-extract px = necessary px ⦃ ≲-refl ⦄
+extract px = □⟨ px ⟩ ⦃ ≲-refl ⦄
 \end{code}
 %
 More generally, we can close values wrapped in the $□$ modifier using any
@@ -255,7 +259,7 @@ extension witness using the following operation:
 %
 \begin{code}
 close : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → P Δ₂
-close eq = necessary eq 
+close eq = □⟨ eq ⟩ 
 \end{code}
 
 We can now redefine the \emph{get-get} law so that it applies to all programs
@@ -263,11 +267,11 @@ that have at least the $\ad{State}$ effect, but potentially other effects too.
 %
 \begin{code}
 get-get◂ : □ Equation State
-V    (necessary get-get◂       )             = 1
-Γ    (necessary get-get◂ {Δ′}  ) (A ∷ [])    = ℕ → ℕ → Free Δ′ A
-R    (necessary get-get◂       ) (A ∷ [])    = A
-lhs  (necessary get-get◂       ) (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
-rhs  (necessary get-get◂       ) (A ∷ []) k  = ‵get 𝓑 λ s → k s s
+V    □⟨ get-get◂ ⟩ = 1
+Γ    □⟨ get-get◂ ⟩ (A ∷ [])    = ℕ → ℕ → Free _ A
+R    □⟨ get-get◂ ⟩ (A ∷ [])    = A
+lhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′
+rhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → k s s
 \end{code}
 %
 The above embedding of the \emph{get-get} law now actually does allow us to
@@ -288,7 +292,8 @@ that include more effects than just $Δ$:
 \begin{code}
 record Theory (Δ : Effect) : Set₁ where
   field
-    equations : List (□ Equation Δ)
+    arity      : Set 
+    equations  : arity → □ Equation Δ
 \end{code}
 %
 We can think of effect theories as defining a specification for how
@@ -309,7 +314,9 @@ open Theory
 \end{code}
 \begin{code}
 _⟨+⟩_ : Theory Δ → Theory Δ → Theory Δ
-equations (T₁ ⟨+⟩ T₂) = equations T₁ ++ equations T₂
+arity      (T₁ ⟨+⟩ T₂)  = arity T₁ ⊎ arity T₂ 
+equations  (T₁ ⟨+⟩ T₂)  (inj₁ a) = equations T₁ a
+equations  (T₁ ⟨+⟩ T₂)  (inj₂ a) = equations T₂ a
 \end{code}
 %
 This way of combining effects is somewhat limiting, as it imposes that the
@@ -319,10 +326,11 @@ requires the ability to \emph{weaken} effect theories
 
 \begin{code}
 weaken-□ : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → □ P Δ₂ 
-necessary (weaken-□ ⦃ w₁ ⦄ px) ⦃ w₂ ⦄ = necessary px ⦃ ≲-trans w₁ w₂ ⦄ 
+□⟨ weaken-□ ⦃ w ⦄ px ⟩ ⦃ w′ ⦄ = □⟨ px ⟩ ⦃ ≲-trans w w′ ⦄
 
-weaken-theory : ⦃ Δ₁ ≲ Δ₂ ⦄ → Theory Δ₁ → Theory Δ₂ 
-equations (weaken-theory T) = map weaken-□ (equations T)
+weaken-theory : ⦃ Δ₁ ≲ Δ₂ ⦄ → Theory Δ₁ → Theory Δ₂
+arity     (weaken-theory T) = arity T 
+equations (weaken-theory T) = λ a → weaken-□ $ T .equations a 
 \end{code}
 %
 Categorically speaking, the observation that for a given effect-indexed type $P$
@@ -337,11 +345,11 @@ different effects into a theory ranging over their coproduct.  This requires us
 to first define appropriate instances relating coproducts to effect inclusion:
 %
 \begin{code}
-instance ≲-⊕-left   : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
-instance ≲-⊕-right  : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
+≲-⊕-left   : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
+≲-⊕-right  : Δ₂ ≲ (Δ₁ ⊕ Δ₂)
 \end{code}
 \begin{code}[hide]
-≲-⊕-left = _ , λ where .reorder → ↔-id _
+≲-⊕-left  = _ , λ where .reorder → ↔-id _
 ≲-⊕-right = _ , λ where .reorder → swap-⊕-↔
 \end{code}
 %
@@ -351,7 +359,7 @@ theories.
 %
 \begin{code}
 _[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
-T₁ [+] T₂ = weaken-theory T₁ ⟨+⟩ weaken-theory T₂
+T₁ [+] T₂ = weaken-theory ⦃ ≲-⊕-left ⦄ T₁ ⟨+⟩ weaken-theory ⦃ ≲-⊕-right ⦄ T₂
 \end{code}
 %
 While this operation is in principle sufficient for our purposes, it forces a
@@ -360,8 +368,8 @@ operation above to allow for the effects of the combined theory to appear in any
 order. This requires the following instances:
 %
 \begin{code}
-instance ≲-∙-left   : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₁ ≲ Δ
-instance ≲-∙-right  : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₂ ≲ Δ
+≲-∙-left   : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₁ ≲ Δ
+≲-∙-right  : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₂ ≲ Δ
 \end{code}
 \begin{code}[hide]
 ≲-∙-left ⦃ w ⦄ = _ , w
@@ -373,7 +381,7 @@ by summing the weakened theories:
 %
 \begin{code}
 compose-theory : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Theory Δ₁ → Theory Δ₂ → Theory Δ
-compose-theory T₁ T₂ = weaken-theory T₁ ⟨+⟩ weaken-theory T₂ 
+compose-theory T₁ T₂ = weaken-theory ⦃ ≲-∙-left ⦄ T₁ ⟨+⟩ weaken-theory ⦃ ≲-∙-right ⦄ T₂ 
 \end{code}
 
 Since equations are defined by storing the syntax trees corresponding their left
@@ -421,10 +429,13 @@ open ⟨_!_⇒_⇒_!_⟩
 open Effect 
 \end{code}
 \begin{code}
+_◂_ : □ Equation Δ → Theory Δ → Set₁
+eq ◂ T = ∃ λ a → T .equations a ≡ eq 
+
 record _⊑_ (T₁ : Theory Δ₁) (T₂ : Theory Δ₂) : Set₁ where
   field
-    ⦃ ext ⦄  : Δ₁ ≲ Δ₂ 
-    sub      : ∀ {eq} → eq ∈ equations T₁ → weaken-□ eq ∈ equations T₂ 
+    ⦃ ≲-eff ⦄  : Δ₁ ≲ Δ₂ 
+    sub       : ∀ {eq} → eq ◂ T₁ → weaken-□ eq ◂ T₂ 
 \end{code}
 \begin{code}[hide]
 open _⊑_ 
@@ -449,7 +460,7 @@ $\ad{Theory}$.
 %
 \begin{AgdaAlign}
 \begin{code}
-data _≈⟨_⟩_ : (m₁ : Free Δ A) → Theory Δ → (m₂ : Free Δ A) → Set₁ where 
+data _≈⟨_⟩_ {Δ Δ′} ⦃ _ : Δ ≲ Δ′ ⦄ : (m₁ : Free Δ′ A) → Theory Δ → (m₂ : Free Δ′ A) → Set₁ where 
 \end{code}
 %
 A value of type $\ab{m₁}~\ad{≈⟨}~\ab{T}~\ad{⟩}~\ab{m₂}$ witnesses that programs
@@ -467,8 +478,8 @@ equality of two programs starting with the same operation by proving that the
 continuations yield equal programs for every possible value. 
 %
 \begin{code}
-  ≈-cong  :  (op : Op Δ)
-          →  (k₁ k₂ : Ret Δ op → Free Δ A)
+  ≈-cong  :  (op : Op Δ′)
+          →  (k₁ k₂ : Ret Δ′ op → Free Δ′ A)
           →  (∀ x → k₁ x ≈⟨ T ⟩ k₂ x) 
           →  impure (op , k₁) ≈⟨ T ⟩ impure (op , k₂) 
 \end{code}
@@ -477,13 +488,12 @@ The final constructor allows to prove equality of programs by reifying equations
 of an effect theory. 
 %
 \begin{code}
-  ≈-eq  :  (eq : □ Equation Δ₁)
-        →  (sub : T₁ ⊑ T₂) 
-        →  eq ∈ equations T₁ 
-        →  (vs : Vec Set (V (close eq)))
-        →  (γ : Γ (close eq) vs)
-        →  (k : R (close eq) vs → Free Δ₂ A)
-        →  (lhs (close eq) vs γ 𝓑 k) ≈⟨ T₂ ⟩ (rhs (close eq) vs γ 𝓑 k)  
+  ≈-eq  :  (eq : □ Equation Δ)
+        →  (px : eq ◂ T)  
+        →  (vs : Vec Set (V (□⟨ eq ⟩)))
+        →  (γ : Γ (□⟨ eq ⟩) vs)
+        →  (k : R (□⟨ eq ⟩) vs → Free Δ′ A)
+        →  (lhs (□⟨ eq ⟩) vs γ 𝓑 k) ≈⟨ T ⟩ (rhs (□⟨ eq ⟩) vs γ 𝓑 k)  
 \end{code}
 \end{AgdaAlign}
 %
@@ -498,20 +508,20 @@ theory that includes that equation.
 The $\ac{≈-eq}$ lets us sequence the left and right hand sides of an
 equation with an arbitrary continuation $\ab{k}$. 
 \begin{code}[hide]
-postulate 𝓑-idʳ-≈ : (m : Free Δ A) → (m 𝓑 Free.pure) ≈⟨ T ⟩ m
+postulate 𝓑-idʳ-≈ : {T : Theory Δ} → ⦃ _ : Δ ≲ Δ′ ⦄ → (m : Free Δ′ A) → m ≈⟨ T ⟩ (m 𝓑 Free.pure) 
 \end{code}
 \begin{code}
 use-equation :
-  ∀  ⦃ sub : T₁ ⊑ T₂ ⦄ 
-  →  (eq : □ Equation Δ₁)
-  →  eq ∈ equations T₁
-  →  (vs : Vec Set (V (close  eq)))
-  →  {γ : Γ (close eq) vs}
-  →  lhs (close eq) vs γ ≈⟨ T₂ ⟩ rhs (close eq) vs γ
+  ∀ ⦃ _ : Δ ≲ Δ′ ⦄
+  → {T : Theory Δ}
+  → (eq : □ Equation Δ)
+  →  eq ◂ T
+  →  (vs : Vec Set (V □⟨ eq ⟩))
+  →  {γ : Γ (□⟨ eq ⟩) vs}
+  →  lhs (□⟨ eq ⟩) vs γ ≈⟨ T ⟩ rhs (□⟨ eq ⟩) vs γ
 \end{code}
 \begin{code}[hide]
-use-equation ⦃ sub ⦄ eq px vs =
-  ≈-trans (≈-sym (𝓑-idʳ-≈ _)) (≈-trans (≈-eq eq sub px _ _ Free.pure) (𝓑-idʳ-≈ _))
+use-equation eq px vs {γ} = ≈-trans (𝓑-idʳ-≈ _) (≈-trans (≈-eq eq px vs γ Free.pure) (≈-sym $ 𝓑-idʳ-≈ _))
 \end{code}
 %
 The definition of \af{use-equation} follows immediately from the right-identity
@@ -523,23 +533,25 @@ analogous to the combinators commonly used to construct proofs of Agda's
 propositional equality. 
 %
 \begin{code}
-begin_ : {m₁ m₂ : Free Δ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂ 
-begin eq = eq 
+module ≈-Reasoning (T : Theory Δ) ⦃ _ : Δ ≲ Δ′ ⦄ where 
 
-_∎ : (m : Free Δ A) → m ≈⟨ T ⟩ m
-m ∎ = ≈-refl
+  begin_ : {m₁ m₂ : Free Δ′ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂ 
+  begin eq = eq 
 
-_≈⟪⟫_ : (m₁ : Free Δ A) {m₂ : Free Δ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂  
-m₁ ≈⟪⟫ eq = eq
+  _∎ : (m : Free Δ′ A) → m ≈⟨ T ⟩ m
+  m ∎ = ≈-refl
 
-_≈⟪_⟫_  : (m₁ {m₂ m₃} : Free Δ A) → m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
-m₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
+  _≈⟪⟫_ : (m₁ : Free Δ′ A) {m₂ : Free Δ′ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂  
+  m₁ ≈⟪⟫ eq = eq
+
+  _≈⟪_⟫_  : (m₁ {m₂ m₃} : Free Δ′ A) → m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
+  m₁ ≈⟪ eq₁ ⟫ eq₂ = ≈-trans eq₁ eq₂
 \end{code}
 %
 \begin{code}[hide]
-infix  1 begin_
-infixr 2 _≈⟪_⟫_ _≈⟪⟫_
-infix  3 _∎
+  infix  1 begin_
+  infixr 2 _≈⟪_⟫_ _≈⟪⟫_
+  infix  3 _∎
 \end{code}
 
 We now have all the necessary tools to prove syntactic equality of programs
@@ -551,20 +563,22 @@ to only have the $\af{get-get}$ law.
 %
 \begin{code}
 StateTheory : Theory State
-equations StateTheory = get-get◂ ∷ []
+arity StateTheory         = ⊤ 
+equations StateTheory tt  = get-get◂
 \end{code}
 %
 Now to prove the equality in \cref{eq:get-get-throw} is simply a matter of
 invoking the $\af{get-get}$ law. 
 \begin{code}
 get-get-throw :
-     {T : Theory Δ} → ⦃ _ : Throw ≲ Δ ⦄ → ⦃ _ : StateTheory ⊑ T ⦄ 
-  →  (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ T ⟩ (‵get 𝓑  λ s → ‵throw)
-get-get-throw = begin
+     ⦃ _ : Throw ≲ Δ ⦄ ⦃ _ : State ≲ Δ ⦄
+  →  (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ StateTheory ⟩ (‵get 𝓑  λ s → ‵throw)
+get-get-throw {A = A} = begin
     ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
-  ≈⟪ use-equation get-get◂ (here refl) (_ ∷ [])  ⟫
+  ≈⟪ use-equation get-get◂ (tt , refl) (A ∷ [])  ⟫
     ‵get 𝓑 (λ s → ‵throw)
   ∎ 
+  where open ≈-Reasoning StateTheory
 \end{code}
 
 \subsection{Handler Correctness}
@@ -594,7 +608,7 @@ Definition 4.3).
 %
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
-Correct T H = ∀ {eq} → eq ∈ equations T → Respects (H .hdl) (extract eq)
+Correct T H = ∀ {eq} → eq ◂ T → Respects (H .hdl) (extract eq) 
 \end{code}
 %
 We can now show that the handler for the $\ad{State}$ effect defined in
@@ -603,9 +617,8 @@ $\af{StateTheory}$; the proof follows immediately by reflexivity.
 %
 \begin{code}
 hStCorrect : Correct {A = A} {Δ′ = Δ} StateTheory hSt
-hStCorrect (here refl) {_ ∷ []} {γ = k} = refl 
+hStCorrect (tt , refl) {_ ∷ []} {γ = k} = refl 
 \end{code}
-
 
 \subsection{Theories of Higher-Order Effects}
 

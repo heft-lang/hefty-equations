@@ -547,7 +547,7 @@ ends:\\
       }
       }
 
-  instance ≲-refl' : Δ ≲ Δ
+  private instance ≲-refl' : Δ ≲ Δ
   ≲-refl' = Nil , ∙-unitᵣ 
 \end{code}
 \end{minipage}
@@ -575,8 +575,7 @@ Using these, we can run a simple hello world program:\footnote{The \ac{refl} con
   test-hello = refl
 \end{code}
 \end{minipage}
-
-An example of an effect handler that makes use of parameterized (as opposed to unparameterized) handlers, is the state effect.
+An example of parameterized (as opposed to unparameterized) handlers, is the state effect.
 \Cref{fig:state-effect-handler} declares and illustrates how to handle such an effect with operations for reading (\ac{get}) and changing (\ac{put}) the state of a memory cell holding a natural number.
 \\
 \begin{figure}
