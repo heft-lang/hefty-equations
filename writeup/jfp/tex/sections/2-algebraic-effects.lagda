@@ -853,6 +853,7 @@ input a scoped operation whose outer and inner computation have been folded into
 The \aF{glue} function is used for modularly \emph{weaving}~\citep{WuSH14} side effects of handlers
 through sub-scopes of yet-unhandled operations.
 
+
 \subsubsection{Weaving}
 \label{sec:weaving}
 %
@@ -899,12 +900,12 @@ exception is thrown during evaluation of a scope, the continuation is discarded
 and the exception is propagated; and if no exception is thrown the continuation
 proceeds normally.
 
+
 \subsubsection{Discussion and Limitations}
 \label{sec:scoped-discussion}
 %
 As observed by \citet{BergSPW21}, some higher-order effects do not correspond to
-scoped operations.  In particular, the \ad{LambdaM} record shown below
-\cref{sec:higher-order-effects} is not a scoped operation:
+scoped operations.  In particular, the \ad{LambdaM} record shown below is not a scoped operation:
 %
 \begin{code}
   record LambdaM (V : Set) (M : Set → Set) : Set₁ where
@@ -918,29 +919,30 @@ the first parameter position to the argument computation in the second parameter
 position.  The \aF{app} operation has a computation as its second parameter so
 that it remains compatible with different evaluation strategies.
 
-\todo{Update discussion to new setup of scoped effects}
-
 To see why the operations summarized by the \ad{LambdaM} record above are not
-scoped operations, let us revisit the definition of scoped operations,
-explicating an implicit quantification in the \ac{enter} constructor of
-\ad{Prog}:
+scoped operations, let us revisit the \ac{enter} constructor of \ad{Prog}:
 %
 \begin{equation*}
-  \ac{enter}~\as{:~}\colorbox{gray!30}{\as{\{}\ab{B}~\as{:}~\ad{Set}\as{\}}}\as{~(}\ab{op}~\as{:}~\aF{Op}~\ab{γ}\as{)~(}\ab{sc}~\as{:}~\aF{Ret}~\ab{γ}~\ab{op}~\as{→}~\ad{Prog}~\ab{Δ}~\ab{γ}~\colorbox{gray!30}{\ab{B}}\as{)~(}\ab{k}~\as{:}~\colorbox{gray!30}{\ab{B}}~\as{→}~\ad{Prog}~\ab{Δ}~\ab{γ}~\ab{A}~\as{)~→~}\ad{Prog}~\ab{Δ}~\ab{γ}~\ab{A}
+  \ac{enter}~\as{:~}\af{⟦}~\ab{γ}~\af{⟧}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{outer}}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{inner}}~\ab{A}\as{))}
 \end{equation*}
 %
-The highlighted \colorbox{gray!30}{$B$} is \emph{existentially quantified},
-meaning that the continuation expects as input a value of some type \ab{B} that
-only reveals itself once we match on \ac{enter}.  Consequently, the only way to
-get a value of this type \ab{B} is by running the scoped computation \ab{sc}.
-At the same time, the only thing we can do with the result of running \ab{sc},
-is applying it to the continuation, making it impossible to postpone the
-evaluation of a scoped computation.  But that is exactly what the implementation
-of the \aF{lam} operation of \ad{LambdaM} requires.  Consequently the \aF{lam}
-operation is not a scoped operation.  It is possible to elaborate the
-\ad{LambdaM} operations into more primitive effects and handlers, but as
-discussed in \cref{sec:modularity-problem,sec:higher-order-effects}, such
-elaborations are not modular.
+
+As summarized earlier in this subsection, \ac{enter} lets us represent
+higher-order operations (specifically, \emph{scoped operations}), whereas
+\ac{call} does not (only \emph{algebraic operations}).  Just like we defined the
+computational parameters as scopes (given by the outer \ad{Prog} in the type of
+\ac{enter}), we might try to define the body of a lambda as a scope in a similar
+way.  However, a difference is that, whereas the \ac{catch} operation always
+passes control to its continuation (the inner \ad{Prog}), the \aF{lam} effect is
+supposed to package the body of the lambda into a value and pass this value to
+the continuation (the inner computation).  Because the inner computation is
+nested within the outer computation, the only way to gain access to the
+inner computation (the continuation) is by first running the outer computation
+(the body of the lambda).  This does not give us the right semantics.
+It is possible to elaborate the \ad{LambdaM} operations into more primitive
+effects and handlers, but as discussed in
+\cref{sec:modularity-problem,sec:higher-order-effects}, such elaborations are
+not modular.
 
 In the next section we present a simple alternative solution to scoped effects
 which supports a broader class of higher-order effects.
