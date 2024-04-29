@@ -709,12 +709,16 @@ whereas \ac{enter} is new:
     enter   : ⟦ γ ⟧ (Prog Δ γ (Prog Δ γ A))  → Prog Δ γ A
 \end{code}
 %
-The \ac{enter} constructor represents a higher-order operation which has as many
-sub-scopes (i.e., computation parameters) as there are inhabitants of the return
-type of the operation \as{(}\ab{op}~\as{:}~\aF{Op}~\ab{γ}\as{)}.  Each sub-scope
-of \ac{enter} is a \emph{scope} in the sense that control flows from the scope
-to the continuation, since the return type of each scope (\ab{B}) matches the
-parameter type of the continuation \ab{k} of \ac{enter}.
+Here, the \ac{enter} constructor represents a higher-order operation with
+\emph{sub-scopes}; i.e., computations that themselves return computations:
+%
+\begin{equation*}
+  \underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{outer}}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{inner}}~\ab{A}\as{)}
+\end{equation*}
+%
+This type represents \emph{scoped} computations in the sense that outer
+computations can be handled independently of inner ones, as we illustrate in \cref{sec:scoped-effect-handlers}.
+One way to think of inner computations is as continuations (or join-points) of sub-scopes.
 
 \begin{code}[hide]
   {-# TERMINATING #-} 
@@ -758,7 +762,7 @@ has two inhabitants.
 %
 Following~\citet{YangPWBS22}, scoped operations are handled using a structure-preserving fold over \ad{Prog}:
 \\
-\begin{minipage}{0.325\linewidth}
+\begin{minipage}{0.375\linewidth}
 \begin{code}[hide]
   CallAlg : (Δ : Effect) (G : Set → Set) → Set₁
   CallAlg Δ G = {A : Set} → ⟦ Δ ⟧ (G A) → G A 
@@ -795,7 +799,7 @@ Following~\citet{YangPWBS22}, scoped operations are handled using a structure-pr
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
-\begin{minipage}{0.665\linewidth}
+\begin{minipage}{0.615\linewidth}
 \begin{code}
   CallAlg⅋ : (Δ : Effect) (G : Set → Set) → Set₁
   CallAlg⅋ Δ G  =
@@ -816,7 +820,8 @@ the second and third correspond to respectively \ac{call} and \ac{enter}.
 The following defines a type of parameterized scoped effect handlers:
 %
 \begin{code}
-  record ⟨∙!_!_⇒_⇒_∙!_!_⟩ (Δ γ : Effect) (P : Set) (G : Set → Set) (Δ′ γ′ : Effect) : Set₁ where
+  record ⟨∙!_!_⇒_⇒_∙!_!_⟩  (Δ γ : Effect)   (P : Set) (G : Set → Set)
+                           (Δ′ γ′ : Effect) : Set₁ where
     field  ret     :  X → P → Prog Δ′ γ′ (G X)
            hcall   :  CallAlg   Δ  (λ X → P → Prog Δ′ γ′ (G X))
            henter  :  EnterAlg  γ  (λ X → P → Prog Δ′ γ′ (G X))
@@ -841,10 +846,11 @@ computation \ad{Prog}~\ab{Δ~γ~A} into a parameterized computation of type
 \ab{P}~\as{→}~\ad{Prog}~\ab{Δ′}~\ab{γ′}~\as{(}\ab{G}~\ab{A}\as{)}.  The \aF{ret}
 and \aF{hcall} cases are similar to the \aF{ret} and \aF{hdl} cases from
 \cref{sec:effect-handlers}.  The crucial addition which adds support for
-higher-order operations is the \aF{henter} case which allows handler cases to
-first invoke scoped sub-computations and inspect their return types, before
-(optionally) passing control to the continuation \ab{k}.  The \aF{glue} function
-is used for modularly \emph{weaving}~\citep{WuSH14} side effects of handlers
+higher-order operations is the \aF{henter} case.
+
+The \aF{henter} field is given by an \af{EnterAlg} case.  This case takes as
+input a scoped operation whose outer and inner computation have been folded into a parameterized computation of type \ab{P}~\as{→}~\ad{Prog}~\ab{Δ′}~\ab{γ′}~\as{(}\ab{G~X}\as{)}; and returns as output an interpretation of that operation as a computation of type \ab{P}~\as{→}~\ad{Prog}~\ab{Δ′}~\ab{γ′}~\as{(}\ab{G~X}\as{)}.
+The \aF{glue} function is used for modularly \emph{weaving}~\citep{WuSH14} side effects of handlers
 through sub-scopes of yet-unhandled operations.
 
 \subsubsection{Weaving}
@@ -859,11 +865,10 @@ the record type above are used to fold over \ad{Prog}:
                         →  Prog Δ γ A → P → Prog Δ₂ γ₂ (G A)
   given h handle-scoped m = hcata (ret h)
     ⊕[ hcall h
-     , (λ where (c , k) p → call (c , flip k p))
-     ]
+     , (λ where (c , k) p → call (c , flip k p)) ]
     ⊕[ (λ {A} → henter h {A})
-     , (λ where (c , k) p → enter (c , λ x → map-prog (λ y → glue h id y p) (k x p))) 
-     ]′ (to-frontΔ (to-frontγ m))
+     , (λ where (c , k) p → enter (c , λ x → map-prog (λ y → glue h id y p) (k x p))) ]′
+     (to-frontΔ (to-frontγ m))
 \end{code}
 %
 The second to last line above shows how \aF{glue} is used.  Because \af{hcata}
