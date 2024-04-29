@@ -74,6 +74,7 @@ swap-⊕-↔ = record
 \end{code} 
 
 \section{Modular Reasoning for Higher-Order Effects}
+\label{sec:modular-reasoning}
 
 A key aspect of algebraic effects and handlers is to state and prove equational
 \emph{laws} that characterize correct implementations of effectful
@@ -196,6 +197,7 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 \end{AgdaAlign}
 
 \subsection{Modal Necessity}
+\label{sec:modal-necessity}
 Consider the following equality: 
 %
 \begin{equation}\label{eq:get-get-throw}
@@ -421,7 +423,8 @@ theory. Given two theories, $\ab{T₁}$ and $\ab{T₂}$, ranging over effects
 $\ab{Δ₁}$ and $\ab{Δ₂}$ respectively, we say that $\ab{T₁}$ is a
 \emph{sub-theory} of $\ab{T₂}$ if (1) $Δ₁$ is a sub-effect of $Δ₂$, and all
 equations of $\ab{T₁}$ are, in their weakened form, also part of $\ab{T₂}$. The
-following record type captures this definition of sub-theories in Agda: 
+following record type captures this definition of sub-theories in Agda:
+\todo{UPDATE!}
 %
 \begin{code}[hide]
 variable T T₁ T₂ T₃ T′ : Theory Δ
@@ -432,8 +435,8 @@ open ⟨_!_⇒_⇒_!_⟩
 open Effect 
 \end{code}
 \begin{code}
-_◂_ : □ Equation Δ → Theory Δ → Set₁
-eq ◂ T = ∃ λ a → T .equations a ≡ eq  
+_◄_ : □ Equation Δ → Theory Δ → Set₁
+eq ◄ T = ∃ λ a → T .equations a ≡ eq  
 \end{code}
 %
 Here, the field $\aF{ext}$ witnesses that the effects of $\ab{T₁}$ are included
@@ -484,7 +487,7 @@ of an effect theory.
 %
 \begin{code}
   ≈-eq  :  (eq : □ Equation Δ)
-        →  (px : eq ◂ T)  
+        →  (px : eq ◄ T)  
         →  (vs : Vec Set (V (□⟨ eq ⟩)))
         →  (γ : Γ (□⟨ eq ⟩) vs)
         →  (k : R (□⟨ eq ⟩) vs → Free Δ′ A)
@@ -506,14 +509,13 @@ equation with an arbitrary continuation $\ab{k}$.
 postulate 𝓑-idʳ-≈ : {T : Theory Δ} → ⦃ _ : Δ ≲ Δ′ ⦄ → (m : Free Δ′ A) → m ≈⟨ T ⟩ (m 𝓑 Free.pure) 
 \end{code}
 \begin{code}
-use-equation :
-  ∀ ⦃ _ : Δ ≲ Δ′ ⦄
-  → {T : Theory Δ}
-  → (eq : □ Equation Δ)
-  →  eq ◂ T
-  →  (vs : Vec Set (V □⟨ eq ⟩))
-  →  {γ : Γ (□⟨ eq ⟩) vs}
-  →  lhs (□⟨ eq ⟩) vs γ ≈⟨ T ⟩ rhs (□⟨ eq ⟩) vs γ
+use-equation  :  ⦃ _ : Δ ≲ Δ′ ⦄
+              →  {T : Theory Δ}
+              →  (eq : □ Equation Δ)
+              →  eq ◄ T
+              →  (vs : Vec Set (V □⟨ eq ⟩))
+              →  {γ : Γ (□⟨ eq ⟩) vs}
+              →  lhs (□⟨ eq ⟩) vs γ ≈⟨ T ⟩ rhs (□⟨ eq ⟩) vs γ
 \end{code}
 \begin{code}[hide]
 use-equation eq px vs {γ} = ≈-trans (𝓑-idʳ-≈ _) (≈-trans (≈-eq eq px vs γ Free.pure) (≈-sym $ 𝓑-idʳ-≈ _))
@@ -552,7 +554,7 @@ module ≈-Reasoning (T : Theory Δ) ⦃ _ : Δ ≲ Δ′ ⦄ where
 We now have all the necessary tools to prove syntactic equality of programs
 modulo a theory of their effect. To illustrate, we consider how to prove the
 equation in \cref{eq:get-get-throw}. First, we define a theory for the
-$\ad{State}$ effect containing the $\af{get-get◂}$ law. While this is not the
+$\ad{State}$ effect containing the $\af{get-get◄}$ law. While this is not the
 only law typically associated with $\ad{State}$, for this example it is enough
 to only have the $\af{get-get}$ law. 
 %
@@ -603,7 +605,7 @@ Definition 4.3).
 %
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
-Correct T H = ∀ {eq} → eq ◂ T → Respects (H .hdl) (extract eq) 
+Correct T H = ∀ {eq} → eq ◄ T → Respects (H .hdl) (extract eq) 
 \end{code}
 %
 We can now show that the handler for the $\ad{State}$ effect defined in
@@ -617,7 +619,12 @@ hStCorrect (tt , refl) {_ ∷ []} {γ = k} = refl
 
 \subsection{Theories of Higher-Order Effects}
 
-
+For the most part, equations and theories for higher-order effects are defined
+in the same way as for first-order effects and support many of the same
+operations. Indeed, the definition of equations ranging over higher-order
+effects is exactly the same as its first-order counterpart, the only difference
+being that the left-hand and right-hand side are now defined as Hefty trees:
+%
 \begin{code}
 record Equationᴴ (H : Effectᴴ) : Set₁ where
   field
@@ -626,81 +633,138 @@ record Equationᴴ (H : Effectᴴ) : Set₁ where
     R        : Vec Set V → Set 
     lhs rhs  : (vs : Vec Set V) → Γ vs → Hefty H (R vs)
 \end{code}
-
-\begin{code}
-open Equationᴴ 
-\end{code}
-
-\begin{code}
-Respectsᴴ : (_~_ : ∀ {A} → Free Δ A → Free Δ A → Set₁) → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
-Respectsᴴ _~_ alg eq =
-  ∀ {δ γ} → cataᴴ Free.pure alg (lhs eq δ γ) ~ cataᴴ Free.pure alg (rhs eq δ γ)
-\end{code}
-
+%
+This definition of equations suffers the same problem when it comes to term
+metavariables, which here too can only range over programs that exhibit the
+exact effect that the equation is defined for. Again, we address the issue using
+an embedding of modal necessity to close over all possible extensions of this
+effect. The definition is analogous to the one in \cref{sec:modal-necessity},
+but this time we use higher-order effect subtyping as the modal accessibility
+relation:
+%
 \begin{code}
 record ■ (P : Effectᴴ → Set₁) (H : Effectᴴ) : Set₁ where
   constructor necessary 
   field ■⟨_⟩ : ∀ {H′} → ⦃ H ≲ᴴ H′ ⦄ → P H′ 
 \end{code}
+%
+To illustrate: we can define the \emph{catch-throw} law from the introduction of
+this section as a value of type $\ad{■}~\ad{Equationᴴ}~\af{Catch}$ a
+follows:~\footnote{For simplicities sake, we gloss over the use of type
+  universes to avoid size issues here.}
+%
+\begin{code}[hide]
+open ■
+open Equationᴴ 
 
+module _ ⦃ _ : Universe ⦄ where
+  postulate catch◄ : Hefty H A → Hefty H A → Hefty H A
+  postulate throw◄ : Hefty H A
+\end{code}
+\begin{code} 
+  local-return : ■ Equationᴴ Catch
+  V    ■⟨ local-return ⟩ = 1
+  Γ    ■⟨ local-return ⟩ (A ∷ []) = Hefty _ A
+  R    ■⟨ local-return ⟩ (A ∷ []) = A
+  lhs  ■⟨ local-return ⟩ (A ∷ []) m = catch◄ throw◄ m
+  rhs  ■⟨ local-return ⟩ (A ∷ []) m = m
+\end{code} 
+\begin{code}[hide]
+open Equationᴴ
+\end{code}
+
+Theories of higher-order effects bundle extensible equations. The setup is the
+same as for theories of first-order effects. 
+%
 \begin{code}
 record Theoryᴴ (H : Effectᴴ) : Set₁ where
   field
     arity     : Set
     equations : arity → ■ Equationᴴ H 
 \end{code}
-
+%
+The following predicate establishes that an equation is part of a theory. We
+prove this fact by providing an arity whose corresponding equation is equal to
+$ab{eq}$. 
+%
 \begin{code}[hide]
 variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
 open Theoryᴴ
 open ■
-
-module _ where
-
-  open Effectᴴ
-
+\end{code}
+\begin{code}
+_◄ᴴ_ : ■ Equationᴴ H → Theoryᴴ H → Set₁
+eq ◄ᴴ Th = ∃ λ a → eq ≡ equations Th a 
 \end{code}
 
+\begin{code}[hide]
+module _ where
+  open Effectᴴ
+\end{code}
+%
+Weakenability of theories of higher-order effects then follows from
+weakenability of its equations.
+%
 \begin{code}
   weaken-■ : ∀ {P} → ⦃ H₁ ≲ᴴ H₂ ⦄ → ■ P H₁ → ■ P H₂
-  ■⟨ weaken-■ ⦃ w ⦄ px ⟩ ⦃ w′ ⦄ = ■⟨ px ⟩ ⦃ ≲ᴴ-trans w w′ ⦄
-\end{code}
+  ■⟨ weaken-■ ⦃ w  ⦄ px ⟩ ⦃ w′ ⦄ = ■⟨ px ⟩ ⦃ ≲ᴴ-trans w w′ ⦄
 
-\begin{code}
   weaken-theoryᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → Theoryᴴ H₁ → Theoryᴴ H₂
-  arity     (weaken-theoryᴴ Th)    = Th .arity
-  equations (weaken-theoryᴴ Th) a  = weaken-■ (Th .equations a)
+  arity      (weaken-theoryᴴ Th)    = Th .arity
+  equations  (weaken-theoryᴴ Th) a  = weaken-■ (Th .equations a)
 \end{code}
 
-\begin{code}
-  _◂ᴴ_ : ■ Equationᴴ H → Theoryᴴ H → Set₁
-  eq ◂ᴴ Th = ∃ λ a → eq ≡ equations Th a 
-\end{code}
-
+Theories of higher-order effects can be combined using the following sum
+operation. The resulting theory contains all equations of both argument
+theories.
+%
 \begin{code}
   _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
-  arity (Th₁ ⟨+⟩ᴴ Th₂) = arity Th₁ ⊎ arity Th₂
-  equations (Th₁ ⟨+⟩ᴴ Th₂) (inj₁ a) = equations Th₁ a
-  equations (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a) = equations Th₂ a
+  arity      (Th₁ ⟨+⟩ᴴ Th₂)           = arity Th₁ ⊎ arity Th₂
+  equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₁ a)  = equations Th₁ a
+  equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a)  = equations Th₂ a
 \end{code}
-
+%
+Theories of higher-order effects are closed under sums of higher-order effect
+theories as well. This operation is defined by appropriately weakening the
+respective theories, for which we need the following lemmas witnessing that
+higher-order effect signatures can be injected in a sum of signatures.
+%
+\begin{code}[hide]
+  postulate 
+\end{code}
 \begin{code}
-  postulate ≲-∔-left   : H₁ ≲ᴴ (H₁ ∔ H₂)
-  postulate ≲-∔-right  : H₂ ≲ᴴ (H₁ ∔ H₂) 
+    ≲-∔-left   : H₁ ≲ᴴ (H₁ ∔ H₂)
+    ≲-∔-right  : H₂ ≲ᴴ (H₁ ∔ H₂) 
 \end{code}
-
+%
+The operation that combines theories under signature sums is then defined like
+so.
+%
 \begin{code}
   _[+]ᴴ_ : Theoryᴴ H₁ → Theoryᴴ H₂ → Theoryᴴ (H₁ ∔ H₂)
-  Th₁ [+]ᴴ Th₂ = weaken-theoryᴴ ⦃ ≲-∔-left ⦄ Th₁ ⟨+⟩ᴴ weaken-theoryᴴ ⦃ ≲-∔-right ⦄ Th₂
+  Th₁ [+]ᴴ Th₂
+    = weaken-theoryᴴ ⦃ ≲-∔-left ⦄ Th₁ ⟨+⟩ᴴ weaken-theoryᴴ ⦃ ≲-∔-right ⦄ Th₂
 \end{code}
 
 \subsection{Equivalence of Programs with Higher-Order Effects}
 
+\todo{Cas: this isn't really used anywhere, but if we mirror the story for 1st
+  order effects it seems natural to discuss this. Keep?}
+
+We define the following inductive relation to capture equivalence of programs
+with higher-order effects modulo the equations of a given theory.
+
 \begin{AgdaAlign}
 \begin{code}
-
-  data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄ : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
-
+  data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄
+    : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
+\end{code}
+%
+To ensure that it is indeed an equivalence relation, we include constructors for
+reflexivity, symmetry, and transitivity. 
+%
+\begin{code}
     ≅-refl   :  ∀  {m : Hefty H₂ A}
                 →  m ≅⟨ Th ⟩ m
 
@@ -712,7 +776,11 @@ module _ where
                 →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
                 →  m₁ ≅⟨ Th ⟩ m₃ 
 \end{code}
-
+%
+Furthermore, we include the following congruence rule that equates two program
+trees that have the same operation at the root, if their continuations are
+equivalent for all inputs. 
+%
 \begin{code}
     ≅-cong   :     (op : Opᴴ H₂)
                 →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
@@ -721,10 +789,13 @@ module _ where
                 →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
                 →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
 \end{code}
-
+%
+Finally, we include a constructor that equates two programs using an equation of
+the theory.
+%
 \begin{code}
     ≅-eq     :     (eq : ■ Equationᴴ H₁)
-                →  eq ◂ᴴ Th
+                →  eq ◄ᴴ Th
                 →  (vs : Vec Set (V ■⟨ eq ⟩))
                 →  (γ : Γ ■⟨ eq ⟩ vs)
                 →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
@@ -732,7 +803,16 @@ module _ where
 \end{code}
 \end{AgdaAlign}
 
+\todo{Cas: could give a small example here (that also illustrates the use of
+  modal necessity).} 
+
 \subsection{Correctness of Elaborations}
+
+\begin{code}
+Respectsᴴ : (_~_ : ∀ {A} → Free Δ A → Free Δ A → Set₁) → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
+Respectsᴴ _~_ alg eq =
+  ∀ {δ γ} → cataᴴ Free.pure alg (lhs eq δ γ) ~ cataᴴ Free.pure alg (rhs eq δ γ)
+\end{code}
 
 \begin{code}
 open Algᴴ
@@ -755,7 +835,7 @@ Correctᴴ Th T e =
   → (e′ : □ (Elaboration H′) Δ′)
   → ⦃ ζ : e ⊑ e′ ⦄
   → {eq : ■ Equationᴴ _}
-  → eq ◂ᴴ Th
+  → eq ◄ᴴ Th
   → Respectsᴴ (_≈⟨ T ⟩_) (extract e′) ■⟨ eq ⟩
 \end{code}     
 
@@ -770,22 +850,25 @@ compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
 postulate 
 \end{code}
 \begin{code}
-  compose-elab-correct :
-       ⦃ _ : Δ₁ ∙ Δ₂ ≈ Δ ⦄ 
-    →  (e₁ : □ (Elaboration H₁) Δ₁)
-    →  (e₂ : □ (Elaboration H₂) Δ₂)
-    →  (T₁ : Theory Δ₁)
-    →  (T₂ : Theory Δ₂)
-    →  (Th₁ : Theoryᴴ H₁)
-    →  (Th₂ : Theoryᴴ H₂)
-    →  Correctᴴ Th₁ T₁ e₁
-    →  Correctᴴ Th₂ T₂ e₂ 
-    →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂) (compose-elab e₁ e₂)
+  compose-elab-correct  :  ⦃ _ : Δ₁ ∙ Δ₂ ≈ Δ ⦄ 
+                        →  (e₁ : □ (Elaboration H₁) Δ₁)
+                        →  (e₂ : □ (Elaboration H₂) Δ₂)
+                        →  (T₁ : Theory Δ₁)
+                        →  (T₂ : Theory Δ₂)
+                        →  (Th₁ : Theoryᴴ H₁)
+                        →  (Th₂ : Theoryᴴ H₂)
+                        →  Correctᴴ Th₁ T₁ e₁
+                        →  Correctᴴ Th₂ T₂ e₂ 
+                        →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂)
+                             (compose-elab e₁ e₂)
 \end{code} 
 
 \subsection{Examples}
 
-
+\todo{What is a good example? Ideally, we show proof of a law that (1) is not a
+  direct correspondence with the algebraic effect we elaborate into, but
+  simultaneously does use an equation of the underlying theory. There are some
+  candidate laws for the ``local'' operation that satisfy this.  }
 
 
 %% 
