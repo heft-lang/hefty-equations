@@ -43,8 +43,7 @@ footnotes.
 defines algebraic effects and handlers; \cref{sec:higher-order-effects} revisits
 the problem of defining higher-order effects using algebraic effects and
 handlers; and \cref{sec:scoped-effects} discusses how scoped
-effects~\cite{WuSH14,PirogSWJ18,YangPWBS22} solves the problem for some
-(\emph{scoped} operations) but not all higher-order operations.
+effects~\citep{WuSH14,PirogSWJ18,YangPWBS22} solves the problem for \emph{scoped} operations but not all higher-order operations.
 
 
 \subsection{Algebraic Effects and The Free Monad}
@@ -57,18 +56,18 @@ module FreeModule where
 We encode algebraic effects in Agda by representing computations as an abstract
 syntax tree given by the \emph{free monad} over an \emph{effect signature}.
 Such effect signatures are
-traditionally~\cite{awodey2010categorytheory,swierstra2008data,KiselyovI15,WuSH14,KammarLO13}
+traditionally~\citep{awodey2010categorytheory,swierstra2008data,KiselyovI15,WuSH14,KammarLO13}
 given by a \emph{functor}; i.e., a type of kind \ad{Set}~\as{→}~\ad{Set}
 together with a (lawful) mapping function.\footnote{\ad{Set} is the type of
   types in Agda. More generally, functors mediate between different
-  \emph{categories}. For simplicity, this paper only considers endofunctors on
-  \ad{Set}.}  In our Agda implementation, effect signature functors are defined
-by giving a \emph{container}~\cite{AbbottAG03,Abbott2005containers}.  Each
+  \emph{categories}. For simplicity, this paper only considers \emph{endofunctors} on
+  \ad{Set}, where an endofunctor is a functor whose domain and codomain coincides; e.g., \ad{Set}~\as{→}~\ad{Set}.}  In our Agda implementation, effect signature functors are defined
+by giving a \emph{container}~\citep{AbbottAG03,Abbott2005containers}.  Each
 container corresponds to a value of type $\ad{Set}~→~\ad{Set}$ that is both
 \emph{strictly
   positive}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/positivity-checking.html}}
 and \emph{universe
-  consistent}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/universe-levels.html}}~\cite{martin-lof1984intuitionistic},
+  consistent}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/universe-levels.html}}~\citep{martin-lof1984intuitionistic},
 meaning they are a constructive approximation of endofunctors on \ad{Set}.
 Effect signatures are given by a (dependent) record
 type:\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/record-types.html}}
@@ -99,7 +98,7 @@ $\ad{Set}~→~\ad{Set}$:
 \end{code}
 %
 The extension of an effect $Δ$ into $\ad{Set}~→~\ad{Set}$ is indeed a functor,
-as witnessed by the following function: 
+as witnessed by the following function:\footnote{To show that this is truly a functor, we should also prove that \af{map-sig} satisfies the \emph{functor laws}.  We will not make use of these functor laws in this paper, so we omit them.}
 %
 \begin{code}
   map-sig : (X → Y) → ⟦ Δ ⟧ X → ⟦ Δ ⟧ Y
@@ -107,8 +106,7 @@ as witnessed by the following function:
 \end{code}
 
 As discussed in the introduction, computations may use multiple different
-effects. Effect signatures are closed under co-products, which we use to encode
-rows of effects:\footnote{The \ad{\_⊕\_} function uses \emph{copattern
+effects. Effect signatures are closed under co-products:\footnote{The \ad{\_⊕\_} function uses \emph{copattern
     matching}:
   \url{https://agda.readthedocs.io/en/v2.6.2.2/language/copatterns.html}. The
   \aF{Op} line defines how to compute the \aF{Op} field of the record produced
@@ -130,13 +128,13 @@ rows of effects:\footnote{The \ad{\_⊕\_} function uses \emph{copattern
 \end{code}
 %
 We compute the co-product of two effect signatures by taking the disjoint sum of
-their operations and combining the return type mappings pointwise.  The effect
+their operations and combining the return type mappings pointwise.
+We co-products to encode effect rows. For example, The effect
 \ab{Δ₁}~\ad{⊕}~\ab{Δ₂} corresponds to the row union denoted as $Δ₁,Δ₂$ in the
 introduction.
 
 The syntax of computations with effects \ab{Δ} is given by the free monad over
-\ab{Δ}.  Following \citet{DBLP:conf/csl/HancockS00} and \citet{KiselyovI15}, we
-encode the free monad as follows:
+\ab{Δ}.  We encode the free monad as follows:
 %
 \begin{code}
   data Free (Δ : Effect) (A : Set) : Set where
@@ -157,14 +155,23 @@ encode the free monad as follows:
   hmap-free θ (impure (c , k))  = impure (θ (c , hmap-free θ ∘ k))
 \end{code}
 %
-Here, \ac{pure} is a computation with no side-effects, whereas \ac{impure} is an
-operation \as{(}\ab{op}~\as{:}~\aF{Op}~\ab{Δ}\as{)} whose continuation
-\as{(}\ab{k}~\as{:}~\aF{Ret}~\ab{Δ}~\ab{op}~\as{→}~\ad{Free}~\ab{Δ}~\ab{A}\as{)}
-expects a value of the return type of the operation.  To see how we can
-represent programs using this data type, it is instructional to look at an
-example.
 
-\paragraph{Example.}
+Here, \ac{pure} is a computation with no side-effects, whereas \ac{impure} is an
+operation whose syntax is given by the functor \af{⟦}~\as{Δ}~\af{⟧}.  By
+applying this functor to \ad{Free}~\as{Δ}~\as{A}, we encode an operation whose
+\emph{continuation} may contain more effectful operations.\footnote{By unfolding
+the definition of \ad{⟦\_⟧} one can see that our definition of the free monad is
+identical to the I/O trees of \citet{DBLP:conf/csl/HancockS00}, or the so-called
+\emph{freer monad} of \citet{KiselyovI15}.}
+
+% \as{(}\ab{op}~\as{:}~\aF{Op}~\ab{Δ}\as{)} whose continuation
+% \as{(}\ab{k}~\as{:}~\aF{Ret}~\ab{Δ}~\ab{op}~\as{→}~\ad{Free}~\ab{Δ}~\ab{A}\as{)}
+% expects a value of the return type of the operation.  To see how we can
+% represent programs using this data type, it is instructional to look at an
+% example.
+
+
+\paragraph*{Example.}
   The data type on the left below defines an operation for outputting a string.
   On the right is its corresponding effect signature.\\
   \begin{minipage}{0.495\linewidth}
@@ -227,7 +234,7 @@ two strings before throwing an exception:\footnote{\ad{⊥-elim} is the eliminat
 \end{code}
 %
 To reduce syntactic overhead, we use \emph{row insertions} and \emph{smart
-  constructors}~\cite{swierstra2008data}.
+  constructors}~\citep{swierstra2008data}.
 
 \subsection{Row Insertions and Smart Constructors}
 \label{sec:row-insertion}
@@ -335,7 +342,7 @@ parameterized by a function \ab{A}~\as{→}~\ab{B} (first parameter) which folds
 \ac{pure} computation, and an \emph{algebra} \af{Alg}~\ab{Δ}~\ab{A} (second
 parameter) which folds an \ac{impure} computation.  We call the latter an
 algebra because it corresponds to an
-$F$-algebra~\cite{arbib1975arrows,DBLP:books/daglib/0069193} over the signature
+$F$-algebra~\citep{arbib1975arrows,DBLP:books/daglib/0069193} over the signature
 functor of $\ad{Δ}$, denoted $F_{Δ}$. That is, a tuple $(A, α)$ where $A$ is an
 object called the \emph{carrier} of the algebra, and \ab{α} a morphism
 $F_{Δ}(A) \to A$.  Using \af{fold}, monadic bind for the free monad is defined
@@ -495,7 +502,7 @@ folding using \aF{ret}, \aF{hdl}, and a function
   from-front : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Free (Δ₁ ⊕ Δ₂) A → Free Δ A
   from-front ⦃ w ⦄ = hmap-free (reorder w .Inverse.to)  
 \end{code}\ 
-, whose implementation can be found in the artifact~\cite{heftyalgebraspopl23artifact}.
+, whose implementation can be found in the artifact~\citep{heftyalgebraspopl23artifact}.
 \begin{code}
   given_handle_ : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
   given_handle_  ⦃ w ⦄ h m = fold
@@ -896,7 +903,7 @@ and \aF{hcall} cases are similar to the \aF{ret} and \aF{hdl} cases from
 higher-order operations is the \aF{henter} case which allows handler cases to
 first invoke scoped sub-computations and inspect their return types, before
 (optionally) passing control to the continuation \ab{k}.  The \aF{glue} function
-is used for modularly \emph{weaving}~\cite{WuSH14} side effects of handlers
+is used for modularly \emph{weaving}~\citep{WuSH14} side effects of handlers
 through sub-scopes of yet-unhandled operations.
 
 \subsubsection{Weaving}
