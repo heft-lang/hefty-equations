@@ -246,7 +246,7 @@ some larger effect row \ab{Δ}.
 We define the \ad{≲} order on effect rows in terms of a different
 \ab{Δ₁}~\ad{∙}~\ab{Δ₂}~\ad{≈}~\ab{Δ} which witnesses that any operation of
 \ab{Δ} is isomorphic to \emph{either} an operation of \ab{Δ₁} \emph{or} an
-operation of \ab{Δ₂}:
+operation of \ab{Δ₂}:\footnote{Here \ad{↔} is the type of an \emph{isomorphism} on \ad{Set} from the Agda Standard Library.  It is given by a record with two fields: the \aF{to} field represents the $\rightarrow$ direction of the isomorphism, and \aF{from} field represents the $\leftarrow$ direction of the isomorphism.}
 %
 \begin{code}
   record _∙_≈_ (Δ₁ Δ₂ Δ : Effect) : Set₁ where
@@ -267,27 +267,29 @@ It is straightforward to show that \ad{≲} is a \emph{preorder}; i.e., that it 
 %
 \begin{code}[hide]
   postulate ≲-trans : Δ₁ ≲ Δ₂ → Δ₂ ≲ Δ → Δ₁ ≲ Δ
+  module _ where
+    open Inverse
 \end{code}
 
 
-We can also define the following function, which uses a \ab{Δ₁}~\ad{≲}~\ab{Δ₂} witness to coerce an operation of effect type \ab{Δ₁} into an operation of some larger effect type \ab{Δ₂}.
+We can also define the following function, which uses a \ab{Δ₁}~\ad{≲}~\ab{Δ₂} witness to coerce an operation of effect type \ab{Δ₁} into an operation of some larger effect type \ab{Δ₂}.\footnote{The dot notation \ab{w}~\as{.}\aF{reorder} projects the \aF{reorder} field of the record \ab{w}.}
 %
 \begin{code}
-  inj : ⦃ Δ₁ ≲ Δ₂ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ₂ ⟧ A
-  inj ⦃ _ , w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
+    inj : ⦃ Δ₁ ≲ Δ₂ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ₂ ⟧ A
+    inj ⦃ _ , w ⦄ (c , k) = w .reorder .to (inj₁ c , k)
 \end{code}
 \begin{code}[hide]
-  injₗ : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ ⟧ A
-  injₗ ⦃ w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
+    injₗ : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ ⟧ A
+    injₗ ⦃ w ⦄ (c , k) = w .reorder .to (inj₁ c , k)
 
-  postulate ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ 
+    postulate ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ 
 \end{code}
 %
 
 Furthermore, we can freely coerce the operations of a computation from one
 effect row type to a different effect row type:\footnote{The notation \af{∀[\_]} is from the Agda Standard library, and is defined as follows: \af{∀[}~\ab{P}~\af{]}~\as{=~∀}~\ab{x}~\as{→}~\ab{P~x}.}
 \footnote{We can think
-of the \af{hmap-free} function as a "higher-order" map for Free: given a natural
+of the \af{hmap-free} function as a ``higher-order'' map for \ad{Free}: given a natural
 transformation between (the extension of) signatures, we can can transform the
 signature of a computation.  This amounts to the observation that \ad{Free} is a
 functor over the category of containers and container morphisms; assuming
@@ -409,11 +411,11 @@ an interface given by an effect signature.  Next, we define \emph{effect
 \subsection{Effect Handlers}
 \label{sec:effect-handlers}
 
-An effect handler implements the interface given by an effect signature, and
-defines how to interpret the syntactic operations associated with an effect.
-Like monadic bind, effect handlers can be defined as a fold over the free monad.
-The following type of \emph{parameterized handlers} defines how to fold
-respectively \ac{pure} and \ac{impure} computations:
+An effect handler implements the interface given by an effect signature,
+interpreting the syntactic operations associated with an effect.  Like monadic
+bind, effect handlers can be defined as a fold over the free monad.  The
+following type of \emph{parameterized handlers} defines how to fold respectively
+\ac{pure} and \ac{impure} computations:
 %
 \begin{code}
   record ⟨_!_⇒_⇒_!_⟩ (A : Set) (Δ : Effect) (P : Set) (B : Set) (Δ′ : Effect) : Set₁ where
@@ -430,84 +432,25 @@ A handler of type
 parameterized in the sense that it turns a computation of type
 \ad{Free}~\ab{Δ}~\ab{A} into a parameterized computation of type
 \ab{P}~\as{→}~\ad{Free}~\ab{Δ′}~\ab{B}.  The following function does so by
-folding using \aF{ret}, \aF{hdl}, and a function
+folding using \aF{ret}, \aF{hdl}, and a \ad{to-front} function:
 %
 \begin{code}[hide]
---   inj▸ₗ-ret≡ : ⦃ p : Δ ∼ Δ₀ ▸ Δ′ ⦄ (op : Op Δ₀)
---              → Ret Δ (inj▸ₗ op) ≡ Ret Δ₀ op
---   inj▸ₗ-ret≡ ⦃ insert ⦄ _  = refl
---   inj▸ₗ-ret≡ ⦃ sift p ⦄    = inj▸ₗ-ret≡ ⦃ p ⦄
--- 
---   inj▸ᵣ-ret≡ : ⦃ p : Δ ∼ Δ₀ ▸ Δ′ ⦄ (op : Op Δ′)
---             → Ret Δ (inj▸ᵣ op) ≡ Ret Δ′ op
---   inj▸ᵣ-ret≡ ⦃ insert ⦄ op  = refl
---   inj▸ᵣ-ret≡ ⦃ sift p ⦄     = [ (λ _ → refl) , inj▸ᵣ-ret≡ ⦃ p ⦄ ]
--- 
--- 
---   case▸  :  ⦃ Δ ∼ Δ₀ ▸ Δ′ ⦄
---          →  Op Δ
---          →  (Op Δ₀  → B)
---          →  (Op Δ′  → B)
---          →  B
---   case▸ ⦃ insert ⦄ x f g = [ f , g ] x
---   case▸ ⦃ sift p ⦄ x f g = [ g ∘ inj₁ , (λ y → case▸ ⦃ p ⦄ y f (g ∘ inj₂)) ] x
--- 
---   case▸≡  :  ⦃ w : Δ ∼ Δ₀ ▸ Δ′ ⦄
---          →  (op : Op Δ)
---          →  ((op′ : Op Δ₀) → op ≡ inj▸ₗ op′ → B)
---          →  ((op′ : Op Δ′) → op ≡ inj▸ᵣ op′ → B)
---          →  B
---   case▸≡ ⦃ w = insert ⦄ (inj₁ x) f g = f x refl
---   case▸≡ ⦃ w = insert ⦄ (inj₂ y) f g = g y refl
---   case▸≡ ⦃ w = sift p ⦄ (inj₁ x) f g = g (inj₁ x) refl
---   case▸≡ ⦃ w = sift p ⦄ (inj₂ y) f g = case▸≡ ⦃ p ⦄ y (λ op′ → f op′ ∘ cong inj₂) (λ op′ → g (inj₂ op′) ∘ cong inj₂)
--- 
-\end{code}
-\begin{code}[inline]
-  to-front : Δ₁ ∙ Δ₂ ≈ Δ → Free Δ A → Free (Δ₁ ⊕ Δ₂) A
-\end{code}
-\begin{code}[hide]
-  to-front w = hmap-free (reorder w .Inverse.from) 
---   to-front {Δ₀ = Δ₀} ⦃ w ⦄ (pure x) = pure x
---   to-front {Δ₀ = Δ₀} ⦃ insert ⦄ (impure (op , k)) = impure $ op , (to-front ⦃ insert ⦄ ∘ k)
---   to-front {Δ₀ = Δ₀} ⦃ sift w ⦄ (impure ((inj₁ op) , k)) = impure $ (inj₂ (inj₁ op)) , (to-front ⦃ sift w ⦄ ∘ k)
---   to-front {Δ₀ = Δ₀} ⦃ sift {Δ = Δ} {Δ′ = Δ′} w ⦄ t@(impure ((inj₂ op) , k)) = case▸≡ ⦃ w ⦄ op
---     (λ op′ eq →
---       impure
---         ((inj₁ op′) ,
---         ( to-front ⦃ sift w ⦄
---         ∘ k
---         ∘ subst id (begin
---             Ret Δ₀ op′
---           ≡⟨ sym (inj▸ₗ-ret≡ ⦃ w ⦄ op′) ⟩
---             Ret Δ (inj▸ₗ ⦃ w ⦄ op′)
---           ≡⟨ sym $ cong (Ret Δ) eq ⟩
---             Ret Δ op
---           ∎))))
---     (λ op′ eq →
---       impure ((inj₂ (inj₂ op′)) ,
---         ( to-front ⦃ sift w ⦄
---         ∘ k
---         ∘ subst id (begin
---             Ret Δ′ op′
---           ≡⟨ sym (inj▸ᵣ-ret≡ ⦃ w ⦄ op′) ⟩
---             Ret Δ (inj▸ᵣ ⦃ w ⦄ op′)
---           ≡⟨ (sym $ cong (Ret Δ) eq) ⟩
---             Ret Δ op
---           ∎))))
--- 
   from-front : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Free (Δ₁ ⊕ Δ₂) A → Free Δ A
-  from-front ⦃ w ⦄ = hmap-free (reorder w .Inverse.to)  
-\end{code}\ 
-, whose implementation can be found in the artifact~\citep{heftyalgebraspopl23artifact}.
+  from-front ⦃ w ⦄ = hmap-free (w .reorder .Inverse.to)
+  module _ where
+    open Inverse
+\end{code}
 \begin{code}
-  given_handle_ : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
-  given_handle_  ⦃ w ⦄ h m = fold
-    (ret h)
-    ( λ where (inj₁ c , k) p → hdl h (c , k) p
-              (inj₂ c , k) p → impure (c , flip k p) 
-    ) 
-    (to-front w m) 
+    to-front : Δ₁ ∙ Δ₂ ≈ Δ → Free Δ A → Free (Δ₁ ⊕ Δ₂) A
+    to-front w = hmap-free (w .reorder .from)
+
+    given_handle_ : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
+    given_handle_  ⦃ w ⦄ h m = fold
+      (ret h)
+      ( λ where (inj₁ c , k) p → hdl h (c , k) p
+                (inj₂ c , k) p → impure (c , flip k p) 
+      ) 
+      (to-front w m) 
 \end{code}
 %
 Comparing with the syntax we used to explain algebraic effects and handlers in
@@ -528,7 +471,7 @@ Using this type of handler, the $\Id{hOut}$ handler from the introduction can be
 %
 The handler $\Id{hOut}$ in \cref{sec:background} did not bind any parameters.
 However, since we are encoding it as a \emph{parameterized} handler, \af{hOut}
-now binds a unit typed parameter.  Besides this difference, the handler is the
+now binds a unit-typed parameter.  Besides this difference, the handler is the
 same as in \cref{sec:background}.  We can use the \af{hOut} handler to run
 computations.  To this end, we introduce a \af{Nil} effect with no associated
 operations which we will use to indicate where an effect row
@@ -609,25 +552,19 @@ An example of parameterized (as opposed to unparameterized) handlers, is the sta
   ‵get = inject (impure (get , pure)) 
 \end{code}
 \hrulefill\\
-\begin{minipage}{0.445\linewidth}
 \begin{code}
   hSt : ⟨ A ! State ⇒ ℕ ⇒ (A × ℕ) ! Δ′ ⟩
   ret hSt x s = pure (x , s)
   hdl hSt (put m , k) n = k tt  m
   hdl hSt (get   , k) n = k n   n
-\end{code}
-\end{minipage}
-\hfill\vline\hfill
-\begin{minipage}{0.545\linewidth}
-\begin{code}
+
   ‵incr : ⦃ State ≲ Δ ⦄ → Free Δ ⊤
   ‵incr = do n ← ‵get; ‵put (n + 1)
-  
+
   incr-test : un ((given hSt handle ‵incr) 0) ≡ (tt , 1)
   incr-test = refl
 \end{code}
-\end{minipage}
-\caption{A state effect (upper), its handler (lower left), and a simple test (lower right) which uses the (elided) smart constructors for \ac{get} and \ac{put}}
+\caption{A state effect (upper), its handler (\af{hSt} below), and a simple test (\af{incr-test}, also below) which uses (the elided) smart constructors for \ac{get} and \ac{put}}
 \label{fig:state-effect-handler}
 \end{figure}
 
@@ -638,7 +575,8 @@ An example of parameterized (as opposed to unparameterized) handlers, is the sta
 \Cref{sec:modularity-problem} described the modularity problem with higher-order
 effects, using a higher-order operation that interacts with output as an
 example.  In this section we revisit the problem, framing it in terms of the
-definitions introduced in the previous section, using a different effect whose
+definitions introduced in the previous section.
+To this end, we use a different effect whose
 interface is summarized by the \ad{CatchM} record below.  The record asserts
 that the computation type \ab{M}~\as{:}~\ad{Set}~\as{→}~\ad{Set} has at least a
 higher-order operation \aF{catch} and a first-order operation \aF{throw}:
