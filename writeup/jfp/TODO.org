@@ -3,3 +3,5 @@
 * TODO Sentence in intro explaining how the paper relates to the old one
 
 * TODO Update list of contributions to reflect new contribution
+
+* TODO Relation to https://arxiv.org/pdf/2302.01415

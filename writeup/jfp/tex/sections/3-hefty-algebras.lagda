@@ -34,8 +34,8 @@ open Abbreviation using (hThrow; ♯_)
 
 As observed in \cref{sec:higher-order-effects}, operations such as \ad{catch}
 can be elaborated into more primitive effects and handlers.  However, these
-elaborations are not modular.  We propose to solve this problem by factoring
-these elaborations into interfaces of their own to make them modular.
+elaborations are not modular.  We solve this problem by factoring
+elaborations into interfaces of their own to make them modular.
 
 To this end, we first introduce a new type of abstract syntax trees
 (\cref{sec:towards-hefty-trees,sec:lifting-algebraic-to-higher-order,sec:hefty-monadic-bind})
@@ -64,13 +64,10 @@ signature functor $H$.  The notion of elaboration that we introduce in
 \cref{sec:hefty-algebras} is an $F$-algebra whose carrier is a ``first-order''
 effect tree (\ad{Free}~\ab{Δ}).
 
-In this section, we encode this conceptual framework in Agda using
-\emph{containers}~\cite{Abbott2005containers,AbbottAG03}, which correspond to a
-higher-order signature functor $H$ by requiring that computation types only
-occur in \emph{strictly positive} positions.  This allows us to shallowly embed
-the conceptual framework in Agda, but may be more restrictive than strictly
-necessary.  We discuss further limitations of the approach and compare with
-previous work in \cref{sec:limitations}.
+In this section, we encode this conceptual framework in Agda using a
+container-inspired approach to represent higher-order signature functors $H$ as
+a strictly positive type.  We discuss and compare our approach with previous
+work in \cref{sec:limitations}.
 
 
 \subsection{Generalizing \ad{Free} to Support Higher-Order Operations}
