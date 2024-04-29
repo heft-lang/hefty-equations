@@ -141,34 +141,15 @@ The syntax of computations with effects \ab{Δ} is given by the free monad over
     pure    : A                 → Free Δ A
     impure  : ⟦ Δ ⟧ (Free Δ A)  → Free Δ A
 \end{code}
-\begin{code}[hide]
-  -- The "higher-order" map for Free. Given a natural transformation between
-  -- (the extension of) signatures, we can can transform the signature of a
-  -- tree.
-  --
-  -- This amounts to the observation that `Free` is a functor over the category
-  -- of containers and container morphisms.
-  --
-  -- Also, hmap-free should preserve naturality
-  hmap-free : ∀[ ⟦ Δ₁ ⟧ ⇒ ⟦ Δ₂ ⟧ ] → ∀[ Free Δ₁ ⇒ Free Δ₂ ] 
-  hmap-free θ (pure x)          = pure x
-  hmap-free θ (impure (c , k))  = impure (θ (c , hmap-free θ ∘ k))
-\end{code}
-%
 
 Here, \ac{pure} is a computation with no side-effects, whereas \ac{impure} is an
-operation whose syntax is given by the functor \af{⟦}~\as{Δ}~\af{⟧}.  By
-applying this functor to \ad{Free}~\as{Δ}~\as{A}, we encode an operation whose
+operation whose syntax is given by the functor \af{⟦}~\ab{Δ}~\af{⟧}.  By
+applying this functor to \ad{Free}~\ab{Δ}~\as{A}, we encode an operation whose
 \emph{continuation} may contain more effectful operations.\footnote{By unfolding
 the definition of \ad{⟦\_⟧} one can see that our definition of the free monad is
 identical to the I/O trees of \citet{DBLP:conf/csl/HancockS00}, or the so-called
-\emph{freer monad} of \citet{KiselyovI15}.}
-
-% \as{(}\ab{op}~\as{:}~\aF{Op}~\ab{Δ}\as{)} whose continuation
-% \as{(}\ab{k}~\as{:}~\aF{Ret}~\ab{Δ}~\ab{op}~\as{→}~\ad{Free}~\ab{Δ}~\ab{A}\as{)}
-% expects a value of the return type of the operation.  To see how we can
-% represent programs using this data type, it is instructional to look at an
-% example.
+\emph{freer monad} of \citet{KiselyovI15}.}  To see in what sense, let us
+consider an example.
 
 
 \paragraph*{Example.}
@@ -236,79 +217,98 @@ two strings before throwing an exception:\footnote{\ad{⊥-elim} is the eliminat
 To reduce syntactic overhead, we use \emph{row insertions} and \emph{smart
   constructors}~\citep{swierstra2008data}.
 
+
 \subsection{Row Insertions and Smart Constructors}
 \label{sec:row-insertion}
 
-A row insertion \ab{Δ}~\ab{∼}~\ab{Δ₀}~\ad{▸}~\ab{Δ′} is a data type representing
-a witness that \ab{Δ} is the effect row resulting from inserting \ab{Δ₀}
-somewhere in \ab{Δ′}:
+A \emph{smart constructor} constructs an effectful computation comprising a single operation.
+The type of this computation is polymorphic in what other effects the computation has.
+For example, the type of a smart constructor for the \ac{out} effect is:
 %
-\begin{code}
-  record _∙_≈_ (Δ₁ Δ₂ Δ : Effect) : Set₁ where
-    field
-      reorder : ∀ {X} → ⟦ Δ₁ ⊕ Δ₂ ⟧ X ↔ ⟦ Δ ⟧ X
-
-  open _∙_≈_ 
-    
-  _≲_ : (Δ₁ Δ₂ : Effect) → Set₁
-  Δ₁ ≲ Δ₂ = ∃ λ Δ′ → Δ₁ ∙ Δ′ ≈ Δ₂
-
-  
-  postulate ≲-trans : Δ₁ ≲ Δ₂ → Δ₂ ≲ Δ → Δ₁ ≲ Δ 
-  
-  inj : ⦃ Δ₁ ≲ Δ₂ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ₂ ⟧ A
-  inj ⦃ _ , w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
-
-  injₗ : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ ⟧ A
-  injₗ ⦃ w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
-
-  postulate ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ 
-\end{code}
-%
-The \ac{insert} constructor represents a witness that \ab{Δ₀} is inserted in
-front of \ab{Δ′}, whereas \ac{sift} witnesses that \ab{Δ₀} is inserted into the
-row \ab{Δ₁}~\ad{⊕}~\ab{Δ′} by inserting \ab{Δ₀} somewhere in \ab{Δ′}.
-
-Using row insertions we can coerce effects into larger ones, and define smart
-constructors like:
 \begin{code}[hide]
-  mutual
+  postulate
+    _≲⅋_ : (Δ₁ Δ₂ : Effect) → Set₁
 \end{code}
 \begin{code}
-    ‵out : ⦃ Output ≲ Δ ⦄ → String → Free Δ ⊤
-\end{code}
-\begin{code}[hide]
-    ‵out s = inject (impure (out s , pure)) 
-
-    inject : ⦃ Δ₁ ≲ Δ₂ ⦄ → Free Δ₁ A → Free Δ₂ A
-    inject = hmap-free inj 
+    ‵out⅋ : ⦃ Output ≲⅋ Δ ⦄ → String → Free Δ ⊤
 \end{code}
 %
-We refer to \citet{heftyalgebraspopl23artifact} for the full implementation of
-\af{‵out}.  The double brace wrapped row insertion parameter of \af{‵out} tells
-us that the \ad{Output} effect is a part of the row \ab{Δ}.  The smart
-constructor uses this witness to coerce an \ac{out} operation into \ab{Δ}.  This
-allows \af{‵out} to be used in any program that has at least the \ad{Output}
-effect.
-
-The double braces in \as{⦃}~\ab{Δ}~\ac{∼}~\ad{Output}~\ad{▸}~\ab{Δ′}~\as{⦄}
-declares the row insertion witness as an \emph{instance argument} of \af{‵out}.
+Here, the \as{⦃}~\ad{Output}~\ad{≲}~\ab{Δ}~\as{⦄} type declares the row insertion witness as an \emph{instance argument} of \af{‵out}.
 Instance arguments in Agda are conceptually similar to type class constraints in
 Haskell: when we call \af{‵out}, Agda will attempt to automatically find a
 witness of the right type, and implicitly pass this as an argument.\footnote{For
   more details on how instance argument resolution works, see the Agda
   documentation:
   \url{https://agda.readthedocs.io/en/v2.6.2.2/language/instance-arguments.html}}
-By declaring the row insertion constructors \ac{insert} and \ac{sift} as
-instances, Agda is able to construct insertion witnesses for us automatically in
-most cases.\footnote{The two constructors for row insertion are
-  \emph{overlapping}, which will cause Agda instance resolution to fail unless
-  we enable the option \texttt{-}\texttt{-overlapping-instances}. The examples
-  in this paper type check in Agda 2.6.2.2 using this option.}
+Thus, calling \af{‵out} will automatically inject the \ad{Output} effect into
+some larger effect row \ab{Δ}.
+
+We define the \ad{≲} order on effect rows in terms of a different
+\ab{Δ₁}~\ad{∙}~\ab{Δ₂}~\ad{≈}~\ab{Δ} which witnesses that any operation of
+\ab{Δ} is isomorphic to \emph{either} an operation of \ab{Δ₁} \emph{or} an
+operation of \ab{Δ₂}:
+%
+\begin{code}
+  record _∙_≈_ (Δ₁ Δ₂ Δ : Effect) : Set₁ where
+    field reorder : ∀ {X} → ⟦ Δ₁ ⊕ Δ₂ ⟧ X ↔ ⟦ Δ ⟧ X
+\end{code}
+\begin{code}[hide]
+  open _∙_≈_ 
+\end{code}
+%
+Using this, the \ad{≲} order is defined as follows:
+%
+\begin{code}
+  _≲_ : (Δ₁ Δ₂ : Effect) → Set₁
+  Δ₁ ≲ Δ₂ = ∃ λ Δ′ → Δ₁ ∙ Δ′ ≈ Δ₂
+\end{code}
+%
+It is straightforward to show that \ad{≲} is a \emph{preorder}; i.e., that it is a \emph{reflexive} and \emph{transitive} relation.
 %
 \begin{code}[hide]
---   instance  insert▸ : (Δ₀ ⊕ Δ′)  ∼ Δ₀ ▸ Δ′;  sift▸ : ⦃ Δ ∼ Δ₀ ▸ Δ′ ⦄  →  ((Δ₁ ⊕ Δ)   ∼ Δ₀ ▸ (Δ₁ ⊕ Δ′))
---             insert▸ = insert;                sift▸ ⦃ w ⦄ = sift w
+  postulate ≲-trans : Δ₁ ≲ Δ₂ → Δ₂ ≲ Δ → Δ₁ ≲ Δ
+\end{code}
+
+
+We can also define the following function, which uses a \ab{Δ₁}~\ad{≲}~\ab{Δ₂} witness to coerce an operation of effect type \ab{Δ₁} into an operation of some larger effect type \ab{Δ₂}.
+%
+\begin{code}
+  inj : ⦃ Δ₁ ≲ Δ₂ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ₂ ⟧ A
+  inj ⦃ _ , w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
+\end{code}
+\begin{code}[hide]
+  injₗ : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ ⟧ A
+  injₗ ⦃ w ⦄ (c , k) = w .reorder .Inverse.to (inj₁ c , k)
+
+  postulate ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ 
+\end{code}
+%
+
+Furthermore, we can freely coerce the operations of a computation from one
+effect row type to a different effect row type:\footnote{The notation \af{∀[\_]} is from the Agda Standard library, and is defined as follows: \af{∀[}~\ab{P}~\af{]}~\as{=~∀}~\ab{x}~\as{→}~\ab{P~x}.}
+\footnote{We can think
+of the \af{hmap-free} function as a "higher-order" map for Free: given a natural
+transformation between (the extension of) signatures, we can can transform the
+signature of a computation.  This amounts to the observation that \ad{Free} is a
+functor over the category of containers and container morphisms; assuming
+\af{hmap-free} preserves naturality.}
+%
+\begin{code}
+  hmap-free : ∀[ ⟦ Δ₁ ⟧ ⇒ ⟦ Δ₂ ⟧ ] → ∀[ Free Δ₁ ⇒ Free Δ₂ ] 
+  hmap-free θ (pure x)          = pure x
+  hmap-free θ (impure (c , k))  = impure (θ (c , hmap-free θ ∘ k))
+\end{code}
+%
+Using this infrastructure, we can now implement a generic \ad{inject} function which
+lets us define smart constructors for operations such as the \ac{out} operation
+discussed in the previous subsection.
+%
+\begin{code}
+  inject : ⦃ Δ₁ ≲ Δ₂ ⦄ → Free Δ₁ A → Free Δ₂ A
+  inject = hmap-free inj
+
+  ‵out : ⦃ Output ≲ Δ ⦄ → String → Free Δ ⊤
+  ‵out s = inject (impure (out s , pure)) 
 \end{code}
 %
 
