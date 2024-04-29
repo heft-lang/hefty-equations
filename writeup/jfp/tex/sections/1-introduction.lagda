@@ -20,11 +20,11 @@ Defining abstractions for programming with side effects is a research question w
 The goal is to define an interface of (possibly) side effecting operations where the interface encapsulates and hides irrelevant operational details about the operations and their side effects.
 Such encapsulation makes it easy to refactor, optimize, or even change the behavior of a program, by changing the implementation of the interface.
 
-Monads~\cite{DBLP:conf/lics/Moggi89} have long been the preferred solution to this research question.
-However, \emph{algebraic effects and handlers}~\cite{Plotkin2009handlers} are emerging as an attractive alternative solution, due to the modularity benefits that they provide.
+Monads~\citep{DBLP:conf/lics/Moggi89} have long been the preferred solution to this research question.
+However, \emph{algebraic effects and handlers}~\citep{Plotkin2009handlers} are emerging as an attractive alternative solution, due to the modularity benefits that they provide.
 However, these modularity benefits do not apply to many common operations that take computations as arguments.
 
-\subsection{Background: Algebraic Effects and Handlers}-
+\subsection{Background: Algebraic Effects and Handlers}
 \label{sec:background}
 
 \newcommand{\Id}[1]{\mathit{#1}}
@@ -139,7 +139,7 @@ Following \citet{Plotkin2009handlers,Pretnar15}, the left and right hand sides o
 Here it is only $k$ whose type is compatible with the right hand side.
 In theory, the parameter type $v$ would also be compatible if $A = \Typing{C}{Δ′}$.
 However, encoding computations as parameters in this way is non-modular.
-The reason is that effect handlers are not applied recursively to parameters of operations~\cite{Plotkin2009handlers,Pretnar15}; i.e., if $h$ handles operations other than $\Op{op}$, then
+The reason is that effect handlers are not applied recursively to parameters of operations~\citep{Plotkin2009handlers,Pretnar15}; i.e., if $h$ handles operations other than $\Op{op}$, then
 %
 \begin{equation*}
 \With{h}{(\Do~x \leftarrow \Op{op}~v; m)}\
@@ -151,7 +151,7 @@ This implies that the only way to ensure that $v$ has type $A = \Typing{C}{Δ′
 In turn, this means that programs can contain at most one higher-order effect encoded in this way (otherwise, which handler do we apply first?).
 Consequently, encoding computation parameters in terms of the value $v$ carried by an operation does not support modular definition, composition, and handling of higher-order effects.
 
-A consequence of this handler typing restriction is that algebraic effects and handlers only support higher-order operations whose computation parameters are \emph{continuation-like}.
+A consequence of this restriction is that algebraic effects and handlers only support higher-order operations whose computation parameters are \emph{continuation-like}.
 In particular, for any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typing{A}{Δ} \to \Typing{A}{Δ}$ and any $m_1,\ldots,m_n$ and $k$,
 %
 \begin{equation*}
@@ -162,7 +162,7 @@ In particular, for any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typin
   \label{eqn:algebraicity}
 \end{equation*}
 %
-This property, known as the \emph{algebraicity property}~\cite{PlotkinP03}, says that the computation parameter values $m_1,\ldots,m_n$ are only ever run in a way that \emph{directly} passes control to $k$.
+This property, known as the \emph{algebraicity property}~\citep{PlotkinP03}, says that the computation parameter values $m_1,\ldots,m_n$ are only ever run in a way that \emph{directly} passes control to $k$.
 Such operations can without loss of generality or modularity be encoded as operations \emph{without computation parameters}; e.g., $\Op{op}~m_1\ldots{}m_n = \Do~x \leftarrow \Op{op′}~(); \Id{select}~x$ where $\Op{op′} : () \to \Typing{D^n}{Δ}$ and $\Id{select} : D^n \to \Typing{A}{Δ}$ is a function that chooses between $n$ different computations using a data type $D^n$ whose constructors are $d_1,\ldots,d_n$ such that $\Id{select}~d_i = m_i$ for $i=1..n$.
 Some higher-order operations obey the algebraicity property; many do not.
 Examples of operations that do not include:
@@ -173,13 +173,13 @@ Examples of operations that do not include:
     \Do~(\Op{catch}~m_1~m_2); \Op{throw}\ \not\equiv\
     \Op{catch}~(\Do~m_1; \Op{throw})~(\Do~m_2; \Op{throw})
   \]
-\item Local binding (the \emph{reader monad}~\cite{DBLP:conf/afp/Jones95}): let $\Op{ask}$ be an operation that reads a local binding, and $\Op{local}~r~m$ be an operation that makes $r$ the current binding in computation $m$.  Observe:
+\item Local binding (the \emph{reader monad}~\citep{DBLP:conf/afp/Jones95}): let $\Op{ask}$ be an operation that reads a local binding, and $\Op{local}~r~m$ be an operation that makes $r$ the current binding in computation $m$.  Observe:
   \[
     \Do~(\Op{local}~r~m); \Op{ask}
     \ \not\equiv\
     \Op{local}~r~(\Do~m; \Op{ask})
   \]
-\item Logging with filtering (an extension of the \emph{writer monad}~\cite{DBLP:conf/afp/Jones95}): let $\Op{out}~s$ be an operation for logging a string, and $\Op{censor}~f~m$ be an operation for post-processing the output of computation $m$ by applying $f : \Type{String} \to \Type{String}$.\footnote{The $\Op{censor}$ operation is a variant of the function by the same name the widely used Haskell \texttt{mtl} library: \url{https://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Writer-Lazy.html}}
+\item Logging with filtering (an extension of the \emph{writer monad}~\citep{DBLP:conf/afp/Jones95}): let $\Op{out}~s$ be an operation for logging a string, and $\Op{censor}~f~m$ be an operation for post-processing the output of computation $m$ by applying $f : \Type{String} \to \Type{String}$.\footnote{The $\Op{censor}$ operation is a variant of the function by the same name the widely used Haskell \texttt{mtl} library: \url{https://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Writer-Lazy.html}}
 Observe:
   \[
     \Do~(\Op{censor}~f~m); \Op{out}~s
@@ -210,17 +210,17 @@ For example, $\Op{censor}$ can be elaborated into an inline handler application 
 %
 The other higher-order operations above can be defined in a similar manner.
 
-Elaborating higher-order operations into standard algebraic effects and handlers as illustrated above is a key use case that effect handlers were designed for~\cite{Plotkin2009handlers}.
+Elaborating higher-order operations into standard algebraic effects and handlers as illustrated above is a key use case that effect handlers were designed for~\citep{Plotkin2009handlers}.
 However, elaborating operations in this way means the operations are not a part of any effect interface.
 So, unlike plain algebraic operations, the only way to refactor, optimize, or change the semantics of higher-order operations defined in this way is to modify or copy code.
 In other words, we forfeit one of the key attractive modularity features of algebraic effects and handlers.
 
-This modularity problem with higher-order effects (i.e., effects with higher-order operations) was first observed by \citet{WuSH14} who proposed \emph{scoped effects and handlers}~\cite{WuSH14,PirogSWJ18,YangPWBS22} as a solution.
+This modularity problem with higher-order effects (i.e., effects with higher-order operations) was first observed by \citet{WuSH14} who proposed \emph{scoped effects and handlers}~\citep{WuSH14,PirogSWJ18,YangPWBS22} as a solution.
 Scoped effects and handlers have similar modularity benefits as algebraic effects and handlers, but works for a wider class of effects, including many higher-order effects.
-However, \citet{BergSPW21} recently observed that operations that defer computation, such as evaluation strategies for $\lambda$ application or \emph{(multi-)staging} \cite{TahaS00}, are beyond the expressiveness of scoped effects.
+However, \citet{BergSPW21} recently observed that operations that defer computation, such as evaluation strategies for $\lambda$ application or \emph{(multi-)staging} \citep{TahaS00}, are beyond the expressiveness of scoped effects.
 Therefore, \citet{BergSPW21} introduced another flavor of effects and handlers that they call \emph{latent effects and handlers}.
 
-In this paper we present a (surprisingly) simple alternative solution to the modularity problem with higher-order effects, which only uses standard effects and handlers and off-the-shelf generic programming techniques known from, e.g., \emph{data types \`{a} la carte}~\cite{swierstra2008data}.
+In this paper we present a (surprisingly) simple alternative solution to the modularity problem with higher-order effects, which only uses standard effects and handlers and off-the-shelf generic programming techniques known from, e.g., \emph{data types \`{a} la carte}~\citep{swierstra2008data}.
 
 %% For example, say we have the following program where the function $\Id{contains}~s_1~s_2$ is true iff string $s_2$ contains the string $s_1$:
 %% %
@@ -258,7 +258,7 @@ To this end, we introduce a new type of \emph{computations with higher-order eff
 Here $\HTyping{A}{H}$ is a computation type where $A$ is a return type and $H$ is a row comprising both algebraic and higher-order effects.
 The idea is that the higher-order effects in the row $H$ are modularly elaborated into the row $Δ$.
 To achieve this, we define $\Id{elaborate}$ such that it can be modularly composed from separately defined elaboration cases, which we call elaboration \emph{algebras} (for reasons we explain in \cref{sec:hefty-trees-and-algebras}).
-Using $\HTyping{A}{H} \Elabarr \Typing{A}{Δ}$ as the type of elaboration algebras that elaborate the higher-order effects in $H$ to $Δ$, we can modularly compose any pair of elaboration algebras $e_1 : \HTyping{A}{\Effect{H_1}} \Elabarr{} \Typing{A}{Δ}$ and $e_2 : \HTyping{A}{\Effect{H_2}} \Elabarr{} \Typing{A}{Δ}$ into an algebra $e_{12} : \HTyping{A}{\Effect{H_1,H_2}} \Elabarr{} \Typing{A}{Δ}$.\footnote{Readers familiar with data types \`{a} la carte~\cite{swierstra2008data} may recognize this as algebra composition.}
+Using $\HTyping{A}{H} \Elabarr \Typing{A}{Δ}$ as the type of elaboration algebras that elaborate the higher-order effects in $H$ to $Δ$, we can modularly compose any pair of elaboration algebras $e_1 : \HTyping{A}{\Effect{H_1}} \Elabarr{} \Typing{A}{Δ}$ and $e_2 : \HTyping{A}{\Effect{H_2}} \Elabarr{} \Typing{A}{Δ}$ into an algebra $e_{12} : \HTyping{A}{\Effect{H_1,H_2}} \Elabarr{} \Typing{A}{Δ}$.\footnote{Readers familiar with data types \`{a} la carte~\citep{swierstra2008data} may recognize this as algebra composition.}
 
 Elaboration algebras are as simple to define as non-modular elaborations such as $\Id{censor}$ (\cref{sec:modularity-problem}).
 For example, here is the elaboration algebra for the higher-order $\Effect{Censor}$ effect whose only associated operation is the higher-order operation $\Op{censor_{op}} : (\Type{String} \to \Type{String}) \to \HTyping{A}{H} \to \HTyping{A}{H}$:
@@ -321,8 +321,8 @@ Higher-order operations now have the same modularity benefits as algebraic opera
 
 This paper formalizes the ideas sketched in this introduction by shallowly embedding them in Agda.
 However, the ideas transcend Agda.
-Similar shallow embeddings can be implemented in other dependently typed languages, such as Idris~\cite{brady2013idris}; but also in less dependently typed languages like Haskell, OCaml, or Scala.\footnote{The artifact accompanying this paper~\cite{heftyalgebraspopl23artifact} contains a shallow embedding of elaboration algebras in Haskell.}
-By working a dependently typed language we can state algebraic laws about interfaces of effectful operations, and prove that implementations of the interfaces respect the laws.
+Similar shallow embeddings can be implemented in other dependently typed languages, such as Idris~\citep{brady2013idris}; but also in less dependently typed languages like Haskell, OCaml, or Scala.\footnote{The artifact accompanying this paper~\citep{heftyalgebraspopl23artifact} contains a shallow embedding of elaboration algebras in Haskell.}
+By working in a dependently typed language we can state algebraic laws about interfaces of effectful operations, and prove that implementations of the interfaces respect the laws.
 We make the following technical contributions:
 
 \begin{itemize}
@@ -339,12 +339,12 @@ We make the following technical contributions:
 \end{itemize}
 %
 \cref{sec:related} discusses related work and \cref{sec:conclusion} concludes.
-An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\cite{heftyalgebraspopl23artifact}.
+An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\citep{heftyalgebraspopl23artifact}.
 
 
 \endinput
 
-Algebraic effects and handlers~\cite{Plotkin2009handlers} are a relatively new, and increasingly popular, solution to the problem of defining abstractions for programming constructs with side effects.
+Algebraic effects and handlers~\citep{Plotkin2009handlers} are a relatively new, and increasingly popular, solution to the problem of defining abstractions for programming constructs with side effects.
 Part of the reason behind its increasing popularity is that the solution supports a high degree of modularity, and requires less glue code than previous solutions like .
 This modularity, in theory, makes it possible to use algebraic effects and handlers to create reusable libraries of effectful abstractions, similar to the popular libraries for monad transformers in general use in the Haskell and Scala communities.
 In practice, most recent libraries (e.g., \cite{FIXME}) rely on a different, more general, notion of effect handler known as \emph{scoped effects and handlers}~\cite{WuSH14,PirogSWJ18,YangPWBS22}.
