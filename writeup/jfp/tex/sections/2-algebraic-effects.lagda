@@ -616,7 +616,7 @@ module Abbreviation where
 %
 The handler modifies the return type of the computation by decorating it with a
 \ad{Maybe}.  If no exception is thrown, \aF{ret} wraps the yielded value in a
-\ac{just}.  If an exception is thrown, the handler never invokes the
+\ac{just} constructor.  If an exception is thrown, the handler never invokes the
 continuation \ab{k} and aborts the computation by returning \ac{nothing}
 instead.
 %
@@ -632,15 +632,20 @@ computation by inserting extra effects in an effect row:
 
   instance ≲-to-∙ : ⦃ w : Δ₁ ≲ Δ₂ ⦄ → Δ₁ ∙ proj₁ w ≈ Δ₂
   ≲-to-∙ ⦃ w ⦄ = proj₂ w
-
 \end{code}
 %
-Using this, the following elaboration defines a semantics for the \aF{catch} operation:\footnote{The \af{maybe} function is the eliminator for the \ad{Maybe} type.  Its first parameter is for eliminating a \ac{just}; the second \ac{nothing}.  Its type is \af{maybe}~\as{:}~\as{(}\ab{A}~\as{→}~\ab{B}\as{)}~\as{→}~\ab{B}~\as{→}~\ad{Maybe}~\ab{A}~\as{→}~\ab{B}.}
+Using this, the following elaboration defines a semantics for the \aF{catch} operation:\footnote{The \af{maybe} function is the eliminator for the \ad{Maybe} type.  Its first parameter is for eliminating a \ac{just}; the second  for \ac{nothing}.  Its type is \af{maybe}~\as{:}~\as{(}\ab{A}~\as{→}~\ab{B}\as{)}~\as{→}~\ab{B}~\as{→}~\ad{Maybe}~\ab{A}~\as{→}~\ab{B}.}
+\footnote{The instance resolution machinery of Agda requires some help to resolve the instance argument of \af{♯} here.  We provide a hint to Agda's instance resolution machinery in an implicit instance argument that we omit for readability in the paper.  In the rest of this paper, we will occasionally follow the same convention.}
 %
+\begin{code}[hide]
+  module _ ⦃ w : Throw ≲ Δ ⦄ where
+\end{code}
 \begin{code}
-
-  catch : ⦃ w : Throw ≲ Δ ⦄ → Free Δ A → Free Δ A → Free Δ A
-  catch ⦃ w ⦄ m₁ m₂ = (♯_ ⦃ _ , ∙-comm (w .proj₂) ⦄ (given hThrow handle m₁ $ tt)) 𝓑 maybe pure m₂ 
+    catch : ⦃ Throw ≲⅋ Δ ⦄ → Free Δ A → Free Δ A → Free Δ A
+    catch m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑 maybe pure m₂ 
+\end{code}
+\begin{code}[hide]
+      where instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
 %
 If \ab{m₁} does not throw an exception, we return the produced value.  If it
@@ -656,7 +661,8 @@ different machinery if we want to refactor, optimize, or change the semantics of
 
 In the next subsection we describe how to define effectful operations such as
 \ad{catch} modularly using scoped effects and handlers, and discuss how this is
-not possible for, e.g., operations representing $\lambda$ abstraction.
+not possible for, e.g., operations representing $\lambda$-abstraction.
+
 
 \subsection{Scoped Effects and Handlers}
 \label{sec:scoped-effects}
