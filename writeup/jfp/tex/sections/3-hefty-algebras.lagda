@@ -20,6 +20,7 @@ open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Relation.Binary.PropositionalEquality renaming ([_] to ≡[_])
+open import Relation.Unary using (IUniversal ; _⇒_)
 
 open import Data.String
 
@@ -267,6 +268,9 @@ and abstract syntax trees over these:
 \begin{code}
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
   ⟦ H ⟧ᴴ M X = Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
+
+  map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
+  map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
 \end{code}
 
 \end{minipage}
@@ -411,6 +415,9 @@ the following smart constructor lets us represent any algebraic operation as a
 
   _≲ᴴ_ : (H₁ H₂ : Effectᴴ) → Set₁
   H₁ ≲ᴴ H₂ = ∃ λ H → H₁ ∙ H ≋ H₂ 
+
+  postulate ≲ᴴ-refl  : H ≲ᴴ H 
+  postulate ≲ᴴ-trans : H₁ ≲ᴴ H₂ → H₂ ≲ᴴ H₃ → H₁ ≲ᴴ H₃
 \end{code}
 %
 \begin{code}[hide]
