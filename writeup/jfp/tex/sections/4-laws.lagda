@@ -258,8 +258,8 @@ More generally, we can close values wrapped in the $□$ modifier using any
 extension witness using the following operation: 
 %
 \begin{code}
-close : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → P Δ₂
-close eq = □⟨ eq ⟩ 
+close : {P : Effect → Set₁} → Δ₁ ≲ Δ₂ → □ P Δ₁ → P Δ₂
+close w eq = (□⟨ eq ⟩) ⦃ w ⦄ 
 \end{code}
 
 We can now redefine the \emph{get-get} law so that it applies to all programs
@@ -623,8 +623,61 @@ hStCorrect (tt , refl) {_ ∷ []} {γ = k} = refl
 \subsection{Theories of Higher-Order Effects}
 
 
+\begin{code}
+record Equationᴴ (H : Effectᴴ) : Set₁ where
+  field
+    V        : ℕ
+    Γ        : Vec Set V → Set
+    R        : Vec Set V → Set 
+    lhs rhs  : (vs : Vec Set V) → Γ vs → Hefty H (R vs)
+\end{code}
+
+\begin{code}
+open Equationᴴ 
+\end{code}
+
+\begin{code}
+Respectsᴴ : (_~_ : ∀ {A} → Free Δ A → Free Δ A → Set₁) → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
+Respectsᴴ _~_ alg eq =
+  ∀ {δ γ} → cataᴴ Free.pure alg (lhs eq δ γ) ~ cataᴴ Free.pure alg (rhs eq δ γ)
+\end{code}
+
+\begin{code}
+record ■ (P : Effectᴴ → Set₁) (H : Effectᴴ) : Set₁ where
+  constructor necessary 
+  field ■⟨_⟩ : ∀ {H′} → ⦃ H ≲ᴴ H′ ⦄ → P H′ 
+\end{code}
+
+\begin{code}
+record Theoryᴴ (H : Effectᴴ) : Set₁ where
+  field
+    arity     : Set
+    equations : arity → ■ Equationᴴ H 
+\end{code}
+
+\begin{code}[hide]
+variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
+open Theoryᴴ
+
+module _ where 
+
+\end{code}
+
+\begin{code}
+  _◂ᴴ_ : ■ Equationᴴ H → Theoryᴴ H → Set₁
+  eq ◂ᴴ Th = ∃ λ a → eq ≡ equations Th a 
+\end{code}
+
+\begin{code}
+  _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
+  arity (Th₁ ⟨+⟩ᴴ Th₂) = arity Th₁ ⊎ arity Th₂
+  equations (Th₁ ⟨+⟩ᴴ Th₂) (inj₁ a) = equations Th₁ a
+  equations (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a) = equations Th₂ a
+\end{code}
 
 \subsection{Correctness of Elaborations}
+
+     
 
 \subsection{Examples}
 

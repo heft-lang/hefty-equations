@@ -733,101 +733,101 @@ for \ad{Lift} and \ad{Nil}, we can elaborate and run the program:
 \end{code}%
 \vspace{-1em}%
 \begin{code}
---     -- test-transact : un (given hSt handle {!given hThrow handle ? $ tt!} $ 0) ≡ ((just 2 , 2))  {- un (  (  given hSt
---     --                           handle (  (  given hThrow
---     --                                        handle (elaborate eTransact transact)))
---     --                                     tt ) 0 ) ≡ (just 2 , 2) -} 
---     -- test-transact = refl
--- \end{code}
--- %
--- \noindent The program above uses a so-called \emph{global} interpretation of
--- state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
--- the state to be updated globally.  In \cref{sec:optional-transactional} we
--- return to this example and show how we can modularly change the elaboration of
--- the higher-order effect \ad{Catch} to yield a so-called \emph{transactional}
--- interpretation of state where the \ac{put} operation in the try block is rolled
--- back when an exception is thrown.
+    -- test-transact : un (given hSt handle {!given hThrow handle ? $ tt!} $ 0) ≡ ((just 2 , 2))  un (  (  given hSt
+    --                           handle (  (  given hThrow
+    --                                        handle (elaborate eTransact transact)))
+    --                                     tt ) 0 ) ≡ (just 2 , 2) -} 
+    -- test-transact = refl
+\end{code}
+%
+\noindent The program above uses a so-called \emph{global} interpretation of
+state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
+the state to be updated globally.  In \cref{sec:optional-transactional} we
+return to this example and show how we can modularly change the elaboration of
+the higher-order effect \ad{Catch} to yield a so-called \emph{transactional}
+interpretation of state where the \ac{put} operation in the try block is rolled
+back when an exception is thrown.
 
 
--- \subsection{Discussion and Limitations}
--- \label{sec:limitations}
+\subsection{Discussion and Limitations}
+\label{sec:limitations}
 
--- Which (higher-order) effects can we describe using hefty trees and algebras?
--- Since the core mechanism of our approach is modular elaboration of higher-order
--- operations into more primitive effects and handlers, it is clear that hefty
--- trees and algebras are at least as expressive as standard algebraic effects.
--- The crucial benefit of hefty algebras over algebraic effects is that
--- higher-order operations can be declared and implemented modularly.  In this
--- sense, hefty algebras provide a modular abstraction layer over standard
--- algebraic effects that, although it adds an extra layer of indirection by
--- requiring both elaborations and handlers to give a semantics to hefty trees, is
--- comparatively cheap and implemented using only standard techniques such as
--- $F$-algebras.
+Which (higher-order) effects can we describe using hefty trees and algebras?
+Since the core mechanism of our approach is modular elaboration of higher-order
+operations into more primitive effects and handlers, it is clear that hefty
+trees and algebras are at least as expressive as standard algebraic effects.
+The crucial benefit of hefty algebras over algebraic effects is that
+higher-order operations can be declared and implemented modularly.  In this
+sense, hefty algebras provide a modular abstraction layer over standard
+algebraic effects that, although it adds an extra layer of indirection by
+requiring both elaborations and handlers to give a semantics to hefty trees, is
+comparatively cheap and implemented using only standard techniques such as
+$F$-algebras.
 
--- Conceptually, we expect that hefty trees can capture any \emph{monadic}
--- higher-order effect whose signature is given by a higher-order functor on
--- $\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
--- monadic effect can be represented using continuations, and given that we can
--- encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
--- terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
--- \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
--- monadic effect into algebraic effects using hefty algebras.  The current Agda
--- implementation, though, is slightly more restrictive.  The type of effect
--- signatures, \ad{Effectᴴ}, approximates the set of higher-order functors by
--- constructively enforcing that all occurrences of the computation type are
--- strictly positive.  Hence, there may be higher-order effects that are
--- well-defined semantically, but which cannot be captured in the Agda encoding
--- presented here.
+Conceptually, we expect that hefty trees can capture any \emph{monadic}
+higher-order effect whose signature is given by a higher-order functor on
+$\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
+monadic effect can be represented using continuations, and given that we can
+encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
+terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
+\citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
+monadic effect into algebraic effects using hefty algebras.  The current Agda
+implementation, though, is slightly more restrictive.  The type of effect
+signatures, \ad{Effectᴴ}, approximates the set of higher-order functors by
+constructively enforcing that all occurrences of the computation type are
+strictly positive.  Hence, there may be higher-order effects that are
+well-defined semantically, but which cannot be captured in the Agda encoding
+presented here.
 
--- When comparing hefty trees to scoped effects, we observe two important
--- differences.  The first difference is that the syntax of programs with
--- higher-order effects is fundamentally more restrictive when using scoped
--- effects.  Specifically, as discussed at the end of \cref{sec:scoped-discussion},
--- scoped effects impose a restriction on operations that their computation
--- parameters must pass control directly to the continuation of the operation.
--- Hefty trees, on the other hand, do not restrict the control flow of computation
--- parameters, meaning that they can be used to define a broader class of
--- operations.  For instance, in \cref{sec:higher-order-lambda} we define a
--- higher-order effect for function abstraction, which is an example of an
--- operation where control does not flow from the computation parameter to the
--- continuation.
+When comparing hefty trees to scoped effects, we observe two important
+differences.  The first difference is that the syntax of programs with
+higher-order effects is fundamentally more restrictive when using scoped
+effects.  Specifically, as discussed at the end of \cref{sec:scoped-discussion},
+scoped effects impose a restriction on operations that their computation
+parameters must pass control directly to the continuation of the operation.
+Hefty trees, on the other hand, do not restrict the control flow of computation
+parameters, meaning that they can be used to define a broader class of
+operations.  For instance, in \cref{sec:higher-order-lambda} we define a
+higher-order effect for function abstraction, which is an example of an
+operation where control does not flow from the computation parameter to the
+continuation.
 
--- The second difference is that hefty algebras and scoped effects and handlers are
--- modular in different ways.  Scoped effects are modular because we can modularly
--- define, compose, and handle scoped operations, by applying scoped effect
--- handlers in sequence; i.e.:
--- %
--- \begin{equation*}
--- \ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1}
--- \ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2}
--- \cdots
--- \xrightarrow{h_n}
--- \ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
--- \end{equation*}
--- %
--- As discussed in \cref{sec:weaving}, each handler application modularly
--- ``weaves'' effects through sub computations, using a dedicated \aF{glue}
--- function.  Hefty algebras, on the other hand, work by applying an elaboration
--- algebra assembled from modular components in one go.  The program resulting from
--- elaboration can then be handled using standard algebraic effect handlers; i.e.:
--- %
--- \begin{equation*}
--- \ad{Hefty}~\as{(}\ab{H₀}~\ad{∔}~\cdots~\ad{∔}~\ab{Hₘ}\as{)}~\ab{A}
--- \xrightarrow{\af{elaborate}~\as{(}\ab{E₀}~\ad{⋎}~\cdots~\ad{⋎}~\ab{Eₘ}\as{)}}
--- \ad{Free}~Δ~A \xrightarrow{h_1}
--- \cdots \xrightarrow{h_k}
--- \ad{Free}~\ad{Nil}~\ab{Aₖ}
--- \end{equation*}
--- %
--- Because hefty algebras eagerly elaborate all higher-order effects in one go,
--- they do not require similar ``weaving'' as scoped effect handlers.  A
--- consequence of this difference is that scoped effect handlers exhibit more
--- effect interaction by default; i.e., different permutations of handlers may give
--- different semantics.  In contrast, when using hefty algebras we have to be more
--- explicit about such effect interactions.  We discuss this difference in more
--- detail in \cref{sec:optional-transactional}.
+The second difference is that hefty algebras and scoped effects and handlers are
+modular in different ways.  Scoped effects are modular because we can modularly
+define, compose, and handle scoped operations, by applying scoped effect
+handlers in sequence; i.e.:
+%
+\begin{equation*}
+\ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1}
+\ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2}
+\cdots
+\xrightarrow{h_n}
+\ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
+\end{equation*}
+%
+As discussed in \cref{sec:weaving}, each handler application modularly
+``weaves'' effects through sub computations, using a dedicated \aF{glue}
+function.  Hefty algebras, on the other hand, work by applying an elaboration
+algebra assembled from modular components in one go.  The program resulting from
+elaboration can then be handled using standard algebraic effect handlers; i.e.:
+%
+\begin{equation*}
+\ad{Hefty}~\as{(}\ab{H₀}~\ad{∔}~\cdots~\ad{∔}~\ab{Hₘ}\as{)}~\ab{A}
+\xrightarrow{\af{elaborate}~\as{(}\ab{E₀}~\ad{⋎}~\cdots~\ad{⋎}~\ab{Eₘ}\as{)}}
+\ad{Free}~Δ~A \xrightarrow{h_1}
+\cdots \xrightarrow{h_k}
+\ad{Free}~\ad{Nil}~\ab{Aₖ}
+\end{equation*}
+%
+Because hefty algebras eagerly elaborate all higher-order effects in one go,
+they do not require similar ``weaving'' as scoped effect handlers.  A
+consequence of this difference is that scoped effect handlers exhibit more
+effect interaction by default; i.e., different permutations of handlers may give
+different semantics.  In contrast, when using hefty algebras we have to be more
+explicit about such effect interactions.  We discuss this difference in more
+detail in \cref{sec:optional-transactional}.
 
--- %%% Local Variables:
--- %%% reftex-default-bibliography: ("../references.bib")
--- %%% End:
+%%% Local Variables:
+%%% reftex-default-bibliography: ("../references.bib")
+%%% End:
 
