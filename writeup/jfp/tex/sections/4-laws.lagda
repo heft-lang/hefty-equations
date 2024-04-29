@@ -10,7 +10,7 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Maybe using (Maybe; just; nothing)
 open import Tactic.Cong
 open import Data.Nat hiding (_⊔_)
-open import Data.Vec hiding (_++_ ; map)
+open import Data.Vec hiding (_++_ ; map ; _⋎_)
 open import Data.List
 open import Data.Product hiding (map)
 open import Data.Sum hiding (map)
@@ -52,6 +52,9 @@ open RawMonad ⦃...⦄
 
 _𝓑_ : Free Δ A → (A → Free Δ B) → Free Δ B
 m 𝓑 k = bindF m k
+
+_𝓑◂_ : Hefty H A → (A → Hefty H B) → Hefty H B
+m 𝓑◂ k = bindH m k 
 
 swap-⊕-↔ : {A : Set} → ⟦ Δ₁ ⊕ Δ₂ ⟧ A ↔ ⟦ Δ₂ ⊕ Δ₁ ⟧ A
 swap-⊕-↔ = record
@@ -430,15 +433,7 @@ open Effect
 \end{code}
 \begin{code}
 _◂_ : □ Equation Δ → Theory Δ → Set₁
-eq ◂ T = ∃ λ a → T .equations a ≡ eq 
-
-record _⊑_ (T₁ : Theory Δ₁) (T₂ : Theory Δ₂) : Set₁ where
-  field
-    ⦃ ≲-eff ⦄  : Δ₁ ≲ Δ₂ 
-    sub       : ∀ {eq} → eq ◂ T₁ → weaken-□ eq ◂ T₂ 
-\end{code}
-\begin{code}[hide]
-open _⊑_ 
+eq ◂ T = ∃ λ a → T .equations a ≡ eq  
 \end{code}
 %
 Here, the field $\aF{ext}$ witnesses that the effects of $\ab{T₁}$ are included
@@ -658,9 +653,23 @@ record Theoryᴴ (H : Effectᴴ) : Set₁ where
 \begin{code}[hide]
 variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
 open Theoryᴴ
+open ■
 
-module _ where 
+module _ where
 
+  open Effectᴴ
+
+\end{code}
+
+\begin{code}
+  weaken-■ : ∀ {P} → ⦃ H₁ ≲ᴴ H₂ ⦄ → ■ P H₁ → ■ P H₂
+  ■⟨ weaken-■ ⦃ w ⦄ px ⟩ ⦃ w′ ⦄ = ■⟨ px ⟩ ⦃ ≲ᴴ-trans w w′ ⦄
+\end{code}
+
+\begin{code}
+  weaken-theoryᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → Theoryᴴ H₁ → Theoryᴴ H₂
+  arity     (weaken-theoryᴴ Th)    = Th .arity
+  equations (weaken-theoryᴴ Th) a  = weaken-■ (Th .equations a)
 \end{code}
 
 \begin{code}
@@ -675,11 +684,107 @@ module _ where
   equations (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a) = equations Th₂ a
 \end{code}
 
+\begin{code}
+  postulate ≲-∔-left   : H₁ ≲ᴴ (H₁ ∔ H₂)
+  postulate ≲-∔-right  : H₂ ≲ᴴ (H₁ ∔ H₂) 
+\end{code}
+
+\begin{code}
+  _[+]ᴴ_ : Theoryᴴ H₁ → Theoryᴴ H₂ → Theoryᴴ (H₁ ∔ H₂)
+  Th₁ [+]ᴴ Th₂ = weaken-theoryᴴ ⦃ ≲-∔-left ⦄ Th₁ ⟨+⟩ᴴ weaken-theoryᴴ ⦃ ≲-∔-right ⦄ Th₂
+\end{code}
+
+\subsection{Equivalence of Programs with Higher-Order Effects}
+
+\begin{AgdaAlign}
+\begin{code}
+
+  data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄ : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
+
+    ≅-refl   :  ∀  {m : Hefty H₂ A}
+                →  m ≅⟨ Th ⟩ m
+
+    ≅-sym    :  ∀  {m₁ : Hefty H₂ A} {m₂}
+                →  m₁ ≅⟨ Th ⟩ m₂
+                →  m₂ ≅⟨ Th ⟩ m₁               
+  
+    ≅-trans  :  ∀  {m₁ : Hefty H₂ A} {m₂ m₃}
+                →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
+                →  m₁ ≅⟨ Th ⟩ m₃ 
+\end{code}
+
+\begin{code}
+    ≅-cong   :     (op : Opᴴ H₂)
+                →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
+                →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
+                →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
+                →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
+                →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
+\end{code}
+
+\begin{code}
+    ≅-eq     :     (eq : ■ Equationᴴ H₁)
+                →  eq ◂ᴴ Th
+                →  (vs : Vec Set (V ■⟨ eq ⟩))
+                →  (γ : Γ ■⟨ eq ⟩ vs)
+                →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
+                →  (lhs ■⟨ eq ⟩ vs γ 𝓑◂ k) ≅⟨ Th ⟩ (rhs ■⟨ eq ⟩ vs γ 𝓑◂ k) 
+\end{code}
+\end{AgdaAlign}
+
 \subsection{Correctness of Elaborations}
 
-     
+\begin{code}
+open Algᴴ
+
+record _⊑_ (e₁ : □ (Elaboration H₁) Δ₁) (e₂ : □ (Elaboration H₂) Δ₂) : Set₁ where
+  field
+    ⦃ ≲-eff   ⦄ : Δ₁ ≲ Δ₂
+    ⦃ ≲ᴴ-eff  ⦄ : H₁ ≲ᴴ H₂
+    preserves-cases
+      : ∀ {M} (m : ⟦ H₁ ⟧ᴴ M A)
+      → (e′ : ∀[ M ⇒ Free Δ₂ ])
+      →     □⟨ e₁ ⟩ .alg (map-sigᴴ (λ {x} → e′ {x}) m)
+         ≡  extract e₂ .alg (map-sigᴴ (λ {x} → e′ {x}) (injᴴ {X = A} m))
+\end{code}
+
+\begin{code}
+Correctᴴ : Theoryᴴ H → Theory Δ → □ (Elaboration H) Δ → Set₁
+Correctᴴ Th T e =
+  ∀ {Δ′ H′}
+  → (e′ : □ (Elaboration H′) Δ′)
+  → ⦃ ζ : e ⊑ e′ ⦄
+  → {eq : ■ Equationᴴ _}
+  → eq ◂ᴴ Th
+  → Respectsᴴ (_≈⟨ T ⟩_) (extract e′) ■⟨ eq ⟩
+\end{code}     
+
+\begin{code}
+compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
+              →  □ (Elaboration H₁) Δ₁
+              →  □ (Elaboration H₂) Δ₂
+              →  □ (Elaboration (H₁ ∔ H₂)) Δ
+□⟨ compose-elab e₁ e₂ ⟩ ⦃ w ⦄ = □⟨ e₁ ⟩ ⦃ ≲-trans ≲-∙-left w ⦄ ⋎ □⟨ e₂ ⟩ ⦃ ≲-trans ≲-∙-right w ⦄
+\end{code}
+\begin{code}[hide]
+postulate 
+\end{code}
+\begin{code}
+  compose-elab-correct :
+       ⦃ _ : Δ₁ ∙ Δ₂ ≈ Δ ⦄ 
+    →  (e₁ : □ (Elaboration H₁) Δ₁)
+    →  (e₂ : □ (Elaboration H₂) Δ₂)
+    →  (T₁ : Theory Δ₁)
+    →  (T₂ : Theory Δ₂)
+    →  (Th₁ : Theoryᴴ H₁)
+    →  (Th₂ : Theoryᴴ H₂)
+    →  Correctᴴ Th₁ T₁ e₁
+    →  Correctᴴ Th₂ T₂ e₂ 
+    →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂) (compose-elab e₁ e₂)
+\end{code} 
 
 \subsection{Examples}
+
 
 
 
