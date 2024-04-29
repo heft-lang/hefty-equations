@@ -312,31 +312,28 @@ discussed in the previous subsection.
 \end{code}
 %
 
+
 \subsection{Fold and Monadic Bind for \ad{Free}}
 \label{sec:fold-bind-free}
 
 Since $\ad{Free}~\ab{Δ}$ is a monad, we can sequence computations using
 \emph{monadic bind}, which is naturally defined in terms of the fold over
-\ad{Free}.\\
+\ad{Free}.
+%
 \begin{code}[hide]
   Alg : (Δ : Effect) (A : Set) → Set
   Alg Δ A = ⟦ Δ ⟧ A → A
 \end{code}
-\begin{minipage}{0.485\linewidth}
 \begin{code}
   fold  :  (A → B) → Alg Δ B → Free Δ A → B
   fold g a (pure x)       = g x
   fold g a (impure (op , k))  = a (op , fold g a ∘ k)
 \end{code}
-\end{minipage}
-\hfill\vline\hfill
-\begin{minipage}{0.505\linewidth}
 \begin{code}
   Alg⅋ : (Δ : Effect) (A : Set) → Set
-  Alg⅋ Δ A = (op : Op Δ) (k : Ret Δ op → A) → A
+  Alg⅋ Δ A = ⟦ Δ ⟧ A → A
 \end{code}
-\end{minipage}
-\\
+%
 Besides the input computation to be folded (last parameter), the fold is
 parameterized by a function \ab{A}~\as{→}~\ab{B} (first parameter) which folds a
 \ac{pure} computation, and an \emph{algebra} \af{Alg}~\ab{Δ}~\ab{A} (second
@@ -386,9 +383,9 @@ as follows:
 %
 Intuitively, \ab{m}~\af{𝓑}~\ab{g} concatenates \ab{g} to all the leaves in the computation \ab{m}.
 %
-\paragraph{Example}
-By implementing a smart constructor
-\begin{code}[inline]
+\paragraph*{Example}
+The following defines a smart constructor for \ac{throw}:
+\begin{code}
   ‵throw : ⦃ Throw ≲ Δ ⦄ → Free Δ A
 \end{code}
 \begin{code}[hide]
@@ -397,7 +394,7 @@ By implementing a smart constructor
   _>>_ : Free Δ A → Free Δ B → Free Δ B
   m₁ >> m₂ = m₁ 𝓑 λ _ → m₂
 \end{code}
-\ for \ac{throw}, our example program from before becomes more readable:
+Using this and the definition of \ad{𝓑} above, we can use \textbf{do}-notation in Agda to make the \af{hello-throw} program from \cref{sec:free-monad} more readable:
 \begin{code}
   hello-throw₁ : ⦃ Output ≲ Δ ⦄ → ⦃ Throw ≲ Δ ⦄ → Free Δ A
   hello-throw₁ = do ‵out "Hello"; ‵out " world!"; ‵throw
