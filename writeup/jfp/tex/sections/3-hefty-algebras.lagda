@@ -15,6 +15,7 @@ open import Data.Sum
 open import Data.Product
 open import Data.Maybe hiding (_>>=_)
 open import Data.Nat hiding (_⊔_)
+open import Data.Integer using (ℤ)
 open import Data.String
 open import Data.List hiding ([_])
 open import Data.List.Membership.Propositional
@@ -93,175 +94,77 @@ variant of the $\Id{censor}$ operation (\cref{sec:modularity-problem}), where
 \end{flalign*}
 %
 We call the second parameter of this operation a \emph{computation parameter}.
-Using \ad{Free}, computation parameters can only be encoded as continuations;
-i.e., inside \ab{k} of the \ac{impure} constructor:
-%
-\begin{flalign*}
-  \;\;\ac{impure}~\as{:~(}\ab{op}~\as{:}~\aF{Op}~\ab{Δ}\as{)~(}\ab{k}~\as{:}~\aF{Ret}~\ab{Δ~op}~\as{→}~\ad{Free}~\ab{Δ}~\ab{A}\as{)~\as{→}~}\ad{Free}~\ab{Δ~A}
-  &&
-\end{flalign*}
-%
+Using \ad{Free}, computation parameters can only be encoded as continuations.
 But the computation parameter of \af{censorₒₚ} is \emph{not} a continuation, since
 %
 \begin{equation*}
-  \ak{do}~\as{(}\af{censorₒₚ}~\ab{f}~\ab{m}\as{);}~\af{‵out}~\ab{s}~~\not\equiv~~\af{censorₒₚ}~\ab{f}~\as{(}\ak{do}~\ab{m}\as{;}~\af{‵out}~\ab{s}\as{)}.
+  \ak{do}~\as{(}\af{censorₒₚ}~~\ab{f}~~\ab{m}\as{);}~\af{‵out}~\ab{s}~~\not\equiv~~\af{censorₒₚ}~~\ab{f}~~\as{(}\ak{do}~\ab{m}\as{;}~\af{‵out}~\ab{s}\as{)}.
 \end{equation*}
 %
-As a first attempt at generalizing \ad{Free}, we might define a type of abstract
-syntax trees where \emph{all} operations have a computation parameter.  The
-\ad{Effect₁} signature type (left) represents an effect signature for this case,
-where \aF{ParRet} defines the return type of the computation parameter of each
-operation.  The syntax tree type on the right defines a type of abstract syntax
-trees where each operation has exactly one computation parameter (\ab{ψ}):
-\\
-\begin{minipage}{0.345\linewidth}
-\begin{code}
-  record Effect₁ : Set₁ where
-    field  Op      : Set
-           ParRet  : Op → Set
-           Ret     : Op → Set
-\end{code}
-\begin{code}[hide]
-  open Effect₁
-\end{code}
-\end{minipage}
-\hfill\vline\hfill
-\begin{minipage}{0.645\linewidth}
-\begin{AgdaAlign}
-\begin{AgdaSuppressSpace}
-\begin{code}
-  data Hefty₁ (H : Effect₁) (A : Set) : Set where
-    pure₁    :  A → Hefty₁ H A
-    impure₁  :  (op  : Op H)
-\end{code}
-{\setlength{\fboxsep}{0pt}%
-\colorbox{gray!30}{\parbox{\linewidth}{%
-\begin{code}
-                (ψ   : Hefty₁ H (ParRet H op))
-\end{code}%
-}}}%
-\begin{code}
-                (k   : Ret H op → Hefty₁ H A)
-             →  Hefty₁ H A
-\end{code}
-\end{AgdaSuppressSpace}
-\end{AgdaAlign}
-\end{minipage}
+The crux of the issue is how signature functors \af{⟦}~\ab{Δ}~\af{⟧}~\as{:}~\ad{Set}~\as{→}~\ad{Set} are defined.
+Since this is an endofunctor on \ad{Set}, the only suitable option in the \ac{impure} constructor is to apply the functor to the type of \emph{continuations}:
 %
-However, algebraic operations generally do not have any computation parameters,
-and many higher-order operations have more than one (e.g., the \ad{catch}
-operation discussed in \cref{sec:higher-order-effects}).  For this reason, we
-further generalize effect signatures to also define how many computation
-parameters a computation has: the \aF{ParAr} of the \ad{Effect₂} signature below
-(left) is a type that represents the computation parameter arity of each
-operation.  The abstract syntax tree type (right) defines abstract syntax trees
-that have as many branches as \aF{ParAr} has constructors:
-\\
-\begin{minipage}{0.345\linewidth}
+\begin{equation*}
+  \ac{impure}~\as{:~}\af{⟦}~\ab{Δ}~\af{⟧}~\as{(}\underbrace{\ad{Free}~\ab{Δ}~\ab{A}}_{\textrm{continuation}}\as{)}~\as{→}~\ad{Free}~\ab{Δ}~\ab{A}
+\end{equation*}
+%
+A more flexible approach would be to allow signature functors to build computation trees with an \emph{arbitrary return type}, including the return type of the continuation.
+A \emph{higher-order} signature functor of some higher-order signature \ab{H}, written \af{⟦}~\ab{H}~\af{⟧ᴴ}~\as{:}~\as{(}\ad{Set}~\as{→}~\ad{Set}\as{)~→}~\ad{Set}~\as{→}~\ad{Set}, would fit that bill.
+Using such a signature functor, we could define the \ac{impure} case as follows:
+%
+\begin{equation*}
+  \ac{impure}~\as{:}~\af{⟦}~\ab{H}~\af{⟧ᴴ}~\as{(}\underbrace{\ad{Hefty}~\ab{H}}_{\begin{array}{c}\text{\footnotesize computation}\\[-0.5em]\text{\footnotesize type}\end{array}}\as{)}~\overbrace{\ab{A}}^{\begin{array}{c}\text{\footnotesize continuation}\\[-0.5em]\text{\footnotesize return type}\end{array}}~\as{→}~\ad{Hefty}~\ab{H}~\ab{A}
+\end{equation*}
+%
+Here, \ad{Hefty} is the type of the free monad using higher-order signature functors instead.
+In the rest of this subsection, we consider how to define higher-order signature functors \ab{H}, their higher-order functor extensions \af{⟦\_⟧ᴴ}, and the type of \ad{Hefty} trees.
+
+Recall how we defined plain algebraic effects in terms of \emph{containers}:
+%
 \begin{code}
-  record Effect₂ : Set₁ where
-    field  Op      : Set
-           ParAr   : Op → Set
-           ParRet  : Op → Set
-           Ret     : Op → Set
+  record Effect⅋ : Set₁ where
+    field  Op⅋   : Set
+           Ret⅋  : Op⅋ → Set
 \end{code}
-\begin{code}[hide]
-  open Effect₂
-\end{code}
-\end{minipage}
-\hfill\vline\hfill
-\begin{minipage}{0.645\linewidth}
-\begin{AgdaAlign}
-\begin{AgdaSuppressSpace}
-\begin{code}
-  data Hefty₂ (H : Effect₂) (A : Set) : Set where
-    pure₂    :  A → Hefty₂ H A
-    impure₂  :  (op  : Op H)
-\end{code}
-{\setlength{\fboxsep}{0pt}%
-\colorbox{gray!30}{\parbox{\linewidth}{%
-\begin{code}
-                (ψ   : ParAr H op → Hefty₂ H (ParRet H op))
-\end{code}%
-}}}%
-\begin{code}
-                (k   : Ret H op → Hefty₂ H A)
-             →  Hefty₂ H A
-\end{code}
-\end{AgdaSuppressSpace}
-\end{AgdaAlign}
-\end{minipage}
-\\
-We can now use \ad{Effect₂} and \ad{Hefty₂} to define the syntax of operations
-with computation parameters, such as \af{catch} and \af{censorₒₚ}.  However, the
-\ad{Effect₂} signature restricts all computation parameters to have the
-\emph{same} return type.  This unnecessarily precludes some higher-order
-operations, such as as a more general operation for exception catching
-\af{‵catch-gen}~\as{:}~\ab{M~A}~\as{→}~\ab{M~B}~\as{→}~\ab{M}~\as{(}\ab{A}~\ad{⊎}~\ab{B}\as{)}
-which returns either \ab{A} or \ab{B}, depending on whether the first
-computation parameter throws an exception at run time.  As a last
-generalization, we therefore allow each computation parameter to have a
-different return type.  We realize this generalization by making the return type
-of each computation depend on \aF{ParAr} in the \ad{Effect₃} type below, such
-that the return type of computation parameters varies depending on which
-computation parameter arity constructor (\aF{ParAr}) it is given:
-\\
-\begin{minipage}{0.325\linewidth}
-\begin{code}
-  record Effect₃ : Set₁ where
-    field
-      Op      : Set
-      ParAr   : Op → Set
-      ParRet  : (op : Op)
-              → ParAr op → Set
-      Ret     : Op → Set
-\end{code}
-\begin{code}[hide]
-  open Effect₃
-\end{code}
-\end{minipage}
-\hfill\vline\hfill
-\begin{minipage}{0.665\linewidth}
-\begin{AgdaAlign}
-\begin{AgdaSuppressSpace}
-\begin{code}
-  data Hefty₃ (H : Effect₃) (A : Set) : Set where
-    pure₃    : A → Hefty₃ H A
-    impure₃  : (op  : Op H)
-\end{code}
-{\setlength{\fboxsep}{0pt}%
-\colorbox{gray!30}{\parbox{\linewidth}{%
-\begin{code}
-               (ψ   : (a : ParAr H op) → Hefty₃ H (ParRet H op a))
-\end{code}%
-}}}%
-\begin{code}
-               (k   : Ret H op → Hefty₃ H A)
-             → Hefty₃ H A
-\end{code}
-\end{AgdaSuppressSpace}
-\end{AgdaAlign}
-\end{minipage}
-\\
-Notice that \aF{ParAr} and \aF{ParRet} is actually a signature in disguise.  In
-other words, \ad{Effect₃} and \ad{Hefty₃} are equivalent to the following notion
-of \emph{higher-order effect signature} \as{(}\ab{H}~\as{:}~\ad{Effectᴴ}\as{)}
-and abstract syntax trees over these:
-\\
-\hspace*{-8pt}
-\begin{minipage}{0.295\linewidth}
+%
+Here, \aF{Op} is the type of operations, and \aF{Ret} defines the return type of each operation.
+In order to allow operations to have sub-computations, we generalize this type to allow each operation to be associated with a number of sub-computations, where each sub-computation can have a different return type.
+The following record provides this generalization:
+%
 \begin{code}
   record Effectᴴ : Set₁ where
-    field  Opᴴ     : Set
-           Retᴴ    : Opᴴ → Set 
-           Fork    : Opᴴ → Set
-           Ty      : {op : Opᴴ} → (ψ : Fork op) → Set
+    field  Opᴴ     : Set                             -- As before
+           Retᴴ    : Opᴴ → Set                       -- As before
+           Fork    : Opᴴ → Set                       -- New
+           Ty      : {op : Opᴴ} (ψ : Fork op) → Set  -- New
 \end{code}
+%
+The set of operations is still given by a type field (\aF{Opᴴ}), and each operation still has a return type (\aF{Retᴴ}).
+\aF{Fork} associates each operation with a type that indicates how many sub-computations (or \emph{forks}) an operation has, and \aF{Ty} indicates the return type of each such fork.
+For example, say we want to encode an operation \ab{op} with two sub-computations with different return types, and whose return type is of a unit type.
+That is, using \ab{M} as our type of computations:
+%
+\begin{equation*}
+  \ab{op}~\as{:}~\ab{M}~\ad{ℤ}~\as{→}~\ab{M}~\ad{ℕ}~\as{→}~\ab{M}~\ad{⊤}
+\end{equation*}
+%
+The following signature declares a higher-order effect signature with a single operation with return type \ad{⊤}, and with two forks (we use \ad{Bool} to encode this fact), and where each fork has, respectively \ad{ℤ} and \ad{ℕ} as return types.
+%
 \begin{code}[hide]
   open Effect
   open Effectᴴ
 \end{code}
-
+\begin{code}
+  example-op : Effectᴴ
+  Opᴴ   example-op        = ⊤     -- A single operation
+  Retᴴ  example-op tt     = ⊤     -- with return type ⊤
+  Fork  example-op tt     = Bool  -- with two forks
+  Ty    example-op false  = ℤ     -- one fork has return type ℤ
+  Ty    example-op true   = ℕ     -- the other has return type ℕ
+\end{code}
+%
+The extension of higher-order effect signatures implements the intuition explained above:
+%
 \begin{code}
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
   ⟦ H ⟧ᴴ M X = Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
@@ -269,22 +172,24 @@ and abstract syntax trees over these:
   map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
   map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
 \end{code}
+%
+Let us unpack this definition.
+%
+\begin{equation*}
+% \af{⟦}~\ab{H}~\af{⟧}~\overbrace{\ab{M}}^{computation types}~\ab{X}~\as{=}~
+  \underbrace{\ad{Σ}~\as{(}~\aF{Opᴴ}~\ab{H}\as{)~λ}~\ab{op}~\as{→}}_{(1)}\as{~(}\underbrace{\aF{Retᴴ}~\ab{H}~\ab{op}~\as{→~}\ab{M}~\ab{X}}_{(2)}\as{)}~\ad{×}~\as{(}\underbrace{\as{(}\ab{ψ}~\as{:}~\aF{Fork}~\ab{H}~\ab{op}\as{)}}_{(3)}\as{~→}~\underbrace{\ab{M}~\as{(}\aF{Ty}~\ab{H}~\ab{ψ}\as{)}}_{(4)}\as{)}
+\end{equation*}
+%
+The extension of a higher-order signature functor is given by (1) the sum of operations of the signature, where each operation has (2) a continuation (of type \ab{M}~\ab{X}) that expects to be passed a value of the operation's return type, and (3) a set of forks where each fork is (4) a computation that returns the expected type for each fork.
 
-\end{minipage}
-\hfill\vline\hfill
-\hspace*{-14pt}
-\begin{minipage}{0.695\linewidth}
-\begin{AgdaAlign}
-\begin{AgdaSuppressSpace}
+Using the higher-order signature functor and its extension above, our generalized free monad becomes:
+%
 \begin{code}
   data Hefty (H : Effectᴴ) (A : Set) : Set where
     pure    : A → Hefty H A
     impure  : ⟦ H ⟧ᴴ (Hefty H) A → Hefty H A
 \end{code}
-\end{AgdaSuppressSpace}
-\end{AgdaAlign}
-\end{minipage}
-\\
+%
 \begin{code}[hide]
   variable H H′ H″ H‴ H₀ H₁ H₂ H₃ H₄ : Effectᴴ
 
@@ -313,20 +218,21 @@ of the \ad{censorₒₚ} operation.
 % 
 \begin{figure}
 \centering
-\begin{minipage}{0.495\linewidth}
+\begin{minipage}{0.445\linewidth}
 \begin{code}
   data CensorOp : Set where
-    censor : (String → String) → CensorOp
+    censor  :  (String → String)
+            →  CensorOp
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
-\begin{minipage}{0.495\linewidth}
+\begin{minipage}{0.545\linewidth}
 \begin{code}
   Censor : Effectᴴ
-  Opᴴ    Censor = CensorOp
-  Retᴴ   Censor (censor f) = ⊤
-  Fork   Censor (censor f) = ⊤
-  Ty Censor {censor f} tt = ⊤
+  Opᴴ    Censor                 = CensorOp
+  Retᴴ   Censor (censor f)      = ⊤
+  Fork   Censor (censor f)      = ⊤
+  Ty     Censor {censor f} tt   = ⊤
 \end{code}
 \end{minipage}
 \\
