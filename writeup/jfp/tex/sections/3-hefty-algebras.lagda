@@ -254,7 +254,7 @@ Just like \ad{Free}, \ad{Hefty} trees can be sequenced using monadic bind.
 Unlike for \ad{Free}, the monadic bind of \ad{Hefty} is not expressible in terms
 of the standard fold over \ad{Hefty} trees.  The difference between \ad{Free}
 and \ad{Hefty} is that \ad{Free} is a regular data type whereas \ad{Hefty} is a
-\emph{nested datatype}~\cite{DBLP:journals/fac/BirdP99}.  The fold of a nested
+\emph{nested datatype}~\citep{DBLP:journals/fac/BirdP99}.  The fold of a nested
 data type is limited to describe \emph{natural transformations}.  As
 \citet{DBLP:journals/fac/BirdP99} show, this limitation can be overcome by using
 a \emph{generalized fold}, but for the purpose of this paper it suffices to
@@ -448,7 +448,7 @@ a type (\ad{Set}), the \ad{CatchOp̅} type lives in \ad{Set₁}.  Consequently i
 does not fit the definition of \ad{Effectᴴ}, whose operations live in \ad{Set}.
 There are two potential solutions to this problem: (1) increase the universe
 level of \ad{Effectᴴ} to allow \aF{Opᴴ} to live in \ad{Set₁}; or (2) use a
-\emph{universe of types}~\cite{martin-lof1984intuitionistic}.
+\emph{universe of types}~\citep{martin-lof1984intuitionistic}.
 %
 Either solution is applicable here.  However, for some operations (e.g.,
 $\lambda$ in \cref{sec:higher-order-lambda}) it is natural to model types as an
@@ -524,7 +524,7 @@ can be encoded as a non-modular elaboration:
 We can make this elaboration modular by expressing it as an \emph{algebra} over
 \ad{Hefty} trees containing operations of the \ad{Catch} signature.  To this
 end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (or
-\emph{catamorphism}~\cite{DBLP:conf/fpca/MeijerFP91}, \af{cataᴴ}) for
+\emph{catamorphism}~\citep{DBLP:conf/fpca/MeijerFP91}, \af{cataᴴ}) for
 \af{Hefty}:
 %
 \begin{code}
@@ -574,7 +574,7 @@ algebraic effects and handlers:
   elaborate = cataᴴ pure
 \end{code}
 
-\paragraph*{Example}
+\paragraph*{Example.}
 The elaboration below is analogous to the non-modular \af{catch} elaboration:
 \begin{code}[hide]
 module ElabModule where
@@ -681,7 +681,7 @@ Conceptually, we expect that hefty trees can capture any \emph{monadic}
 higher-order effect whose signature is given by a higher-order functor on
 $\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
 monadic effect can be represented using continuations, and given that we can
-encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
+encode the continuation monad using algebraic effects~\citep{SchrijversPWJ19} in
 terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
 \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
 monadic effect into algebraic effects using hefty algebras.  The current Agda
