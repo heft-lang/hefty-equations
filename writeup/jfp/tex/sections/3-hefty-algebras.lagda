@@ -167,7 +167,8 @@ The extension of higher-order effect signatures implements the intuition explain
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
   ⟦ H ⟧ᴴ M X =
     Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
-
+\end{code}
+\begin{code}[hide]
   map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
   map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
 \end{code}
@@ -529,11 +530,9 @@ end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (o
   record Algᴴ (H : Effectᴴ) (F : Set → Set) : Set₁ where
     field alg  : ⟦ H ⟧ᴴ F A → F A
 \end{code}
-%
 \begin{code}[hide]
   open Algᴴ
 \end{code}
-\vspace{-1em}
 \begin{code}
   cataᴴ : (∀ {A} → A → F A) → Algᴴ H F → Hefty H A → F A
   cataᴴ g a (pure x)               = g x
