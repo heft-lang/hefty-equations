@@ -18,6 +18,7 @@ open import Relation.Unary hiding (_∈_)
 open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.Unit
+open import Data.String
 
 open import Level renaming (suc to sℓ)
 
@@ -658,16 +659,16 @@ open ■
 open Equationᴴ 
 
 module _ ⦃ _ : Universe ⦄ where
-  postulate catch◄ : Hefty H A → Hefty H A → Hefty H A
-  postulate throw◄ : Hefty H A
+  postulate catch◂ : Hefty H A → Hefty H A → Hefty H A
+  postulate throw◂ : Hefty H A
 \end{code}
 \begin{code} 
-  local-return : ■ Equationᴴ Catch
-  V    ■⟨ local-return ⟩ = 1
-  Γ    ■⟨ local-return ⟩ (A ∷ []) = Hefty _ A
-  R    ■⟨ local-return ⟩ (A ∷ []) = A
-  lhs  ■⟨ local-return ⟩ (A ∷ []) m = catch◄ throw◄ m
-  rhs  ■⟨ local-return ⟩ (A ∷ []) m = m
+  catch-throw : ■ Equationᴴ Catch
+  V    ■⟨ catch-throw ⟩ = 1
+  Γ    ■⟨ catch-throw ⟩ (A ∷ []) = Hefty _ A
+  R    ■⟨ catch-throw ⟩ (A ∷ []) = A
+  lhs  ■⟨ catch-throw ⟩ (A ∷ []) m = catch◂ throw◂ m
+  rhs  ■⟨ catch-throw ⟩ (A ∷ []) m = m
 \end{code} 
 \begin{code}[hide]
 open Equationᴴ
@@ -749,9 +750,6 @@ so.
 
 \subsection{Equivalence of Programs with Higher-Order Effects}
 
-\todo{Cas: this isn't really used anywhere, but if we mirror the story for 1st
-  order effects it seems natural to discuss this. Keep?}
-
 We define the following inductive relation to capture equivalence of programs
 with higher-order effects modulo the equations of a given theory.
 
@@ -765,16 +763,18 @@ To ensure that it is indeed an equivalence relation, we include constructors for
 reflexivity, symmetry, and transitivity. 
 %
 \begin{code}
-    ≅-refl   :  ∀  {m : Hefty H₂ A}
-                →  m ≅⟨ Th ⟩ m
-
-    ≅-sym    :  ∀  {m₁ : Hefty H₂ A} {m₂}
-                →  m₁ ≅⟨ Th ⟩ m₂
-                →  m₂ ≅⟨ Th ⟩ m₁               
-  
-    ≅-trans  :  ∀  {m₁ : Hefty H₂ A} {m₂ m₃}
-                →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
-                →  m₁ ≅⟨ Th ⟩ m₃ 
+   ≅-refl   :  ∀  {m : Hefty H₂ A}
+               →  m ≅⟨ Th ⟩ m
+\end{code}
+\begin{code}
+   ≅-sym    :  ∀  {m₁ : Hefty H₂ A} {m₂}
+               →  m₁ ≅⟨ Th ⟩ m₂
+               →  m₂ ≅⟨ Th ⟩ m₁
+\end{code}
+\begin{code}
+   ≅-trans  :  ∀  {m₁ : Hefty H₂ A} {m₂ m₃}
+               →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
+               →  m₁ ≅⟨ Th ⟩ m₃
 \end{code}
 %
 Furthermore, we include the following congruence rule that equates two program
@@ -782,29 +782,95 @@ trees that have the same operation at the root, if their continuations are
 equivalent for all inputs. 
 %
 \begin{code}
-    ≅-cong   :     (op : Opᴴ H₂)
-                →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
-                →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
-                →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
-                →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
-                →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
+   ≅-cong   :     (op : Opᴴ H₂)
+               →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
+               →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
+               →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
+               →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
+               →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
 \end{code}
 %
 Finally, we include a constructor that equates two programs using an equation of
 the theory.
 %
 \begin{code}
-    ≅-eq     :     (eq : ■ Equationᴴ H₁)
-                →  eq ◄ᴴ Th
-                →  (vs : Vec Set (V ■⟨ eq ⟩))
-                →  (γ : Γ ■⟨ eq ⟩ vs)
-                →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
-                →  (lhs ■⟨ eq ⟩ vs γ 𝓑◂ k) ≅⟨ Th ⟩ (rhs ■⟨ eq ⟩ vs γ 𝓑◂ k) 
+   ≅-eq     :     (eq : ■ Equationᴴ H₁)
+               →  eq ◄ᴴ Th
+               →  (vs : Vec Set (V ■⟨ eq ⟩))
+               →  (γ : Γ ■⟨ eq ⟩ vs)
+               →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
+               →  (lhs ■⟨ eq ⟩ vs γ 𝓑◂ k) ≅⟨ Th ⟩ (rhs ■⟨ eq ⟩ vs γ 𝓑◂ k) 
 \end{code}
 \end{AgdaAlign}
+%
+We can define the same reasoning combinators to construct proofs of equivalence
+for programs with higher-order effects. 
 
-\todo{Cas: could give a small example here (that also illustrates the use of
-  modal necessity).} 
+\begin{code}
+module ≅-Reasoning ⦃ _ : H₁ ≲ᴴ H₂ ⦄ (Th : Theoryᴴ H₁) where
+
+  begin_ : {m₁ m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂ 
+  begin eq = eq 
+
+  _∎ : (c : Hefty H₂ A) → c ≅⟨ Th ⟩ c
+  c ∎ = ≅-refl
+
+  _≅⟪⟫_ : (m₁ : Hefty H₂ A) {m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂  
+  c₁ ≅⟪⟫ eq = eq
+
+  _≅⟪_⟫_  : (c₁ {c₂ c₃} : Hefty H₂ A) → c₁ ≅⟨ Th ⟩ c₂ → c₂ ≅⟨ Th ⟩ c₃ → c₁ ≅⟨ Th ⟩ c₃
+  c₁ ≅⟪ eq₁ ⟫ eq₂ = ≅-trans eq₁ eq₂
+\end{code}
+\begin{code}[hide]
+  infix 1 begin_
+  infixr 2 _≅⟪_⟫_ _≅⟪⟫_
+  infix 3 _∎
+\end{code}
+%
+\begin{code}[hide]
+postulate 
+  use-equationᴴ  :  ⦃ _ : H ≲ᴴ H′ ⦄
+                 →  {T : Theoryᴴ H}
+                 →  (eq : ■ Equationᴴ H)
+                 →  eq ◄ᴴ T
+                 →  (vs : Vec Set (V ■⟨ eq ⟩))
+                 →  {γ : Γ (■⟨ eq ⟩) vs}
+                 →  lhs (■⟨ eq ⟩) vs γ ≅⟨ T ⟩ rhs (■⟨ eq ⟩) vs γ
+
+module _ ⦃ _ : Universe ⦄ where
+
+  CatchTheory : Theoryᴴ Catch
+  arity CatchTheory = ⊤
+  equations CatchTheory tt = catch-throw
+
+  postulate censor◂ : (String → String) → Hefty H A → Hefty H A 
+\end{code}
+%
+To illustrate, we can prove that the programs
+$\af{catch}~\af{throw}~(\af{censor}~\ab{f}~\ab{m})$ and
+$\af{censor}~\ab{f}~\ab{m}$ are equal under a theory for the $af{Catch}$ effect
+that contains the \emph{catch-throw} law.
+%
+\begin{code}
+
+  catch-throw-censor :  ∀  {f} {m : Hefty H A}
+                        →  ⦃ _ : Catch ≲ᴴ H ⦄ → ⦃ _ : Censor ≲ᴴ H ⦄
+                        →  catch◂ throw◂ (censor◂ f m) ≅⟨ CatchTheory ⟩ censor◂ f m
+  catch-throw-censor {A = A} {f = f} {m = m} =
+    begin
+      catch◂ throw◂ (censor◂ f m)
+    ≅⟪ use-equationᴴ catch-throw (tt , refl) (A ∷ []) ⟫
+      censor◂ f m
+    ∎
+    where open ≅-Reasoning _
+\end{code}
+%
+The equivalence proof above makes, again, essential use of modal necessity. That
+is, by closing over all possible extensions of the $\af{Catch}$ effe, the term
+metavariable in the \emph{catch-throw} law to range over programs that have
+higher-order effects other than $\af{Catch}$, which is needed to apply the law
+if the second branch of the $\af{catch}$ operation contains the $\af{censor}$
+operation.
 
 \subsection{Correctness of Elaborations}
 
