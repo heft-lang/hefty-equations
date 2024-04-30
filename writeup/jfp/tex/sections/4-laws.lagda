@@ -19,6 +19,8 @@ open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.Unit
 open import Data.String
+open import Data.Maybe using (maybe′)
+open import Data.Bool using (true ; false ; Bool)
 
 open import Level renaming (suc to sℓ)
 
@@ -76,6 +78,9 @@ swap-⊕-↔ = record
 
 \section{Modular Reasoning for Higher-Order Effects}
 \label{sec:modular-reasoning}
+
+\todo{We ought to refer to the Agda development somewhere around here}
+\todo{Point out somewhere how handler correctness is a separate concern}
 
 A key aspect of algebraic effects and handlers is to state and prove equational
 \emph{laws} that characterize correct implementations of effectful
@@ -387,7 +392,8 @@ by summing the weakened theories:
 %
 \begin{code}
 compose-theory : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Theory Δ₁ → Theory Δ₂ → Theory Δ
-compose-theory T₁ T₂ = weaken-theory ⦃ ≲-∙-left ⦄ T₁ ⟨+⟩ weaken-theory ⦃ ≲-∙-right ⦄ T₂ 
+compose-theory T₁ T₂
+  = weaken-theory ⦃ ≲-∙-left ⦄ T₁ ⟨+⟩ weaken-theory ⦃ ≲-∙-right ⦄ T₂ 
 \end{code}
 
 Since equations are defined by storing the syntax trees corresponding their left
@@ -460,7 +466,8 @@ $\ad{Theory}$.
 %
 \begin{AgdaAlign}
 \begin{code}
-data _≈⟨_⟩_ {Δ Δ′} ⦃ _ : Δ ≲ Δ′ ⦄ : (m₁ : Free Δ′ A) → Theory Δ → (m₂ : Free Δ′ A) → Set₁ where 
+data _≈⟨_⟩_ {Δ Δ′} ⦃ _ : Δ ≲ Δ′ ⦄
+  : (m₁ : Free Δ′ A) → Theory Δ → (m₂ : Free Δ′ A) → Set₁ where 
 \end{code}
 %
 A value of type $\ab{m₁}~\ad{≈⟨}~\ab{T}~\ad{⟩}~\ab{m₂}$ witnesses that programs
@@ -551,6 +558,9 @@ module ≈-Reasoning (T : Theory Δ) ⦃ _ : Δ ≲ Δ′ ⦄ where
   infix  1 begin_
   infixr 2 _≈⟪_⟫_ _≈⟪⟫_
   infix  3 _∎
+
+from-≡ : ∀ {T : Theory Δ} {m₁ m₂ : Free Δ′ A} → ⦃ _ : Δ ≲ Δ′ ⦄ → m₁ ≡ m₂ → m₁ ≈⟨ T ⟩ m₂
+from-≡ refl = ≈-refl 
 \end{code}
 
 We now have all the necessary tools to prove syntactic equality of programs
@@ -571,7 +581,8 @@ invoking the $\af{get-get}$ law.
 \begin{code}
 get-get-throw :
      ⦃ _ : Throw ≲ Δ ⦄ ⦃ _ : State ≲ Δ ⦄
-  →  (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A}) ≈⟨ StateTheory ⟩ (‵get 𝓑  λ s → ‵throw)
+  →  (‵get 𝓑 λ s → ‵get 𝓑 λ s′ → ‵throw {A = A})
+     ≈⟨ StateTheory ⟩ (‵get 𝓑  λ s → ‵throw)
 get-get-throw {A = A} = begin
     ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
   ≈⟪ use-equation get-get◂ (tt , refl) (A ∷ [])  ⟫
@@ -627,13 +638,23 @@ operations. Indeed, the definition of equations ranging over higher-order
 effects is exactly the same as its first-order counterpart, the only difference
 being that the left-hand and right-hand side are now defined as Hefty trees:
 %
+\begin{code}[hide]
+module _ ⦃ _ : Universe ⦄ where 
+\end{code}
 \begin{code}
-record Equationᴴ (H : Effectᴴ) : Set₁ where
-  field
-    V        : ℕ
-    Γ        : Vec Set V → Set
-    R        : Vec Set V → Set 
-    lhs rhs  : (vs : Vec Set V) → Γ vs → Hefty H (R vs)
+  data Kind : Set where set type : Kind 
+
+  TypeContext : List Kind → Set₁
+  TypeContext []            = Level.Lift _ ⊤
+  TypeContext (set   ∷ vs)  = Set × TypeContext vs
+  TypeContext (type  ∷ vs)  = Level.Lift (sℓ 0ℓ) Type × TypeContext vs
+
+  record Equationᴴ (H : Effectᴴ) : Set₁ where
+    field
+      V        : List Kind 
+      Γ        : TypeContext V → Set
+      R        : TypeContext V → Set 
+      lhs rhs  : (vs : TypeContext V) → Γ vs → Hefty H (R vs)
 \end{code}
 %
 This definition of equations suffers the same problem when it comes to term
@@ -645,44 +666,42 @@ but this time we use higher-order effect subtyping as the modal accessibility
 relation:
 %
 \begin{code}
-record ■ (P : Effectᴴ → Set₁) (H : Effectᴴ) : Set₁ where
-  constructor necessary 
-  field ■⟨_⟩ : ∀ {H′} → ⦃ H ≲ᴴ H′ ⦄ → P H′ 
+  record ■ (P : Effectᴴ → Set₁) (H : Effectᴴ) : Set₁ where
+    constructor necessary 
+    field ■⟨_⟩ : ∀ {H′} → ⦃ H ≲ᴴ H′ ⦄ → P H′ 
 \end{code}
 %
-To illustrate: we can define the \emph{catch-throw} law from the introduction of
+To illustrate: we can define the \emph{catch-return} law from the introduction of
 this section as a value of type $\ad{■}~\ad{Equationᴴ}~\af{Catch}$ a
 follows:~\footnote{For simplicities sake, we gloss over the use of type
-  universes to avoid size issues here.}
+  universes to avoid size issues here.}\todo{UPDATE: quantification over types
+  and sets} 
 %
 \begin{code}[hide]
-open ■
-open Equationᴴ 
+  open ■
+  open Equationᴴ 
 
-module _ ⦃ _ : Universe ⦄ where
-  postulate catch◂ : Hefty H A → Hefty H A → Hefty H A
-  postulate throw◂ : Hefty H A
 \end{code}
 \begin{code} 
-  catch-throw : ■ Equationᴴ Catch
-  V    ■⟨ catch-throw ⟩ = 1
-  Γ    ■⟨ catch-throw ⟩ (A ∷ []) = Hefty _ A
-  R    ■⟨ catch-throw ⟩ (A ∷ []) = A
-  lhs  ■⟨ catch-throw ⟩ (A ∷ []) m = catch◂ throw◂ m
-  rhs  ■⟨ catch-throw ⟩ (A ∷ []) m = m
+  catch-return : ■ Equationᴴ Catch
+  V    ■⟨ catch-return ⟩               = type ∷ []
+  Γ    ■⟨ catch-return ⟩ (lift t , _)  = ⟦ t ⟧ᵀ × Hefty _ ⟦ t ⟧ᵀ
+  R    ■⟨ catch-return ⟩ (lift t , _)  = ⟦ t ⟧ᵀ
+  lhs  ■⟨ catch-return ⟩ _ (x , m)     = ‵catch (Hefty.pure x) m
+  rhs  ■⟨ catch-return ⟩ _ (x , m)     = Hefty.pure x
 \end{code} 
 \begin{code}[hide]
-open Equationᴴ
+  open Equationᴴ
 \end{code}
 
 Theories of higher-order effects bundle extensible equations. The setup is the
 same as for theories of first-order effects. 
 %
 \begin{code}
-record Theoryᴴ (H : Effectᴴ) : Set₁ where
-  field
-    arity     : Set
-    equations : arity → ■ Equationᴴ H 
+  record Theoryᴴ (H : Effectᴴ) : Set₁ where
+    field
+      arity     : Set
+      equations : arity → ■ Equationᴴ H 
 \end{code}
 %
 The following predicate establishes that an equation is part of a theory. We
@@ -690,30 +709,30 @@ prove this fact by providing an arity whose corresponding equation is equal to
 $ab{eq}$. 
 %
 \begin{code}[hide]
-variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
-open Theoryᴴ
-open ■
+  variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
+  open Theoryᴴ
+  open ■
 \end{code}
 \begin{code}
-_◄ᴴ_ : ■ Equationᴴ H → Theoryᴴ H → Set₁
-eq ◄ᴴ Th = ∃ λ a → eq ≡ equations Th a 
+  _◄ᴴ_ : ■ Equationᴴ H → Theoryᴴ H → Set₁
+  eq ◄ᴴ Th = ∃ λ a → eq ≡ equations Th a 
 \end{code}
 
 \begin{code}[hide]
-module _ where
-  open Effectᴴ
+  module _ where
+    open Effectᴴ
 \end{code}
 %
 Weakenability of theories of higher-order effects then follows from
 weakenability of its equations.
 %
 \begin{code}
-  weaken-■ : ∀ {P} → ⦃ H₁ ≲ᴴ H₂ ⦄ → ■ P H₁ → ■ P H₂
-  ■⟨ weaken-■ ⦃ w  ⦄ px ⟩ ⦃ w′ ⦄ = ■⟨ px ⟩ ⦃ ≲ᴴ-trans w w′ ⦄
-
-  weaken-theoryᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → Theoryᴴ H₁ → Theoryᴴ H₂
-  arity      (weaken-theoryᴴ Th)    = Th .arity
-  equations  (weaken-theoryᴴ Th) a  = weaken-■ (Th .equations a)
+    weaken-■ : ∀ {P} → ⦃ H₁ ≲ᴴ H₂ ⦄ → ■ P H₁ → ■ P H₂
+    ■⟨ weaken-■ ⦃ w  ⦄ px ⟩ ⦃ w′ ⦄ = ■⟨ px ⟩ ⦃ ≲ᴴ-trans w w′ ⦄
+  
+    weaken-theoryᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → Theoryᴴ H₁ → Theoryᴴ H₂
+    arity      (weaken-theoryᴴ Th)    = Th .arity
+    equations  (weaken-theoryᴴ Th) a  = weaken-■ (Th .equations a)
 \end{code}
 
 Theories of higher-order effects can be combined using the following sum
@@ -721,10 +740,10 @@ operation. The resulting theory contains all equations of both argument
 theories.
 %
 \begin{code}
-  _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
-  arity      (Th₁ ⟨+⟩ᴴ Th₂)           = arity Th₁ ⊎ arity Th₂
-  equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₁ a)  = equations Th₁ a
-  equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a)  = equations Th₂ a
+    _⟨+⟩ᴴ_ : ∀[ Theoryᴴ ⇒ Theoryᴴ ⇒ Theoryᴴ ]
+    arity      (Th₁ ⟨+⟩ᴴ Th₂)           = arity Th₁ ⊎ arity Th₂
+    equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₁ a)  = equations Th₁ a
+    equations  (Th₁ ⟨+⟩ᴴ Th₂) (inj₂ a)  = equations Th₂ a
 \end{code}
 %
 Theories of higher-order effects are closed under sums of higher-order effect
@@ -733,20 +752,20 @@ respective theories, for which we need the following lemmas witnessing that
 higher-order effect signatures can be injected in a sum of signatures.
 %
 \begin{code}[hide]
-  postulate 
+    postulate 
 \end{code}
 \begin{code}
-    ≲-∔-left   : H₁ ≲ᴴ (H₁ ∔ H₂)
-    ≲-∔-right  : H₂ ≲ᴴ (H₁ ∔ H₂) 
+      ≲-∔-left   : H₁ ≲ᴴ (H₁ ∔ H₂)
+      ≲-∔-right  : H₂ ≲ᴴ (H₁ ∔ H₂) 
 \end{code}
 %
 The operation that combines theories under signature sums is then defined like
 so.
 %
 \begin{code}
-  _[+]ᴴ_ : Theoryᴴ H₁ → Theoryᴴ H₂ → Theoryᴴ (H₁ ∔ H₂)
-  Th₁ [+]ᴴ Th₂
-    = weaken-theoryᴴ ⦃ ≲-∔-left ⦄ Th₁ ⟨+⟩ᴴ weaken-theoryᴴ ⦃ ≲-∔-right ⦄ Th₂
+    _[+]ᴴ_ : Theoryᴴ H₁ → Theoryᴴ H₂ → Theoryᴴ (H₁ ∔ H₂)
+    Th₁ [+]ᴴ Th₂
+      = weaken-theoryᴴ ⦃ ≲-∔-left ⦄ Th₁ ⟨+⟩ᴴ weaken-theoryᴴ ⦃ ≲-∔-right ⦄ Th₂
 \end{code}
 
 \subsection{Equivalence of Programs with Higher-Order Effects}
@@ -756,26 +775,26 @@ with higher-order effects modulo the equations of a given theory.
 
 \begin{AgdaAlign}
 \begin{code}
-  data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄
-    : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
+    data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄
+      : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
 \end{code}
 %
 To ensure that it is indeed an equivalence relation, we include constructors for
 reflexivity, symmetry, and transitivity. 
 %
 \begin{code}
-   ≅-refl   :  ∀  {m : Hefty H₂ A}
-               →  m ≅⟨ Th ⟩ m
+     ≅-refl   :  ∀  {m : Hefty H₂ A}
+                 →  m ≅⟨ Th ⟩ m
 \end{code}
 \begin{code}
-   ≅-sym    :  ∀  {m₁ : Hefty H₂ A} {m₂}
-               →  m₁ ≅⟨ Th ⟩ m₂
-               →  m₂ ≅⟨ Th ⟩ m₁
+     ≅-sym    :  ∀  {m₁ : Hefty H₂ A} {m₂}
+                 →  m₁ ≅⟨ Th ⟩ m₂
+                 →  m₂ ≅⟨ Th ⟩ m₁
 \end{code}
 \begin{code}
-   ≅-trans  :  ∀  {m₁ : Hefty H₂ A} {m₂ m₃}
-               →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
-               →  m₁ ≅⟨ Th ⟩ m₃
+     ≅-trans  :  ∀  {m₁ : Hefty H₂ A} {m₂ m₃}
+                 →  m₁ ≅⟨ Th ⟩ m₂ → m₂ ≅⟨ Th ⟩ m₃
+                 →  m₁ ≅⟨ Th ⟩ m₃
 \end{code}
 %
 Furthermore, we include the following congruence rule that equates two program
@@ -783,24 +802,24 @@ trees that have the same operation at the root, if their continuations are
 equivalent for all inputs. 
 %
 \begin{code}
-   ≅-cong   :     (op : Opᴴ H₂)
-               →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
-               →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
-               →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
-               →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
-               →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
+     ≅-cong   :     (op : Opᴴ H₂)
+                 →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
+                 →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
+                 →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
+                 →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
+                 →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
 \end{code}
 %
 Finally, we include a constructor that equates two programs using an equation of
 the theory.
 %
 \begin{code}
-   ≅-eq     :     (eq : ■ Equationᴴ H₁)
-               →  eq ◄ᴴ Th
-               →  (vs : Vec Set (V ■⟨ eq ⟩))
-               →  (γ : Γ ■⟨ eq ⟩ vs)
-               →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
-               →  (lhs ■⟨ eq ⟩ vs γ 𝓑◂ k) ≅⟨ Th ⟩ (rhs ■⟨ eq ⟩ vs γ 𝓑◂ k) 
+     ≅-eq     :     (eq : ■ Equationᴴ H₁)
+                 →  eq ◄ᴴ Th
+                 →  (vs : TypeContext (V ■⟨ eq ⟩))
+                 →  (γ : Γ ■⟨ eq ⟩ vs)
+                 →  (k : R ■⟨ eq ⟩ vs → Hefty H₂ A)
+                 →  (lhs ■⟨ eq ⟩ vs γ 𝓑◂ k) ≅⟨ Th ⟩ (rhs ■⟨ eq ⟩ vs γ 𝓑◂ k) 
 \end{code}
 \end{AgdaAlign}
 %
@@ -808,67 +827,75 @@ We can define the same reasoning combinators to construct proofs of equivalence
 for programs with higher-order effects. 
 
 \begin{code}
-module ≅-Reasoning ⦃ _ : H₁ ≲ᴴ H₂ ⦄ (Th : Theoryᴴ H₁) where
-
-  begin_ : {m₁ m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂ 
-  begin eq = eq 
-
-  _∎ : (c : Hefty H₂ A) → c ≅⟨ Th ⟩ c
-  c ∎ = ≅-refl
-
-  _≅⟪⟫_ : (m₁ : Hefty H₂ A) {m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂  
-  c₁ ≅⟪⟫ eq = eq
-
-  _≅⟪_⟫_  : (c₁ {c₂ c₃} : Hefty H₂ A) → c₁ ≅⟨ Th ⟩ c₂ → c₂ ≅⟨ Th ⟩ c₃ → c₁ ≅⟨ Th ⟩ c₃
-  c₁ ≅⟪ eq₁ ⟫ eq₂ = ≅-trans eq₁ eq₂
+  module ≅-Reasoning ⦃ _ : H₁ ≲ᴴ H₂ ⦄ (Th : Theoryᴴ H₁) where
+  
+    begin_ : {m₁ m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂ 
+    begin eq = eq 
+  
+    _∎ : (c : Hefty H₂ A) → c ≅⟨ Th ⟩ c
+    c ∎ = ≅-refl
+  
+    _≅⟪⟫_ : (m₁ : Hefty H₂ A) {m₂ : Hefty H₂ A} → m₁ ≅⟨ Th ⟩ m₂ → m₁ ≅⟨ Th ⟩ m₂  
+    c₁ ≅⟪⟫ eq = eq
+  
+    _≅⟪_⟫_  : (c₁ {c₂ c₃} : Hefty H₂ A) → c₁ ≅⟨ Th ⟩ c₂ → c₂ ≅⟨ Th ⟩ c₃ → c₁ ≅⟨ Th ⟩ c₃
+    c₁ ≅⟪ eq₁ ⟫ eq₂ = ≅-trans eq₁ eq₂
 \end{code}
 \begin{code}[hide]
-  infix 1 begin_
-  infixr 2 _≅⟪_⟫_ _≅⟪⟫_
-  infix 3 _∎
+    infix 1 begin_
+    infixr 2 _≅⟪_⟫_ _≅⟪⟫_
+    infix 3 _∎
 \end{code}
 %
 \begin{code}[hide]
-postulate 
-  use-equationᴴ  :  ⦃ _ : H ≲ᴴ H′ ⦄
-                 →  {T : Theoryᴴ H}
-                 →  (eq : ■ Equationᴴ H)
-                 →  eq ◄ᴴ T
-                 →  (vs : Vec Set (V ■⟨ eq ⟩))
-                 →  {γ : Γ (■⟨ eq ⟩) vs}
-                 →  lhs (■⟨ eq ⟩) vs γ ≅⟨ T ⟩ rhs (■⟨ eq ⟩) vs γ
-
-module _ ⦃ _ : Universe ⦄ where
+  postulate 
+    use-equationᴴ  :  ⦃ _ : H ≲ᴴ H′ ⦄
+                   →  {T : Theoryᴴ H}
+                   →  (eq : ■ Equationᴴ H)
+                   →  eq ◄ᴴ T
+                   →  (vs : TypeContext (V ■⟨ eq ⟩))
+                   →  {γ : Γ (■⟨ eq ⟩) vs}
+                   →  lhs (■⟨ eq ⟩) vs γ ≅⟨ T ⟩ rhs (■⟨ eq ⟩) vs γ  
 
   CatchTheory : Theoryᴴ Catch
   arity CatchTheory = ⊤
-  equations CatchTheory tt = catch-throw
-
-  postulate censor◂ : (String → String) → Hefty H A → Hefty H A 
+  equations CatchTheory tt = catch-return
 \end{code}
 %
 To illustrate, we can prove that the programs
 $\af{catch}~\af{throw}~(\af{censor}~\ab{f}~\ab{m})$ and
 $\af{censor}~\ab{f}~\ab{m}$ are equal under a theory for the $af{Catch}$ effect
-that contains the \emph{catch-throw} law.
+that contains the \emph{catch-return} law.
 %
-\begin{code}
+\begin{code}[hide]
+  data CensorOp◂ : Set where censor◂ : Type → (String → String) → CensorOp◂ 
 
-  catch-throw-censor :  ∀  {f} {m : Hefty H A}
-                        →  ⦃ _ : Catch ≲ᴴ H ⦄ → ⦃ _ : Censor ≲ᴴ H ⦄
-                        →  catch◂ throw◂ (censor◂ f m) ≅⟨ CatchTheory ⟩ censor◂ f m
-  catch-throw-censor {A = A} {f = f} {m = m} =
+  Censor◂ : Effectᴴ
+  Effectᴴ.Opᴴ Censor◂ = CensorOp◂
+  Effectᴴ.Retᴴ Censor◂ (censor◂ t _) = ⟦ t ⟧ᵀ
+  Effectᴴ.Fork Censor◂ (censor◂ t x) = ⊤
+  Effectᴴ.Ty Censor◂ {censor◂ t _} ψ = ⟦ t ⟧ᵀ
+  
+  ‵censor : ∀ {t : Type} → ⦃ Censor◂ ≲ᴴ H ⦄ → (String → String) → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
+  ‵censor {H = H} {t = t} f m = impure (injᴴ {M = Hefty H} ((censor◂ t f) , Hefty.pure {H = H} , λ where tt → m)) 
+\end{code}
+\begin{code}
+  catch-return-censor :  ∀  {t : Type} {f} {x : ⟦ t ⟧ᵀ} {m : Hefty H ⟦ t ⟧ᵀ}
+                        →  ⦃ _ : Catch ≲ᴴ H ⦄ → ⦃ _ : Censor◂ ≲ᴴ H ⦄
+                        →  ‵catch (Hefty.pure x) (‵censor f m)
+                           ≅⟨ CatchTheory ⟩ Hefty.pure x 
+  catch-return-censor {f = f} {x = x} {m = m} =
     begin
-      catch◂ throw◂ (censor◂ f m)
-    ≅⟪ use-equationᴴ catch-throw (tt , refl) (A ∷ []) ⟫
-      censor◂ f m
+      ‵catch (Hefty.pure x) (‵censor f m)
+    ≅⟪ use-equationᴴ catch-return (tt , refl) _ ⟫
+      Hefty.pure _
     ∎
     where open ≅-Reasoning _
 \end{code}
 %
 The equivalence proof above makes, again, essential use of modal necessity. That
 is, by closing over all possible extensions of the $\af{Catch}$ effe, the term
-metavariable in the \emph{catch-throw} law to range over programs that have
+metavariable in the \emph{catch-return} law to range over programs that have
 higher-order effects other than $\af{Catch}$, which is needed to apply the law
 if the second branch of the $\af{catch}$ operation contains the $\af{censor}$
 operation.
@@ -887,10 +914,10 @@ equality would be too restrictive, since that preclude us from equating programs
 using equations of the first-order effect(s) that we elaborate into. 
 %
 \begin{code}
-Respectsᴴ  : (_≈_ : ∀ {A} → Free Δ A → Free Δ A → Set₁)
-           → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
-Respectsᴴ _≈_ alg eq =
-  ∀ {vs γ} → cataᴴ Free.pure alg (lhs eq vs γ) ≈ cataᴴ Free.pure alg (rhs eq vs γ)
+  Respectsᴴ  : (_≈_ : ∀ {A} → Free Δ A → Free Δ A → Set₁)
+             → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
+  Respectsᴴ _≈_ alg eq =
+    ∀ {vs γ} → cataᴴ Free.pure alg (lhs eq vs γ) ≈ cataᴴ Free.pure alg (rhs eq vs γ)
 \end{code}
 
 Since elaborations are composed in parallel, the use of necessity in the
@@ -903,18 +930,18 @@ over all possible ways these additional effects are elaborated. For this, we
 define the following binary relation on extensible elaborations. 
 %
 \begin{code}[hide]
-open Algᴴ
+  open Algᴴ
 \end{code}
 \begin{code}
-record _⊑_ (e₁ : □ (Elaboration H₁) Δ₁) (e₂ : □ (Elaboration H₂) Δ₂) : Set₁ where
-  field
-    ⦃ ≲-eff   ⦄ : Δ₁ ≲ Δ₂
-    ⦃ ≲ᴴ-eff  ⦄ : H₁ ≲ᴴ H₂
-    preserves-cases
-      : ∀ {M} (m : ⟦ H₁ ⟧ᴴ M A)
-      → (e′ : ∀[ M ⇒ Free Δ₂ ])
-      →     □⟨ e₁ ⟩ .alg (map-sigᴴ (λ {x} → e′ {x}) m)
-         ≡  extract e₂ .alg (map-sigᴴ (λ {x} → e′ {x}) (injᴴ {X = A} m))
+  record _⊑_ (e₁ : □ (Elaboration H₁) Δ₁) (e₂ : □ (Elaboration H₂) Δ₂) : Set₁ where
+    field
+      ⦃ ≲-eff   ⦄ : Δ₁ ≲ Δ₂
+      ⦃ ≲ᴴ-eff  ⦄ : H₁ ≲ᴴ H₂
+      preserves-cases
+        : ∀ {M} (m : ⟦ H₁ ⟧ᴴ M A)
+        → (e′ : ∀[ M ⇒ Free Δ₂ ])
+        →     □⟨ e₁ ⟩ .alg (map-sigᴴ (λ {x} → e′ {x}) m)
+           ≡  extract e₂ .alg (map-sigᴴ (λ {x} → e′ {x}) (injᴴ {X = A} m))
 \end{code}
 %
 A proof of the form $\ab{e₁}~⊑~\ab{e₂}$ witnesses that the elaboration
@@ -926,416 +953,87 @@ both $\ab{e₁}$ and $\ab{e₂}$ they should produce the same result.
 We then define correctness of elaborations as follows. 
 %
 \begin{code}
-Correctᴴ : Theoryᴴ H → Theory Δ → □ (Elaboration H) Δ → Set₁
-Correctᴴ Th T e =
-  ∀ {Δ′ H′}
-  → (e′ : □ (Elaboration H′) Δ′)
-  → ⦃ _ : e ⊑ e′ ⦄
-  → {eq : ■ Equationᴴ _}
-  → eq ◄ᴴ Th
-  → Respectsᴴ (_≈⟨ T ⟩_) (extract e′) ■⟨ eq ⟩
+  Correctᴴ : Theoryᴴ H → Theory Δ → □ (Elaboration H) Δ → Set₁
+  Correctᴴ Th T e =
+    ∀ {Δ′ H′}
+    → (e′ : □ (Elaboration H′) Δ′)
+    → ⦃ _ : e ⊑ e′ ⦄
+    → {eq : ■ Equationᴴ _}
+    → eq ◄ᴴ Th
+    → Respectsᴴ (_≈⟨ T ⟩_) (extract e′) ■⟨ eq ⟩
 \end{code}
 %
 Which is to say that an elaboration is correct with respect to a theory of the
 higher-order effects it elaborates and a theory of the first-order effects it
 elaborates into, if all possible extensions of the elaboration respect all
 equations of the higher-order theory with respect to equivalence modulo the
-first-order theory. 
+first-order theory.
+
+Crucially, correctness of elaborations is preserved under their
+composition. \cref{fig:correctness-composition} shows the type of the
+corresponding correctness theorem in Agda; for the full details of the proof we
+refer to \todo{cite agda development}. 
 
 \begin{code}[hide]
-compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
-              →  □ (Elaboration H₁) Δ₁
-              →  □ (Elaboration H₂) Δ₂
-              →  □ (Elaboration (H₁ ∔ H₂)) Δ
-□⟨ compose-elab e₁ e₂ ⟩ ⦃ w ⦄ = □⟨ e₁ ⟩ ⦃ ≲-trans ≲-∙-left w ⦄ ⋎ □⟨ e₂ ⟩ ⦃ ≲-trans ≲-∙-right w ⦄
+  compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
+                →  □ (Elaboration H₁) Δ₁
+                →  □ (Elaboration H₂) Δ₂
+                →  □ (Elaboration (H₁ ∔ H₂)) Δ
+  □⟨ compose-elab e₁ e₂ ⟩ ⦃ w ⦄ = □⟨ e₁ ⟩ ⦃ ≲-trans ≲-∙-left w ⦄ ⋎ □⟨ e₂ ⟩ ⦃ ≲-trans ≲-∙-right w ⦄
 \end{code}
 
 \begin{figure}
 \begin{code}[hide]
-postulate 
+  postulate 
 \end{code}
 \begin{code}
-  compose-elab-correct  :  ⦃ _ : Δ₁ ∙ Δ₂ ≈ Δ ⦄ 
-                        →  (e₁ : □ (Elaboration H₁) Δ₁)
-                        →  (e₂ : □ (Elaboration H₂) Δ₂)
-                        →  (T₁ : Theory Δ₁)
-                        →  (T₂ : Theory Δ₂)
-                        →  (Th₁ : Theoryᴴ H₁)
-                        →  (Th₂ : Theoryᴴ H₂)
-                        →  Correctᴴ Th₁ T₁ e₁
-                        →  Correctᴴ Th₂ T₂ e₂ 
-                        →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂)
-                             (compose-elab e₁ e₂)
+    compose-elab-correct  :  ⦃ _ : Δ₁ ∙ Δ₂ ≈ Δ ⦄ 
+                          →  (e₁ : □ (Elaboration H₁) Δ₁)
+                          →  (e₂ : □ (Elaboration H₂) Δ₂)
+                          →  (T₁ : Theory Δ₁)
+                          →  (T₂ : Theory Δ₂)
+                          →  (Th₁ : Theoryᴴ H₁)
+                          →  (Th₂ : Theoryᴴ H₂)
+                          →  Correctᴴ Th₁ T₁ e₁
+                          →  Correctᴴ Th₂ T₂ e₂ 
+                          →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂)
+                               (compose-elab e₁ e₂)
 \end{code}
-\label{fig:correctness-composition}
 \caption{The central correctness theorem, which establishes that correctness of
   elaborations is preserved under composition.}
+\label{fig:correctness-composition}
 \end{figure}
 
-\subsection{Examples}
+\subsection{Example Correctness Proof}
 
-\todo{What is a good example? Ideally, we show proof of a law that (1) is not a
-  direct correspondence with the algebraic effect we elaborate into, but
-  simultaneously does use an equation of the underlying theory. There are some
-  candidate laws for the ``local'' operation that satisfy this.  }
+\begin{code}
+  module ℰ (e : □ (Elaboration H) Δ) where  
+    ℰ⟦_⟧ : Hefty H A → Free Δ A
+    ℰ⟦ m ⟧ = elaborate (extract e) m
+\end{code}
 
-
-%% 
-%% 
-%% \section{Verifying Algebraic Laws for Higher-Order Effects}
-%% \label{sec:laws}
-%% 
-%% A key idea behind algebraic effects is that we can state and prove algebraic laws about effectful operations.
-%% In this section we show how to verify the lawfulness of catch , and compare the effort required to verify lawfulness using hefty algebras vs. a non-modular elaboration for catch.
-%% 
-%% The record type shown below defines the interface of a monad given by the record parameters \ab{M}, \ab{return}, and \ab{\_𝓑\_}.
-%% The fields on the left below assert that \ab{M} has a \aF{𝑡ℎ𝑟𝑜𝑤} and \aF{𝑐𝑎𝑡𝑐ℎ} operation, as well as a \aF{run} function which runs a computation to yield a result \aF{R}~\as{:}~\ad{Set}~\as{→}~\ad{Set}.\footnote{The notation \as{⦃}~\ab{u}~\as{⦄}~\as{:}~\ad{Universe} treats the \ad{u} field as an \emph{instance} that can be automatically resolved in the scope of the \ad{CatchIntf} record type.}
-%% On the right are the laws that constrain the behavior of the throw and catch operations.
-%% The laws are borrowed from \citet{delaware2013meta}.
-%% \\
-%% \begin{minipage}{0.545\linewidth}
-%% \footnotesize
-%% \begin{code}
-%% record  CatchIntf (M : Set → Set)
-%%         (return  :  ∀ {A} → A → M A)
-%%         (_𝓑_   :  ∀ {A B}
-%%                  →  M A → (A → M B) → M B) : Set₁ where
-%%   field  ⦃ u ⦄  : Universe
-%%          𝑡ℎ𝑟𝑜𝑤   : {t : Ty} → M ⟦ t ⟧ᵀ
-%%          𝑐𝑎𝑡𝑐ℎ   : {t : Ty} → M ⟦ t ⟧ᵀ → M ⟦ t ⟧ᵀ → M ⟦ t ⟧ᵀ
-%%          R       : Set → Set
-%%          run     : M A → R A
-%% \end{code}
-%% \end{minipage}
-%% \hfill\vline\hfill
-%% \begin{minipage}{0.445\linewidth}
-%% \footnotesize
-%% \begin{code}
-%%          bind-throw  : {t₁ t₂ : Ty} (k : ⟦ t₁ ⟧ᵀ → M ⟦ t₁ ⟧ᵀ)
-%%            → run (𝑡ℎ𝑟𝑜𝑤 𝓑 k) ≡ run 𝑡ℎ𝑟𝑜𝑤
-%%          catch-throw₁  : {t : Ty} (m : M ⟦ t ⟧ᵀ)
-%%            → run (𝑐𝑎𝑡𝑐ℎ 𝑡ℎ𝑟𝑜𝑤 m) ≡ run m
-%%          catch-throw₂  : {t : Ty} (m : M ⟦ t ⟧ᵀ)
-%%            → run (𝑐𝑎𝑡𝑐ℎ m 𝑡ℎ𝑟𝑜𝑤) ≡ run m
-%%          catch-return  : {t : Ty} (x : ⟦ t ⟧ᵀ) (m : M ⟦ t ⟧ᵀ)
-%%            → run (𝑐𝑎𝑡𝑐ℎ (return x) m) ≡ run (return x)
-%% \end{code}f
-%% \begin{code}[hide]
-%%          catch-cong    : {t : Ty} (m₁ m₁′ m₂ m₂′ : M ⟦ t ⟧ᵀ)
-%%            → run m₁ ≡ run m₁′
-%%            → run m₂ ≡ run m₂′
-%%            → run (𝑐𝑎𝑡𝑐ℎ m₁ m₂) ≡ run (𝑐𝑎𝑡𝑐ℎ m₁′ m₂′)
-%% \end{code}
-%% \end{minipage}
-%% \\
-%% \Cref{fig:laws} (left) shows that the elaboration and handler from the previous section satisfy these laws.
-%% The figure uses \af{‵throwᴴ} as an abbreviation for \af{↑}~\ac{throw}~\af{𝓑}~\af{⊥-elim}, \af{h} as an abbreviation of the handler for \af{hThrow}, and \af{e} as an abbreviation of \af{elaborate}.
-%% The proofs are equational rewriting proofs akin to pen-and-paper proofs, except that each step is mechanically verified.
-%% The equational rewriting steps use the \am{≡-Reasoning} module from the Agda standard library, and have the form \ab{t₁}~\af{≡⟨}~\ab{eq}~\af{⟩}~\ab{t₂} where \ab{t₁} is the term before the rewrite, \ab{t₂} is the term after, and \ab{eq} is a proof that \ab{t₁} and \ab{t₂} are equal.
-%% The question is, how much overhead the hefty algebra encoding adds compared to the non-modular abbreviation of catch from \cref{sec:higher-order-effects}?
-%% To answer this question, \cref{fig:laws} also contains the implementation and proof of a non-modular elaboration of catch (\ad{CatchImpl₁} on the right).
-%% %
-%% \begin{figure}
-%% \centering
-%% \begin{minipage}[t]{0.495\linewidth}%
-%% \footnotesize%
-%% \begin{AgdaMultiCode}%
-%% \begin{code}[hide]
-%% module CatchLawModule where
-%%   open import Data.Empty
-%%   open import Data.Unit
-%%   open import Data.Maybe hiding (_>>=_)
-%%   open import Data.Sum
-%% 
-%%   open CatchIntf
-%%   open Abbreviation hiding (catch)
-%%   open ElabModule
-%%   open import tex.sections.Postulates.Extensionality
-%%   open ≡-Reasoning
-%% 
-%%   ‵throwᴴ : ⦃ w : H  ∼  Lift Throw  ▹ H″ ⦄
-%%            → Hefty H A
-%%   ‵throwᴴ ⦃ w ⦄ = (↑ throw) 𝓑 ⊥-elim
-%%     where open HeftyModule using (_𝓑_)
-%% 
-%% 
-%%   module _ {H : Effectᴴ} {Δ : Effect} (E : Elaboration H (Throw ⊕ Δ)) where
-%%     open HeftyModule using (pure) renaming (_𝓑_ to _𝓑⅋_)
-%%     CatchImpl₀  :  ⦃ u : Universe ⦄
-%%                 →  CatchIntf  (Hefty (Lift Throw ∔ Catch ∔ H))
-%%                               pure _𝓑⅋_
-%% \end{code}
-%% \begin{code}
-%%     u             (CatchImpl₀ ⦃ u ⦄)    = u
-%%     𝑡ℎ𝑟𝑜𝑤         CatchImpl₀            = ‵throwᴴ
-%%     𝑐𝑎𝑡𝑐ℎ         CatchImpl₀            = ‵catch
-%%     R             CatchImpl₀            = Free Δ ∘ Maybe 
-%%     run           CatchImpl₀            =  h ∘ e
-%% 
-%% \end{code}
-%% \begin{code}[hide]
-%%       where
-%%            h : ∀ {A} → Free (Throw ⊕ _) A → Free _ (Maybe A)
-%%            e : ∀ {A} → Hefty (Lift Throw ∔ Catch ∔ _) A → Free (Throw ⊕ _) A
-%% \end{code}
-%% \begin{code}[hide]
-%%            h m = (given hThrow handle m) tt
-%%            e = elaborate (eLift ⋎ eCatch ⋎ E)
-%% \end{code}
-%% \begin{code}
-%%     bind-throw    CatchImpl₀  k    = refl
-%%     catch-return  CatchImpl₀  x m  = refl
-%% \end{code}
-%% \begin{code}
-%%     catch-throw₁  CatchImpl₀  m    = begin
-%%         h (e (‵catch ‵throwᴴ m))
-%%       ≡⟨ refl ⟩
-%%         h ((♯ h (e ‵throwᴴ)) 𝓑 maybe pure ((e m) 𝓑 pure))
-%%       ≡⟨ cong! (Free-unitᵣ-≡ (e m)) ⟩
-%%         h (e m) ∎
-%% \end{code}
-%% \begin{code}[hide]
-%%       where
-%%         h : ∀ {A} → Free (Throw ⊕ _) A → Free _ (Maybe A)
-%%         e : ∀ {A} → Hefty (Lift Throw ∔ Catch ∔ _) A → Free (Throw ⊕ _) A
-%% \end{code}
-%% \begin{code}[hide]
-%%         h m = (given hThrow handle m) tt
-%%         e = elaborate (eLift ⋎ eCatch ⋎ E)
-%% \end{code}
-%% \begin{code}[hide]
-%%         open FreeModule
-%% \end{code}
-%% \begin{code}
-%%     catch-throw₂  CatchImpl₀  m    = begin
-%%         h (e (‵catch m ‵throwᴴ))
-%%       ≡⟨ refl ⟩
-%%         h ((♯ h (e m)) 𝓑 maybe pure ((e ‵throwᴴ) 𝓑 pure))
-%%       ≡⟨ cong (λ P → h ((♯ h (e m)) 𝓑 P))
-%%            (extensionality (λ x →
-%%              cong (λ P → maybe pure P x)
-%%                (cong (λ k → impure (inj₁ throw , k))
-%%                      (extensionality (λ x → ⊥-elim x))))) ⟩
-%%         h ((♯ h (e m)) 𝓑 maybe pure ‵throw)
-%%       ≡⟨ catch-throw-lem (e m) ⟩
-%%         h (e m) ∎
-%% \end{code}
-%% \begin{code}[hide]
-%%       where
-%%         open FreeModule
-%% 
-%%         h : ∀ {A} → Free (Throw ⊕ _) A → Free _ (Maybe A)
-%%         h m = (given hThrow handle m) tt
-%%         e : ∀ {A} → Hefty (Lift Throw ∔ Catch ∔ _) A → Free (Throw ⊕ _) A
-%%         e = elaborate (eLift ⋎ eCatch ⋎ E)
-%%           
-%%         catch-throw-lem : (m : Free (Throw ⊕ _) A)
-%%                         → h ((♯ h m) 𝓑 maybe pure ‵throw)
-%%                           ≡ (given hThrow handle m) tt
-%%         catch-throw-lem (pure x)                = refl
-%%         catch-throw-lem (impure (inj₁ throw , k)) = refl
-%%         catch-throw-lem (impure (inj₂ y , k)) = cong (impure ∘ (y ,_)) (extensionality (λ x → catch-throw-lem (k x)))
-%%     catch-cong CatchImpl₀ m₁ m₁' m₂ m₂' eq₁ eq₂ = begin
-%%         h (e (‵catch m₁ m₂))
-%%       ≡⟨ refl ⟩
-%%          h ((♯ h (e m₁)) 𝓑ᶠ maybe pure (e m₂ 𝓑ᶠ pure))
-%%       ≡⟨ cong
-%%            (λ P → h ((♯ h (e m₁)) 𝓑ᶠ P))
-%%            (extensionality (λ x → cong (λ P → maybe pure P x) (Free-unitᵣ-≡ (e m₂)))) ⟩
-%%          h ((♯ h (e m₁)) 𝓑ᶠ maybe pure (e m₂))
-%%       ≡⟨ cong (λ P → h ((♯ P) 𝓑ᶠ maybe pure (e m₂))) eq₁ ⟩
-%%          h ((♯ h (e m₁')) 𝓑ᶠ maybe pure (e m₂))
-%%       ≡⟨ hThrow-bind-distr (♯ h (e m₁')) _ ⟩
-%%          (h (♯ h (e m₁'))) 𝓑ᶠ maybe (h ∘ maybe pure (e m₂)) (pure nothing)
-%%       ≡⟨ cong
-%%            (λ P → (h (♯ (h (e m₁')))) 𝓑ᶠ maybe P (pure nothing))
-%%            (extensionality (λ x → maybe-distr x pure (e m₂) h)) ⟩
-%%          (h (♯ h (e m₁'))) 𝓑ᶠ maybe (maybe (h ∘ pure) (h (e m₂))) (pure nothing)
-%%       ≡⟨ cong
-%%            (λ P → (h (♯ (h (e m₁')))) 𝓑ᶠ maybe (maybe (h ∘ pure) P) (pure nothing))
-%%            eq₂ ⟩
-%%          (h (♯ h (e m₁'))) 𝓑ᶠ maybe (maybe (h ∘ pure) (h (e m₂'))) (pure nothing)
-%%       ≡⟨ cong
-%%            (λ P → (h (♯ (h (e m₁')))) 𝓑ᶠ maybe P (pure nothing))
-%%            (extensionality (λ x → sym $ maybe-distr x pure (e m₂') h)) ⟩
-%%          (h (♯ h (e m₁'))) 𝓑ᶠ maybe (h ∘ maybe pure (e m₂')) (pure nothing)
-%%       ≡⟨ (sym $ hThrow-bind-distr (♯ h (e m₁')) _) ⟩
-%%          h ((♯ h (e m₁')) 𝓑ᶠ maybe pure (e m₂'))
-%%       ≡⟨ cong
-%%            (λ P → h ((♯ h (e m₁')) 𝓑ᶠ P))
-%%            (extensionality (λ x →
-%%              cong
-%%                (λ P → maybe pure P x)
-%%                (sym $ Free-unitᵣ-≡ (e m₂')))) ⟩
-%%         h ((♯ h (e m₁')) 𝓑ᶠ maybe pure (e m₂' 𝓑ᶠ pure))
-%%       ≡⟨ refl ⟩
-%%         h (e (‵catch m₁' m₂')) ∎
-%%      where
-%%        open HeftyModule renaming (_𝓑_ to _𝓑ᴴ_) hiding (m; n)
-%%        open FreeModule renaming (_𝓑_ to _𝓑ᶠ_) hiding (Δ)
-%%        
-%%        h : ∀ {A} → Free (Throw ⊕ Δ) A → Free Δ (Maybe A)
-%%        h m = (given hThrow handle m) tt
-%%        
-%%        e : ∀ {A} → Hefty (Lift Throw ∔ Catch ∔ _) A → Free (Throw ⊕ Δ) A
-%%        e = elaborate (eLift ⋎ eCatch ⋎ E)
-%% 
-%%        maybe-distr : (x : Maybe A)
-%%                      {B : Maybe A → Set}
-%%                      (f : (a : A) → B (just a))
-%%                      (b : B nothing)
-%%                      (g : ∀ {x : Maybe A} → B x → C)
-%%                    → g {x = x} (maybe {B = B} f b x) ≡ maybe (g ∘ f) (g b) x
-%%        maybe-distr (just x) f b g = refl
-%%        maybe-distr nothing f b g = refl
-%% 
-%%        hThrow-bind-distr : (m : Free (Throw ⊕ Δ) A) (k : A → Free (Throw ⊕ Δ) B)
-%%                          → (given hThrow handle (m 𝓑ᶠ k)) tt
-%%                            ≡ (given hThrow handle m) tt 𝓑ᶠ maybe (λ x → (given hThrow handle (k x)) tt) (pure nothing)
-%%        hThrow-bind-distr (pure x) k = refl
-%%        hThrow-bind-distr (impure (inj₁ throw , k₁)) k = refl
-%%        hThrow-bind-distr (impure (inj₂ y , k₁)) k = cong (impure ∘ (y ,_)) (extensionality (λ x → hThrow-bind-distr (k₁ x) k))
-%% \end{code}
-%% \end{AgdaMultiCode}
-%% \end{minipage}%
-%% \hfill\vline\hfill%
-%% \begin{minipage}[t]{0.495\linewidth}%
-%% \footnotesize%
-%% \begin{AgdaMultiCode}%
-%% \begin{code}[hide]
-%%   module _ {Δ : Effect} where
-%%     open FreeModule hiding (Δ)
-%%     open Abbreviation
-%%     CatchImpl₁  : ⦃ u : Universe ⦄
-%%                 →  CatchIntf  (Free (Throw ⊕ Δ))
-%%                               pure _𝓑_
-%% \end{code}
-%% \begin{code}
-%%     u             (CatchImpl₁ ⦃ u ⦄)   = u
-%%     𝑡ℎ𝑟𝑜𝑤         CatchImpl₁           = ‵throw
-%%     𝑐𝑎𝑡𝑐ℎ         CatchImpl₁           = catch
-%%     R             CatchImpl₁           = Free Δ ∘ Maybe
-%%     run           CatchImpl₁           = h
-%%     
-%% \end{code}
-%% \begin{code}[hide]
-%%       where h : ∀ {A} → Free (Throw ⊕ Δ) A → Free Δ (Maybe A)
-%%             h m = (given hThrow handle m) tt
-%% \end{code}
-%% \begin{code}
-%%     bind-throw    CatchImpl₁ k    = refl
-%%     catch-return  CatchImpl₁ x m  = refl
-%%     catch-throw₁  CatchImpl₁ m    = refl
-%% \end{code}
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% \begin{code}
-%%     catch-throw₂  CatchImpl₁ m    = begin
-%%         h (catch m ‵throw)
-%%       ≡⟨ refl ⟩
-%% \end{code}
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% ~
-%% \\[0.175em]
-%% \begin{code}
-%%         h ((♯ h m) 𝓑 maybe pure ‵throw)
-%%       ≡⟨ catch-throw-lem m ⟩
-%%         h m ∎
-%% \end{code}
-%% \begin{code}[hide]
-%%       where
-%%         h : ∀ {A} → Free (Throw ⊕ Δ) A → Free Δ (Maybe A)
-%%         h m = (given hThrow handle m) tt
-%%           
-%%         catch-throw-lem : (m : Free (Throw ⊕ Δ) A)
-%%                         → h ((♯ h m) 𝓑 maybe pure ‵throw)
-%%                           ≡ (given hThrow handle m) tt
-%%         catch-throw-lem (pure x) = refl
-%%         catch-throw-lem (impure (inj₁ throw , k)) = refl
-%%         catch-throw-lem (impure (inj₂ y , k)) = cong (impure ∘ (y ,_)) (extensionality (λ x → catch-throw-lem (k x)))
-%% \end{code}
-%% \begin{code}[hide]
-%%     catch-cong CatchImpl₁ m₁ m₁′ m₂ m₂′ eq₁ eq₂ = begin
-%%         h (catch m₁ m₂)
-%%       ≡⟨ refl ⟩
-%%         h ((♯ (h m₁)) 𝓑 maybe pure m₂)
-%%       ≡⟨ cong (λ P → h ((♯ P) 𝓑 maybe pure m₂)) eq₁ ⟩
-%%         h ((♯ h m₁′) 𝓑 maybe pure m₂)
-%%       ≡⟨ h-distr (♯ h m₁′) (maybe pure m₂) ⟩
-%%         (h (♯ h m₁′)) 𝓑 maybe (h ∘ maybe pure m₂) (pure nothing)
-%%       ≡⟨ cong (λ P → (h (♯ h m₁′)) 𝓑 P)
-%%            (extensionality (λ x →
-%%              cong (λ P → maybe P (pure nothing) x)
-%%                (extensionality (λ x →
-%%                  maybe-distr x pure m₂ h)))) ⟩
-%%         (h (♯ h m₁′)) 𝓑 maybe (maybe (h ∘ pure) (h m₂)) (pure nothing)
-%%       ≡⟨ cong (λ P → (h (♯ h m₁′)) 𝓑 P)
-%%            (extensionality (λ x →
-%%              cong (λ P → maybe P (pure nothing) x)
-%%                (extensionality (λ x →
-%%                  cong (λ P → maybe _ P x) eq₂)))) ⟩
-%%         (h (♯ h m₁′)) 𝓑 maybe (maybe (h ∘ pure) (h m₂′)) (pure nothing)
-%%       ≡⟨ ( sym
-%%          $ cong (λ P → (h (♯ h m₁′)) 𝓑 P)
-%%              (extensionality (λ x →
-%%                cong (λ P → maybe P (pure nothing) x)
-%%                  (extensionality (λ x →
-%%                    maybe-distr x pure m₂′ h))))) ⟩
-%%         (h (♯ h m₁′)) 𝓑 maybe (h ∘ maybe pure m₂′) (pure nothing)
-%%       ≡⟨ (sym $ h-distr (♯ h m₁′) (maybe pure m₂′)) ⟩
-%%         h ((♯ h m₁′) 𝓑 maybe pure m₂′)
-%%       ≡⟨ refl ⟩
-%%         h (catch m₁′ m₂′) ∎
-%% \end{code}
-%% \begin{code}[hide]
-%%       where
-%%         h : ∀ {A} → Free (Throw ⊕ Δ) A → Free Δ (Maybe A)
-%%         h m = (given hThrow handle m) tt
-%% 
-%%         maybe-distr : (x : Maybe A)
-%%                       {B : Maybe A → Set}
-%%                       (f : (a : A) → B (just a))
-%%                       (b : B nothing)
-%%                       (g : ∀ {x : Maybe A} → B x → C)
-%%                     → g {x = x} (maybe {B = B} f b x) ≡ maybe (g ∘ f) (g b) x
-%%         maybe-distr (just x) f b g = refl
-%%         maybe-distr nothing f b g = refl
-%% 
-%%         h-distr : (m : Free (Throw ⊕ Δ) A) (k : A → Free (Throw ⊕ Δ) B)
-%%                 → h (m 𝓑 k) ≡ (h m) 𝓑 maybe (h ∘ k) (pure nothing)
-%%         h-distr (pure x) k = refl
-%%         h-distr (impure (inj₁ throw , k₁)) k = refl
-%%         h-distr (impure (inj₂ y , k₁)) k = cong (impure ∘ (y ,_)) (extensionality (λ x → h-distr (k₁ x) k))
-%% \end{code}
-%% \end{AgdaMultiCode}
-%% \end{minipage}
-%% \caption{Lawfulness for the modular elaboration (left) and the non-modular elaboration of catch (right)}
-%% \label{fig:laws}
-%% \end{figure}
-%% 
-%% The side-by-side comparison shows that hefty algebra elaborations add some administrative overhead.
-%% In particular, elaborations introduce some redundant binds, as in the sub-term \as{(}\af{e}~\ab{m}\as{)}~\af{𝓑}~\ac{pure} of the term resulting from the first equational rewrite in \aF{catch-throw₁} on the left above.
-%% These extraneous binds are rewritten away by applying the free monad right unit law (\ad{Free-unitᵣ-≡}).
-%% Another source of overhead of using hefty algebras is that Agda is unable to infer that the term resulting from elaborating \af{‵throwᴴ} is equal to the term given by the smart constructor \af{‵throw}.
-%% We prove this explicitly on the left above in the second-to-last equational rewrite of \aF{catch-throw₂}.
-%% Both proofs make use of functional \ad{extensionality} (which is postulated since we cannot prove functional extensionality in general in Agda), and a straightforward \ad{catch-throw-lem} lemma that we prove by induction on the structure of the computation parameter of the lemma.
-%% 
-%% Except for the administrative overhead discussed above, the proofs have the same structure, and the effort of verifying algebraic laws for higher-order effects defined using hefty algebras is about the same as verifying algebraic laws for direct, non-modular encodings.
-%% 
-%% 
-%% 
-%% %%% Local Variables:
-%% %%% reftex-default-bibliography: ("../references.bib")
-%% %%% End:
-%% 
+\begin{code}[hide] 
+  open _⊑_ 
+  eCatch◂ : □ (Elaboration Catch) Throw
+  □⟨ eCatch◂ ⟩ = ElabModule.eCatch
+\end{code}
+\begin{code}
+  eCatchCorrect : {T : Theory Throw} → Correctᴴ CatchTheory T eCatch◂ 
+  eCatchCorrect {Δ′ = Δ′} e′ ⦃ ζ ⦄ (tt , refl) {γ = x , m} =
+    begin
+      ℰ⟦ ‵catch (Hefty.pure x) m ⟧
+    ≈⟪ from-≡ (sym $ ζ .preserves-cases _ ℰ⟦_⟧) ⟫
+      (♯◂ (given hThrow handle (Free.pure x) $ tt)) 𝓑 maybe′ Free.pure (ℰ⟦ m ⟧)
+    ≈⟪⟫ {- By definition of hThrow -}  
+      (Free.pure (just x) 𝓑 maybe′ Free.pure ((ℰ⟦ m ⟧ 𝓑 Free.pure))) 
+    ≈⟪⟫ {- By definition of 𝓑 -} 
+      ℰ⟦ Hefty.pure x ⟧
+    ∎
+    where
+      open ≈-Reasoning _
+      open ℰ e′
+\end{code}
+\begin{code}[hide]
+      postulate instance foo : ζ .≲-eff .proj₁ ≲ Δ′
+      ♯◂ = ♯_ ⦃ foo ⦄
+\end{code}
