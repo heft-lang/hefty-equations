@@ -63,39 +63,38 @@ swap-⊕-↔ = record
 \section{Modular Reasoning for Higher-Order Effects}
 \label{sec:modular-reasoning}
 
-A key aspect of algebraic effects and handlers is to state and prove equational
-\emph{laws} that characterize correct implementations of effectful
-operations. Usually, an effect comes equipped with multiple laws that govern the
-behavior of its operations, which we refer to a as a \emph{theory} of that
-effect. Effect theories are closed under the co-product of effects, by combining
-the equations into a new theory that contains all equations for both
-effects~\citep{DBLP:journals/tcs/HylandPP06}. The concept of effect theories
-extends to higher-order effects. Theories for higher-order effects too are
-closed under sums of higher-order effect signatures. In this section, we discuss
-how to define theories for algebraic effects in Agda (based on the definitions
-used by \cite{DBLP:journals/pacmpl/YangW21}), and how to state and prove
-correctness of implementations with respect to a given theory. We extend this
-infrastructure to higher-order effects, to allow for modular reasoning about
-elaborations of higher-order effects. 
+A key aspect of algebraic effects and handlers is the ability to state and prove
+equational \emph{laws} that characterize correct implementations of effectful
+operations. Usually, an effect comes equipped with multiple laws that govern its
+intended behavior, which altogether we refer to a as a \emph{theory} of that
+effect. The concept of effect theories extends to \emph{higher-order effect
+  theories}, which describe the intended behavior of higher-order effects. In
+this section, we discuss how to define theories for algebraic effects in Agda by
+adapting the exposition of \cite{DBLP:journals/pacmpl/YangW21}, and show how
+correctness of implementations with respect to a given theory can be stated and
+proved. We extend this reasoning infrastructure to higher-order effects,
+allowing for modular reasoning about the correctness of elaborations of
+higher-order effects.
 
-To consider an example, the state effect, which comprises the $\af{get}$ and
-$\af{put}$ operations, is typically associated with a set of equations (or laws)
-that specify how implementations of the state effect ought to behave. One such
-law is the \emph{get-get} law, which captures the intuition that the state
+Let us consider the state effect as an example, which comprises the $\af{get}$
+and $\af{put}$ operations. With the state effect, we typically associate a set
+of equations (or laws) that specify how its implementations ought to behave. One
+such law is the \emph{get-get} law, which captures the intuition that the state
 returned by two subsequent $\af{get}$ operation does not change if we do not use
 the $\af{put}$ operation in between:
 %
 \begin{equation*}
-  \af{get}\ 𝓑\ λ s →\ \af{get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{get}\ 𝓑\ λ s →\ k\ s\ s
+  \af{‵get}\ 𝓑\ λ s →\ \af{‵get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{‵get}\ 𝓑\ λ s →\ k\ s\ s
 \end{equation*}
 %
-In a similar fashion, we an also state equations about higher-order effects. For
-example, the following law is usually associated with the $\af{local}$ operation
-of the reader effect, stating that transforming the context of a computation
-that immediately returns a value has no effect:
+In a similar fashion, we an also define equational laws for higher-order
+effects. For example, the following \emph{catch-return} law is usually
+associated with the $\af{‵catch}$ operation of the $\af{Catch}$ effect, stating
+that catching exceptions in a computation that only returns a value does
+nothing.  
 %
 \begin{equation*}
-  \af{local}\ f\ (\mathbf{pure}\ x)\ \equiv\ \mathbf{pure}\ x
+  \af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}
 \end{equation*}
 
 Correctness of an implementation of an algebraic effect with respect to a given
@@ -116,22 +115,29 @@ elaborated programs do not have to be syntactically equal, but rather we should
 be able to prove them equal using a theory of the algebraic effects used to
 implement a higher-order effect.
 
+Effect theories are known to be closed under the co-product of effects, by
+combining the equations into a new theory that contains all equations for both
+effects~\citep{DBLP:journals/tcs/HylandPP06}. Similarly, theories of
+higher-order effects too are closed under sums of higher-order effect
+signatures. In \cref{sec:elaboration-correctness}, we show that composing two
+elaborations preserves their correctness, with respect to the sum of their
+respective theories. 
+
 \subsection{Theories of Algebraic Effects}
 
-Theories are collections of equations, so we start defining the type of
-equations in Agda. At its core, an equation for the effect $Δ$ is given by a
-pair of effect trees of the form $\ad{Free}~\ab{Δ}~A$, representing the left and
-right hand side of the equation. However, looking at the \emph{get-get} law
-above, we see that this equation contains a \emph{metavariable}, i.e.,
-$\ab{k}$. Furthermore, looking at the type of $\ab{k}$,
-$\ab{S}~\to~\ab{S}~\to~\ad{Free}~\ab{Δ}~\ab{A}$, we see that its type contains a
-\emph{type metavariable}, i.e., $\ab{A}$. In general, an equation may refer to
-any number of metavariables, which, in turn, may depend on any number of type
-metavariables. Moreover, the type of the value returned by the left hand side
-and right hand side of an equation may depend on these type metavariables as
-well, as is the case for the \emph{get-get} law above.
-
-This motivates the following definition of equations in Agda:
+Theories of effects are collections of equations, so we start defining the type
+of equations in Agda. At its core, an equation for an effect $Δ$ is given by a
+pair of effect trees of type $\ad{Free}~\ab{Δ}~A$, that define the left-hand
+respectively right-hand side of the equation. However, looking at the
+\emph{get-get} law above, we see that this equation contains a \emph{term
+  metavariable}, i.e., $\ab{k}$. Furthermore, when considering the type of
+$\ab{k}$, which is $\ab{S}~\to~\ab{S}~\to~\ad{Free}~\ab{Δ}~\ab{A}$, we see that
+it refers to a \emph{type metavariable}, i.e., $\ab{A}$. Generally speaking, an
+equation may refer to any number of term metavariables, which, in turn, may
+depend on any number of type metavariables. Moreover, the type of the value
+returned by the left hand side and right hand side of an equation may depend on
+these type metavariables as well, as is the case for the \emph{get-get} law
+above. This motivates the following definition of equations in Agda. 
 %
 \begin{code}
 record Equation (Δ : Effect) : Set₁ where
@@ -144,19 +150,20 @@ record Equation (Δ : Effect) : Set₁ where
 %
 An equation consists of five components. The field $\aF{V}$ defines the number
 of type metavariables used in the equation. Then, the fields $\aF{Γ}$ and
-$\aF{R}$ define the metavariables respectively return type of the equation. Both
-may depend on the type metavariables of the equation, so they take a vector of
-length $\aF{V}$ containing instantiations of all type metavariables as
-input. Finally, the left hand side ($\aF{lhs}$) and right hand side ($\aF{rhs}$)
-of the equation are then defined as values of type
-$\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which take an instantiation of the type
-metavariables and term metavariables as their input.
+$\aF{R}$ define the term metavariables respectively return type of the
+equation. Both may depend on the type metavariables of the equation, hence they
+depend on a vector of length $\aF{V}$ containing unapplied substitutions for all
+type metavariables. Finally, the left-hand side ($\aF{lhs}$) and right-hand side
+($\aF{rhs}$) of the equation are then defined as functions of type
+$\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which depend on unapplied substitutions for both
+the type and term level metavariables that the equation can refer to.
 
-\paragraph*{Example}.
-We consider how to define the \emph{get-get} as a value of type
-$\ad{Equation}~\af{State}$. Recall that it depends on one type metavariable, and
-one term metavariable. Furthermore, the return type of the programs on the left
-and right hand sides is equal to the sole type metavariable:
+\paragraph*{Example}.  To illustrate how the \ad{Equation} record captures
+equational laws of effects, we consider how to define the \emph{get-get} as a
+value of type $\ad{Equation}~\af{State}$. Recall that the equation depends on
+one type metavariable, and one term metavariable. Furthermore, the return type
+of the programs on the left and right hand sides should be equal to this type
+metavariable.
 %
 \begin{AgdaAlign}
 \begin{code}[hide]
@@ -173,9 +180,10 @@ R    get-get = λ where (A ∷ []) → A
 \end{code}
 %
 Since there is exactly one term metavariable, we equate $\aF{Γ}$ to the type of
-$k$. For equations with more than one metavariable, we define $\aF{Γ}$ as a
-product of the types of all term metavariables.  The $\aF{lhs}$ and $\aF{rhs}$
-of the \emph{get-get} law are then defined as follows:
+this metavariable. For equations with more than one metavariable, we would
+define $\aF{Γ}$ as a product of the types of all term metavariables. The fields
+$\aF{lhs}$ and $\aF{rhs}$ for the \emph{get-get} law are then defined as
+follows:
 %
 \begin{code} 
 lhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′ 
@@ -185,7 +193,11 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 
 \subsection{Modal Necessity}
 \label{sec:modal-necessity}
-Consider the following equality: 
+
+The current definition of equations is too weak, in the sense that it does not
+apply in many situations where it should. The issue is that it fixes the set of
+effects that can be used in the left-hand and right-hand side. To illustrate why
+this is problematic, consider the following equality:
 %
 \begin{equation}\label{eq:get-get-throw}
   \af{get}\ 𝓑\ λ s\ →\ \af{get}\ 𝓑\ λ s′\ →\ \af{throw}\ \equiv\ \af{get}\ 𝓑\ λ s\ →\ \af{throw}  
@@ -198,16 +210,16 @@ instantiation for the term metavariable $k$: it ranges over values of type
 $\ab{S}~\to~\ab{S}~\to~Free State A$, inhibiting all references to effectful
 operation that are not part of the state effect, such as $\af{throw}$.
 
-Given an equation for the effect $Δ$, the solution is to view $Δ$ as a
-\emph{lower bound}, rather than an exact specification of the effects used in
-the left hand side and right hand side of the equation. Effectively, this means
-that we close over all posible contexts of effects in which the equation can
-occur. A useful abstraction that captures this pattern, which was also utilized
-by \cite{DBLP:journals/jfp/AllaisACMM21} and
-\cite{DBLP:journals/pacmpl/RestPRVM22} (where they respectively close over
-future contexts of free variables and canonical forms of definitional
-interpreters), is to use a shallow embedding of the Kripke semantics of modal
-necessity:
+Given an equation for the effect $Δ$, the solution to this problem is to view
+$Δ$ as a \emph{lower bound} on the effects that might occur in the left-hand and
+right-hand side of the equation, rather than an exact
+specification. Effectively, this means that we close over all posible contexts
+of effects in which the equation can occur. This ``pattern'' of closing over all
+possible extensions of a type index is
+well-known~\citep{DBLP:journals/jfp/AllaisACMM21,
+  DBLP:journals/pacmpl/RestPRVM22}, and corresponds to a shallow embedding of
+the Kripke semantics of the necessity modality from modal logic. We can define
+it in Agda as follows.
 %
 \begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
@@ -232,30 +244,22 @@ open □
 \end{code}
 %
 Intuitively, the $□$ modifier transforms, for any effect-indexed type, an
-\emph{exact} specification of the set of effects to a \emph{lower bound}. For
-equations, the difference between terms of type $\ad{Equation}~\ab{Δ}$ and
-$\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former defining an equation
-relating programs that have exactly effects $Δ$, while the latter defines an
-equation relating programs that have at least the effects $Δ$. The $\ad{□}$
-modifier is a comonad, whose counit tells us that we can always view a lower
-bound on effects as an exact specification by instantiating the extension
-witness with a proof of reflexivity.
+\emph{exact} specification of the set of effects to a \emph{lower bound} on the
+set of effects. For equations, the difference between terms of type
+$\ad{Equation}~\ab{Δ}$ and $\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former
+defining an equation relating programs that have exactly effects $Δ$, while the
+latter defines an equation relating programs that have at least the effects $Δ$
+but potentially more. The $\ad{□}$ modifier is a comonad; the counit witnesses
+that we can always transform a lower bound on effects to an exact specification,
+by instantiating the extension witness with a proof of reflexivity.
 %
 \begin{code}
 extract : {P : Effect → Set₁} → □ P Δ → P Δ
 extract px = □⟨ px ⟩ ⦃ ≲-refl ⦄
 \end{code}
-%
-More generally, we can close values wrapped in the $□$ modifier using any
-extension witness using the following operation: 
-%
-\begin{code}
-close : {P : Effect → Set₁} → Δ₁ ≲ Δ₂ → □ P Δ₁ → P Δ₂
-close w eq = (□⟨ eq ⟩) ⦃ w ⦄ 
-\end{code}
 
-We can now redefine the \emph{get-get} law so that it applies to all programs
-that have at least the $\ad{State}$ effect, but potentially other effects too.
+We can now redefine the \emph{get-get} law such that it applies to all programs
+that have the $\ad{State}$ effect, but potentially other effects too.
 %
 \begin{code}
 get-get◂ : □ Equation State
@@ -266,13 +270,13 @@ lhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s
 rhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → k s s
 \end{code}
 %
-The above embedding of the \emph{get-get} law now actually does allow us to
-prove the equality in \cref{eq:get-get-throw}; the term metavariable $k$ now
-ranges over all continuations returning a tree of type
+The above definition of the \emph{get-get} law now actually does allow us to
+prove the equality in \cref{eq:get-get-throw}; the term metavariable $k$ ranges
+ranges over all continuations that return a tree of type
 $\ad{Free}\ \ab{Δ′}\ \ab{A}$, for all $\ab{Δ′}$ such that
-$\af{State}~\ad{≲}~\ab{Δ′}$. This way, we can instantiate $\ab{Δ′}$ with any set
-of effects that includes both $\af{State}$ and $\af{Throw}$, allowing us to
-instantiate $k$ as $\af{throw}$.
+$\af{State}~\ad{≲}~\ab{Δ′}$. This way, we can instantiate $\ab{Δ′}$ with an
+effect signature that subsumes both the $\af{State}$ and the $\af{Throw}$, which
+in turn allows us to instantiate $k$ with $\af{throw}$.
 
 \subsection{Effect Theories}
 
@@ -882,6 +886,7 @@ if the second branch of the $\af{catch}$ operation contains the $\af{censor}$
 operation.
 
 \subsection{Correctness of Elaborations}
+\label{sec:elaboration-correctness}
 
 As the first step towards defining correctness of elaborations, we must specify
 what it means for an algebra over a higher-order effect signature $\ab{H}$ to
