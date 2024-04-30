@@ -35,7 +35,7 @@ open _∙_≈_
 
 private variable M : Set → Set
 
-open Universe ⦃ ... ⦄
+open Univ ⦃ ... ⦄
 
 module _ where
   open RawMonad hiding (pure)
@@ -640,7 +640,7 @@ effects is exactly the same as its first-order counterpart, the only difference
 being that the left-hand and right-hand side are now defined as Hefty trees:
 %
 \begin{code}[hide]
-module _ ⦃ _ : Universe ⦄ where 
+module _ ⦃ _ : Univ ⦄ where 
 \end{code}
 \begin{code}
   data Kind : Set where set type : Kind 
@@ -1063,28 +1063,38 @@ prove correctness of an elaboration.
 
 
 In the \todo{Artifact}, we verify correctness of elaborations for the
-higher-order operations defined in the 3MT library~\citep{delaware2013modular}.
+higher-order operations defined in the 3MT library by
+\cite{delaware2013modular}.  \cref{tab:laws} shows an overview of first-order
+and higher-order effects included in the development, and the laws which we
+prove about their handlers respectively elaborations. 
 
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
 \begin{table}[]
-\begin{tabular}{|l|l|ll|}
-\hline
-\textbf{Effect} & \textbf{Operations} & \multicolumn{2}{l|}{\textbf{Laws}}            \\ \hline
-Throw           & throw               & \multicolumn{1}{l|}{} & \textit{bind-throw}   \\ \hline
-State           & get, put            & \multicolumn{1}{l|}{} & \textit{get-get}      \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{get-put}      \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{put-get}      \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{put-put}      \\ \hline
-Reader          & ask                 & \multicolumn{1}{l|}{} & \textit{ask-query}    \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{ask-ask}      \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{ask-bind}     \\ \hline
-Local Reader    & ask, local          & \multicolumn{1}{l|}{} & \textit{local-return} \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{local-bind}   \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{local-ask}    \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{local-local}  \\ \hline
-Catch           & catch, throw        & \multicolumn{1}{l|}{} & \textit{catch-return} \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{catch-throw1} \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{catch-throw2} \\ \hline
-Lambda          & var, abs, app       & \multicolumn{1}{l|}{} & \textit{beta}         \\ \hline
-                &                     & \multicolumn{1}{l|}{} & \textit{eta}          \\ \hline
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{c|cl}
+\textbf{Effect}                    & \multicolumn{2}{l}{\textbf{Laws}}                \\ \hline\hline
+\af{Throw}                         & \multicolumn{1}{c|}{$\af{‵throw}~\af{𝓑}~\ab{k}\ \equiv\ \ab{k}$} & \textit{bind-throw}      \\ \hline\hline
+\multirow{4}{*}{\af{State}}        & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~λ~\ab{s}~→~\af{‵get}~𝓑~\ab{k}~\ab{s}\ \equiv\ \af{‵get}~𝓑~\ab{k}~\ab{s}~\ab{s}$} & \textit{get-get}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~\af{‵put}\ \equiv\ \aF{return}~\ab{x}$} & \textit{get-put}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵put}~\ab{s}~\af{≫}~\af{‵get}\ \equiv\ \af{‵put}~\ab{s}~\af{≫}~\aF{return}~\ab{s}$} & \textit{put-get}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{`put}~\ab{s}~\af{≫}~\af{‵put}~\ab{s′}\ \equiv\ \af{‵put}~\ab{s′}$} & \textit{put-put}         \\ \hline\hline
+\multirow{3}{*}{\af{Reader}}       & \multicolumn{1}{c|}{$\af{‵ask}~\af{≫}~\ab{m}\ \equiv\ \ab{m}$} & \textit{ask-query}       \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\af{‵ask}~\af{𝓑}~\ab{k}~\ab{r}\ \equiv\ \af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{k}~\ab{r}~\ab{r}$} & \textit{ask-ask}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\ab{m}~\af{𝓑}~λ~\ab{x}~→~\af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{k}~\ab{x}~\ab{r}\ \equiv\ \af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{m}~\af{𝓑}~λ~\ab{x}~→~\ab{k}~\ab{x}~\ab{r}$} & \textit{ask-bind}        \\ \hline\hline
+\multirow{4}{*}{\af{LocalReader}}  & \multicolumn{1}{c|}{$\af{‵local}~\ab{f}~(\aF{return}\ \ab{x})\ \equiv\ \aF{return}\ \ab{x}$} & \textit{local-return}    \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵local}~\ab{f}~(\ab{m}~\af{𝓑}~\ab{k})\ \equiv\ \af{‵local}~\ab{f}~\ab{m}~\af{𝓑}~\af{‵local}~\ab{f}~\af{∘}~\ab{k}$} & \textit{local-bind}      \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵local}~\af{f}~\af{‵ask}\ \equiv\ \aF{return}~\af{∘}~\ab{f}$} & \textit{local-ask}       \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵local}~(\ab{f}~\af{∘}~\ab{g})~\ab{m}\ \equiv\ \af{‵local}~\ab{g}~(\af{‵local}~\ab{f}~\ab{m})$} & \textit{local-local}     \\ \hline\hline
+\multirow{3}{*}{\af{Catch}}        & \multicolumn{1}{c|}{$\af{‵catch}~(\aF{return}~\ab{x})~\ab{m}\ \equiv\ \aF{return}~\ab{x}$} & \textit{catch-return}    \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵catch}~\af{‵throw}~\ab{m}\ \equiv\ \ab{m}$} & \textit{catch-throw$_1$} \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{`catch}~\ab{m}~\af{‵throw}\ \equiv\ \ab{m}$} & \textit{catch-throw$_2$} \\ \hline\hline
+\multirow{2}{*}{\af{Lambda}}       & \multicolumn{1}{c|}{$\af{‵abs}~\ab{f}~\af{𝓑}~λ~\ab{f′}~→~\af{‵app}~\ab{f′}~\ab{m}$} & \textit{beta}            \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\aF{return}~\ab{f}\ \equiv\ \af{‵abs}~(λ~\ab{x}~→~\af{‵app}~\ab{f}~(\af{‵var}~\ab{x}))$} & \textit{eta}             \\ 
 \end{tabular}
+}
+\vspace{1em}
+\caption{Overview of effects, their operations, and verified laws in the Agda
+  code. }
+\label{tab:laws}
 \end{table}
