@@ -167,7 +167,8 @@ The extension of higher-order effect signatures implements the intuition explain
 %
 \begin{code}
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
-  ⟦ H ⟧ᴴ M X = Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
+  ⟦ H ⟧ᴴ M X =
+    Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
 
   map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
   map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
@@ -508,14 +509,15 @@ As shown in \cref{sec:higher-order-effects}, the higher-order catch operation
 can be encoded as a non-modular elaboration:
 %
 \begin{code}[hide]
-  catch⅋ : ⦃ Throw ≲ Δ ⦄ → Free Δ A → Free Δ A → Free Δ A
+  module _  ⦃ w : Throw ≲ Δ ⦄ where
+    catch⅋ : Free Δ A → Free Δ A → Free Δ A
 \end{code}
 \begin{code}
-  catch⅋ ⦃ w ⦄ m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑⅋ (maybe pure m₂)
+    catch⅋ m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑⅋ (maybe pure m₂)
 \end{code}
 \begin{code}[hide]
-    where open FreeModule using () renaming (_𝓑_ to _𝓑⅋_)
-          postulate instance foo : proj₁ w ≲ _ 
+      where open FreeModule using () renaming (_𝓑_ to _𝓑⅋_)
+            postulate instance foo : proj₁ w ≲ _ 
 \end{code}
 %
 We can make this elaboration modular by expressing it as an \emph{algebra} over
@@ -571,7 +573,7 @@ algebraic effects and handlers:
   elaborate = cataᴴ pure
 \end{code}
 
-\paragraph{Exampl}
+\paragraph*{Example}
 The elaboration below is analogous to the non-modular \af{catch} elaboration:
 \begin{code}[hide]
 module ElabModule where
