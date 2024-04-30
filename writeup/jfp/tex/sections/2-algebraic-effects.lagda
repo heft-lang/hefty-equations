@@ -923,29 +923,27 @@ To see why the operations summarized by the \ad{LambdaM} record above are not
 scoped operations, let us revisit the \ac{enter} constructor of \ad{Prog}:
 %
 \begin{equation*}
-  \ac{enter}~\as{:~}\af{⟦}~\ab{γ}~\af{⟧}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{outer}}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{inner}}~\ab{A}\as{))}
+  \ac{enter}~\as{:~}\af{⟦}~\ab{γ}~\af{⟧}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{outer}}~\as{(}\underbrace{\ad{Prog}~\ab{Δ}~\ab{γ}}_{\textrm{inner}}~\ab{A}\as{))}~\as{→}~\ad{Prog}~\ab{Δ}~\ab{γ}~\ab{A}
 \end{equation*}
 %
-
 As summarized earlier in this subsection, \ac{enter} lets us represent
 higher-order operations (specifically, \emph{scoped operations}), whereas
 \ac{call} does not (only \emph{algebraic operations}).  Just like we defined the
 computational parameters as scopes (given by the outer \ad{Prog} in the type of
 \ac{enter}), we might try to define the body of a lambda as a scope in a similar
-way.  However, a difference is that, whereas the \ac{catch} operation always
+way.  However, whereas the \ac{catch} operation always
 passes control to its continuation (the inner \ad{Prog}), the \aF{lam} effect is
 supposed to package the body of the lambda into a value and pass this value to
 the continuation (the inner computation).  Because the inner computation is
-nested within the outer computation, the only way to gain access to the
+nested within the outer computation, \emph{the only way to gain access to the
 inner computation (the continuation) is by first running the outer computation
-(the body of the lambda).  This does not give us the right semantics.
+(the body of the lambda)}.  This does not give us the right semantics.
+
 It is possible to elaborate the \ad{LambdaM} operations into more primitive
 effects and handlers, but as discussed in
 \cref{sec:modularity-problem,sec:higher-order-effects}, such elaborations are
 not modular.
-
-In the next section we present a simple alternative solution to scoped effects
-which supports a broader class of higher-order effects.
+In the next section we show how to make such elaborations modular.
 
 %%% Local Variables:
 %%% reftex-default-bibliography: ("../references.bib")
