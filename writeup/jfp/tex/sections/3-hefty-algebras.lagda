@@ -167,7 +167,8 @@ The extension of higher-order effect signatures implements the intuition explain
 %
 \begin{code}
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
-  ⟦ H ⟧ᴴ M X = Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
+  ⟦ H ⟧ᴴ M X =
+    Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
 
   map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
   map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
@@ -253,7 +254,7 @@ Just like \ad{Free}, \ad{Hefty} trees can be sequenced using monadic bind.
 Unlike for \ad{Free}, the monadic bind of \ad{Hefty} is not expressible in terms
 of the standard fold over \ad{Hefty} trees.  The difference between \ad{Free}
 and \ad{Hefty} is that \ad{Free} is a regular data type whereas \ad{Hefty} is a
-\emph{nested datatype}~\cite{DBLP:journals/fac/BirdP99}.  The fold of a nested
+\emph{nested datatype}~\citep{DBLP:journals/fac/BirdP99}.  The fold of a nested
 data type is limited to describe \emph{natural transformations}.  As
 \citet{DBLP:journals/fac/BirdP99} show, this limitation can be overcome by using
 a \emph{generalized fold}, but for the purpose of this paper it suffices to
@@ -420,8 +421,9 @@ the higher-order effect signature on the right:\footnote{\textsf{\ab{d}} is for
 \begin{code}[hide]
   record Effectᴴ⅋ : Set₂ where
     field  Opᴴ     : Set₁
-           Fork    : Opᴴ → Effect
            Retᴴ    : Opᴴ → Set
+           Fork    : Opᴴ → Set                       -- New
+           Ty      : {op : Opᴴ} (ψ : Fork op) → Set  -- New
   open Effectᴴ⅋
 \end{code}
 \end{minipage}%
@@ -430,9 +432,9 @@ the higher-order effect signature on the right:\footnote{\textsf{\ab{d}} is for
 \begin{code}
   Catch̅ : Effectᴴ⅋
   Opᴴ    Catch̅ = CatchOp̅
-  Fork   Catch̅ (catch̅ A)  = record
-    { Op = Bool; Ret = λ _ → A }
   Retᴴ   Catch̅ (catch̅ A)  = A
+  Fork   Catch̅ (catch̅ A)  = Bool
+  Ty     Catch̅ {catch̅ A} _  = A
 \end{code}
 \end{minipage}%
 \\
@@ -446,7 +448,7 @@ a type (\ad{Set}), the \ad{CatchOp̅} type lives in \ad{Set₁}.  Consequently i
 does not fit the definition of \ad{Effectᴴ}, whose operations live in \ad{Set}.
 There are two potential solutions to this problem: (1) increase the universe
 level of \ad{Effectᴴ} to allow \aF{Opᴴ} to live in \ad{Set₁}; or (2) use a
-\emph{universe of types}~\cite{martin-lof1984intuitionistic}.
+\emph{universe of types}~\citep{martin-lof1984intuitionistic}.
 %
 Either solution is applicable here.  However, for some operations (e.g.,
 $\lambda$ in \cref{sec:higher-order-lambda}) it is natural to model types as an
@@ -459,12 +461,12 @@ A universe of types is a (dependent) pair of a syntax of types
 by reflecting it into Agda's \ad{Set}:
 %
 \begin{code}
-  record Universe : Set₁ where
+  record Univ : Set₁ where
     field  Type  : Set
            ⟦_⟧ᵀ  : Type → Set
 \end{code}
 \begin{code}[hide]
-  open Universe ⦃ ... ⦄
+  open Univ ⦃ ... ⦄
 \end{code}
 %
 Using type universes, we can parameterize the \ac{catch} constructor on the left
@@ -474,14 +476,14 @@ computation parameters in the effect signature on the right below:
 %
 \begin{minipage}{0.495\linewidth}
 \begin{code}
-  data CatchOp ⦃ u : Universe ⦄ : Set where
+  data CatchOp ⦃ u : Univ ⦄ : Set where
     catch : Type → CatchOp
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
 \begin{minipage}{0.495\linewidth}
 \begin{code}
-  Catch : ⦃ u : Universe ⦄ → Effectᴴ
+  Catch : ⦃ u : Univ ⦄ → Effectᴴ
   Opᴴ    Catch            = CatchOp
   Retᴴ   Catch (catch t)  = ⟦ t ⟧ᵀ
   Fork   Catch (catch t)  = Bool
@@ -489,7 +491,7 @@ computation parameters in the effect signature on the right below:
 \end{code}
 \end{minipage}
 \begin{code}[hide]
-  ‵catch   : ⦃ u : Universe ⦄ ⦃ w : Catch ≲ᴴ H ⦄ {t : Type} 
+  ‵catch   : ⦃ u : Univ ⦄ ⦃ w : Catch ≲ᴴ H ⦄ {t : Type} 
            → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ  → Hefty H ⟦ t ⟧ᵀ
 \end{code}
 \begin{code}[hide]
@@ -508,20 +510,21 @@ As shown in \cref{sec:higher-order-effects}, the higher-order catch operation
 can be encoded as a non-modular elaboration:
 %
 \begin{code}[hide]
-  catch⅋ : ⦃ Throw ≲ Δ ⦄ → Free Δ A → Free Δ A → Free Δ A
+  module _  ⦃ w : Throw ≲ Δ ⦄ where
+    catch⅋ : Free Δ A → Free Δ A → Free Δ A
 \end{code}
 \begin{code}
-  catch⅋ ⦃ w ⦄ m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑⅋ (maybe pure m₂)
+    catch⅋ m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑⅋ (maybe pure m₂)
 \end{code}
 \begin{code}[hide]
-    where open FreeModule using () renaming (_𝓑_ to _𝓑⅋_)
-          postulate instance foo : proj₁ w ≲ _ 
+      where open FreeModule using () renaming (_𝓑_ to _𝓑⅋_)
+            postulate instance foo : proj₁ w ≲ _ 
 \end{code}
 %
 We can make this elaboration modular by expressing it as an \emph{algebra} over
 \ad{Hefty} trees containing operations of the \ad{Catch} signature.  To this
 end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (or
-\emph{catamorphism}~\cite{DBLP:conf/fpca/MeijerFP91}, \af{cataᴴ}) for
+\emph{catamorphism}~\citep{DBLP:conf/fpca/MeijerFP91}, \af{cataᴴ}) for
 \af{Hefty}:
 %
 \begin{code}
@@ -571,7 +574,7 @@ algebraic effects and handlers:
   elaborate = cataᴴ pure
 \end{code}
 
-\paragraph{Exampl}
+\paragraph*{Example.}
 The elaboration below is analogous to the non-modular \af{catch} elaboration:
 \begin{code}[hide]
 module ElabModule where
@@ -587,7 +590,7 @@ module ElabModule where
     alg eNil ()
 \end{code}
 \begin{code}
-    eCatch : ⦃ u : Universe ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
     alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
       (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
 \end{code}
@@ -613,10 +616,10 @@ representations of higher-order operations instead.
         num   : Type
 
     private instance
-      TypeUniverse : Universe
-      Universe.Type TypeUniverse = Type
-      Universe.⟦ TypeUniverse ⟧ᵀ unit  = ⊤
-      Universe.⟦ TypeUniverse ⟧ᵀ num   = ℕ
+      TypeUniv : Univ
+      Univ.Type TypeUniv = Type
+      Univ.⟦ TypeUniv ⟧ᵀ unit  = ⊤
+      Univ.⟦ TypeUniv ⟧ᵀ num   = ℕ
 \end{code}
 %
 Using this elaboration, we can, for example, run the following example program
@@ -678,7 +681,7 @@ Conceptually, we expect that hefty trees can capture any \emph{monadic}
 higher-order effect whose signature is given by a higher-order functor on
 $\ad{Set}~→~\ad{Set}$.  \citet{DBLP:conf/popl/Filinski99} showed that any
 monadic effect can be represented using continuations, and given that we can
-encode the continuation monad using algebraic effects~\cite{SchrijversPWJ19} in
+encode the continuation monad using algebraic effects~\citep{SchrijversPWJ19} in
 terms of the \emph{sub/jump} operations (\cref{sec:optional-transactional}) by
 \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}, it is possible to elaborate any
 monadic effect into algebraic effects using hefty algebras.  The current Agda

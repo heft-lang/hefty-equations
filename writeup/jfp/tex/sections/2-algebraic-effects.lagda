@@ -385,7 +385,7 @@ as follows:
 %
 Intuitively, \ab{m}~\af{𝓑}~\ab{g} concatenates \ab{g} to all the leaves in the computation \ab{m}.
 %
-\paragraph*{Example}
+\paragraph*{Example.}
 The following defines a smart constructor for \ac{throw}:
 \begin{code}
   ‵throw : ⦃ Throw ≲ Δ ⦄ → Free Δ A
