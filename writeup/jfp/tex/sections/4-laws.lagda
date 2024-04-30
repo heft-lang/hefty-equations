@@ -445,7 +445,8 @@ in the effects of $\ab{T₂}$, while the $\aF{sub}$ field transforms proofs that
 an equation is included in $\ab{T₁}$ into a proof that its weakened form is
 included in $\ab{T₂}$. 
 
-\subsection{Syntactic Equivalence of Effectful Programs} 
+\subsection{Syntactic Equivalence of Effectful Programs}
+\label{sec:fo-equivalence} 
 
 As discussed, propositional equality of effectful programs is too strict, as it
 precludes us from proving equalities that rely on a semantic understanding of
@@ -874,15 +875,37 @@ operation.
 
 \subsection{Correctness of Elaborations}
 
+As the first step towards defining correctness of elaborations, we must specify
+what it means for an algebra over a higher-order effect signature $\ab{H}$ to
+respect an equation. The definition is broadly similar to its counterpart for
+first-order effects in \cref{sec:handler-correctness}, with the crucial
+difference that the notion of begin equation respecting for higher-order effects
+is parameterized over a binary relation $\ab{\_≈\_}$ between first-order effect
+trees. In practice, this binary relation will be instantiated with the inductive
+equivalence relation defined in \cref{sec:fo-equivalence}; propositional
+equality would be too restrictive, since that preclude us from equating programs
+using equations of the first-order effect(s) that we elaborate into. 
+%
 \begin{code}
-Respectsᴴ : (_~_ : ∀ {A} → Free Δ A → Free Δ A → Set₁) → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
-Respectsᴴ _~_ alg eq =
-  ∀ {δ γ} → cataᴴ Free.pure alg (lhs eq δ γ) ~ cataᴴ Free.pure alg (rhs eq δ γ)
+Respectsᴴ  : (_≈_ : ∀ {A} → Free Δ A → Free Δ A → Set₁)
+           → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
+Respectsᴴ _≈_ alg eq =
+  ∀ {vs γ} → cataᴴ Free.pure alg (lhs eq vs γ) ≈ cataᴴ Free.pure alg (rhs eq vs γ)
 \end{code}
 
-\begin{code}
+Since elaborations are composed in parallel, the use of necessity in the
+defintion of equations has additional consequences for their definiton of
+correctness. That is, correctness of an elaboration is defined with a theory
+whose equations have left-hand and right-hand sides that may contain term
+metavariables that range over programs with more effects than those the
+elaboration is defined for. Therefore, to state correctness, we must also close
+over all possible ways these additional effects are elaborated. For this, we
+define the following binary relation on extensible elaborations. 
+%
+\begin{code}[hide]
 open Algᴴ
-
+\end{code}
+\begin{code}
 record _⊑_ (e₁ : □ (Elaboration H₁) Δ₁) (e₂ : □ (Elaboration H₂) Δ₂) : Set₁ where
   field
     ⦃ ≲-eff   ⦄ : Δ₁ ≲ Δ₂
@@ -893,25 +916,41 @@ record _⊑_ (e₁ : □ (Elaboration H₁) Δ₁) (e₂ : □ (Elaboration H₂
       →     □⟨ e₁ ⟩ .alg (map-sigᴴ (λ {x} → e′ {x}) m)
          ≡  extract e₂ .alg (map-sigᴴ (λ {x} → e′ {x}) (injᴴ {X = A} m))
 \end{code}
+%
+A proof of the form $\ab{e₁}~⊑~\ab{e₂}$ witnesses that the elaboration
+$\ab{e₁}$ is included in $\ab{e₂}$, meaning that $\ab{e₂}$ may elaborate a
+bigger set of higher-order effects, for which it may need to refer to more
+first-order effects, but for those higher-order effects that are elaborated by
+both $\ab{e₁}$ and $\ab{e₂}$ they should produce the same result.
 
+We then define correctness of elaborations as follows. 
+%
 \begin{code}
 Correctᴴ : Theoryᴴ H → Theory Δ → □ (Elaboration H) Δ → Set₁
 Correctᴴ Th T e =
   ∀ {Δ′ H′}
   → (e′ : □ (Elaboration H′) Δ′)
-  → ⦃ ζ : e ⊑ e′ ⦄
+  → ⦃ _ : e ⊑ e′ ⦄
   → {eq : ■ Equationᴴ _}
   → eq ◄ᴴ Th
   → Respectsᴴ (_≈⟨ T ⟩_) (extract e′) ■⟨ eq ⟩
-\end{code}     
+\end{code}
+%
+Which is to say that an elaboration is correct with respect to a theory of the
+higher-order effects it elaborates and a theory of the first-order effects it
+elaborates into, if all possible extensions of the elaboration respect all
+equations of the higher-order theory with respect to equivalence modulo the
+first-order theory. 
 
-\begin{code}
+\begin{code}[hide]
 compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
               →  □ (Elaboration H₁) Δ₁
               →  □ (Elaboration H₂) Δ₂
               →  □ (Elaboration (H₁ ∔ H₂)) Δ
 □⟨ compose-elab e₁ e₂ ⟩ ⦃ w ⦄ = □⟨ e₁ ⟩ ⦃ ≲-trans ≲-∙-left w ⦄ ⋎ □⟨ e₂ ⟩ ⦃ ≲-trans ≲-∙-right w ⦄
 \end{code}
+
+\begin{figure}
 \begin{code}[hide]
 postulate 
 \end{code}
@@ -927,7 +966,11 @@ postulate
                         →  Correctᴴ Th₂ T₂ e₂ 
                         →  Correctᴴ (Th₁ [+]ᴴ Th₂) (compose-theory T₁ T₂)
                              (compose-elab e₁ e₂)
-\end{code} 
+\end{code}
+\label{fig:correctness-composition}
+\caption{The central correctness theorem, which establishes that correctness of
+  elaborations is preserved under composition.}
+\end{figure}
 
 \subsection{Examples}
 
