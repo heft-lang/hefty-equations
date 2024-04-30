@@ -35,23 +35,7 @@ open _∙_≈_
 
 private variable M : Set → Set
 
-open Univ ⦃ ... ⦄
-
-module _ where
-  open RawMonad hiding (pure)
-
-  HeftyRawMonad : RawMonad (Hefty H)
-  HeftyRawMonad = record
-    { rawApplicative = record
-      { rawFunctor = record
-        { _<$>_ = λ f x → bindH x λ v → pure (f v) }
-        ; pure = pure
-        ; _<*>_ = λ x y → bindH x λ f → bindH y λ v → pure (f v)
-        }
-    ; _>>=_ = bindH
-    }
-
-open RawMonad ⦃...⦄
+open Universe ⦃ ... ⦄
 
 _𝓑_ : Free Δ A → (A → Free Δ B) → Free Δ B
 m 𝓑 k = bindF m k
@@ -78,10 +62,6 @@ swap-⊕-↔ = record
 
 \section{Modular Reasoning for Higher-Order Effects}
 \label{sec:modular-reasoning}
-
-\todo{We ought to refer to the Agda development somewhere around here}
-\todo{Point out somewhere how handler correctness is a separate concern}
-\todo{Use typeclass for monadic return} 
 
 A key aspect of algebraic effects and handlers is to state and prove equational
 \emph{laws} that characterize correct implementations of effectful
@@ -115,7 +95,7 @@ of the reader effect, stating that transforming the context of a computation
 that immediately returns a value has no effect:
 %
 \begin{equation*}
-  \af{local}\ f\ (\mathbf{return}\ x)\ \equiv\ \mathbf{return}\ x
+  \af{local}\ f\ (\mathbf{pure}\ x)\ \equiv\ \mathbf{pure}\ x
 \end{equation*}
 
 Correctness of an implementation of an algebraic effect with respect to a given
@@ -516,7 +496,7 @@ theory that includes that equation.
 The $\ac{≈-eq}$ lets us sequence the left and right hand sides of an
 equation with an arbitrary continuation $\ab{k}$. 
 \begin{code}[hide]
-postulate 𝓑-idʳ-≈ : {T : Theory Δ} → ⦃ _ : Δ ≲ Δ′ ⦄ → (m : Free Δ′ A) → m ≈⟨ T ⟩ (m 𝓑 Free.pure) 
+postulate 𝓑-idʳ-≈ : {T : Theory Δ} → ⦃ _ : Δ ≲ Δ′ ⦄ → (m : Free Δ′ A) → m ≈⟨ T ⟩ (m 𝓑 pure) 
 \end{code}
 \begin{code}
 use-equation  :  ⦃ _ : Δ ≲ Δ′ ⦄
@@ -528,7 +508,7 @@ use-equation  :  ⦃ _ : Δ ≲ Δ′ ⦄
               →  lhs (□⟨ eq ⟩) vs γ ≈⟨ T ⟩ rhs (□⟨ eq ⟩) vs γ
 \end{code}
 \begin{code}[hide]
-use-equation eq px vs {γ} = ≈-trans (𝓑-idʳ-≈ _) (≈-trans (≈-eq eq px vs γ Free.pure) (≈-sym $ 𝓑-idʳ-≈ _))
+use-equation eq px vs {γ} = ≈-trans (𝓑-idʳ-≈ _) (≈-trans (≈-eq eq px vs γ pure) (≈-sym $ 𝓑-idʳ-≈ _))
 \end{code}
 %
 The definition of \af{use-equation} follows immediately from the right-identity
@@ -640,7 +620,7 @@ effects is exactly the same as its first-order counterpart, the only difference
 being that the left-hand and right-hand side are now defined as Hefty trees:
 %
 \begin{code}[hide]
-module _ ⦃ _ : Univ ⦄ where 
+module _ ⦃ _ : Universe ⦄ where 
 \end{code}
 \begin{code}
   data Kind : Set where set type : Kind 
@@ -688,8 +668,8 @@ follows:~\footnote{For simplicities sake, we gloss over the use of type
   V    ■⟨ catch-return ⟩               = type ∷ []
   Γ    ■⟨ catch-return ⟩ (lift t , _)  = ⟦ t ⟧ᵀ × Hefty _ ⟦ t ⟧ᵀ
   R    ■⟨ catch-return ⟩ (lift t , _)  = ⟦ t ⟧ᵀ
-  lhs  ■⟨ catch-return ⟩ _ (x , m)     = ‵catch (Hefty.pure x) m
-  rhs  ■⟨ catch-return ⟩ _ (x , m)     = Hefty.pure x
+  lhs  ■⟨ catch-return ⟩ _ (x , m)     = ‵catch (pure x) m
+  rhs  ■⟨ catch-return ⟩ _ (x , m)     = pure x
 \end{code} 
 \begin{code}[hide]
   open Equationᴴ
@@ -878,18 +858,18 @@ that contains the \emph{catch-return} law.
   Effectᴴ.Ty Censor◂ {censor◂ t _} ψ = ⟦ t ⟧ᵀ
   
   ‵censor : ∀ {t : Type} → ⦃ Censor◂ ≲ᴴ H ⦄ → (String → String) → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
-  ‵censor {H = H} {t = t} f m = impure (injᴴ {M = Hefty H} ((censor◂ t f) , Hefty.pure {H = H} , λ where tt → m)) 
+  ‵censor {H = H} {t = t} f m = impure (injᴴ {M = Hefty H} ((censor◂ t f) , pure , λ where tt → m)) 
 \end{code}
 \begin{code}
   catch-return-censor :  ∀  {t : Type} {f} {x : ⟦ t ⟧ᵀ} {m : Hefty H ⟦ t ⟧ᵀ}
                         →  ⦃ _ : Catch ≲ᴴ H ⦄ → ⦃ _ : Censor◂ ≲ᴴ H ⦄
-                        →  ‵catch (Hefty.pure x) (‵censor f m)
-                           ≅⟨ CatchTheory ⟩ Hefty.pure x 
+                        →  ‵catch (pure x) (‵censor f m)
+                           ≅⟨ CatchTheory ⟩ pure x 
   catch-return-censor {f = f} {x = x} {m = m} =
     begin
-      ‵catch (Hefty.pure x) (‵censor f m)
+      ‵catch (pure x) (‵censor f m)
     ≅⟪ use-equationᴴ catch-return (tt , refl) _ ⟫
-      Hefty.pure _
+      pure x
     ∎
     where open ≅-Reasoning _
 \end{code}
@@ -918,7 +898,7 @@ using equations of the first-order effect(s) that we elaborate into.
   Respectsᴴ  : (_≈_ : ∀ {A} → Free Δ A → Free Δ A → Set₁)
              → Algᴴ H (Free Δ) → Equationᴴ H → Set₁
   Respectsᴴ _≈_ alg eq =
-    ∀ {vs γ} → cataᴴ Free.pure alg (lhs eq vs γ) ≈ cataᴴ Free.pure alg (rhs eq vs γ)
+    ∀ {vs γ} → cataᴴ pure alg (lhs eq vs γ) ≈ cataᴴ pure alg (rhs eq vs γ)
 \end{code}
 
 Since elaborations are composed in parallel, the use of necessity in the
@@ -973,7 +953,12 @@ first-order theory.
 Crucially, correctness of elaborations is preserved under their
 composition. \cref{fig:correctness-composition} shows the type of the
 corresponding correctness theorem in Agda; for the full details of the proof we
-refer to \todo{cite agda development}. 
+refer to the Agda formalization accompanying this paper~\citep{artifact}. We
+remark that correctness of a composed elaboration is defined with respect to the
+composition of the theories of the first-order effects that the respective
+elaborations use. Constructing a handler that is correct with respect to this
+composed first-order effect theory is a separate concern; a solution based on
+\emph{fusion} is detailed in the work by \cite{DBLP:journals/pacmpl/YangW21}.
 
 \begin{code}[hide]
   compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
@@ -1043,13 +1028,13 @@ prove correctness of an elaboration.
   eCatchCorrect : {T : Theory Throw} → Correctᴴ CatchTheory T eCatch◂ 
   eCatchCorrect {Δ′ = Δ′} e′ ⦃ ζ ⦄ (tt , refl) {γ = x , m} =
     begin
-      ℰ⟦ ‵catch (Hefty.pure x) m ⟧
+      ℰ⟦ ‵catch (pure x) m ⟧
     ≈⟪ from-≡ (sym $ ζ .preserves-cases _ ℰ⟦_⟧) ⟫
-      (♯◂ (given hThrow handle (Free.pure x) $ tt)) 𝓑 maybe′ Free.pure (ℰ⟦ m ⟧)
+      (♯◂ (given hThrow handle (pure x) $ tt)) 𝓑 maybe′ pure (ℰ⟦ m ⟧)
     ≈⟪⟫ {- By definition of hThrow -}  
-      (Free.pure (just x) 𝓑 maybe′ Free.pure ((ℰ⟦ m ⟧ 𝓑 Free.pure))) 
+      (pure (just x) 𝓑 maybe′ pure ((ℰ⟦ m ⟧ 𝓑 pure))) 
     ≈⟪⟫ {- By definition of 𝓑 -} 
-      ℰ⟦ Hefty.pure x ⟧
+      ℰ⟦ pure x ⟧
     ∎
     where
       open ≈-Reasoning _
@@ -1060,13 +1045,12 @@ prove correctness of an elaboration.
       ♯◂ = ♯_ ⦃ foo ⦄
 
 \end{code}
-
-
-In the \todo{Artifact}, we verify correctness of elaborations for the
-higher-order operations defined in the 3MT library by
-\cite{delaware2013modular}.  \cref{tab:laws} shows an overview of first-order
-and higher-order effects included in the development, and the laws which we
-prove about their handlers respectively elaborations. 
+%
+In the Agda formalization accompanying this paper~\citep{artifact}, we verify
+correctness of elaborations for the higher-order operations defined in the 3MT
+library by \cite{delaware2013modular}. \cref{tab:laws} shows an overview of
+first-order and higher-order effects included in the development, and the laws
+which we prove about their handlers respectively elaborations.
 
 % Please add the following required packages to your document preamble:
 % \usepackage{multirow}
@@ -1076,21 +1060,21 @@ prove about their handlers respectively elaborations.
 \textbf{Effect}                    & \multicolumn{2}{l}{\textbf{Laws}}                \\ \hline\hline
 \af{Throw}                         & \multicolumn{1}{c|}{$\af{‵throw}~\af{𝓑}~\ab{k}\ \equiv\ \ab{k}$} & \textit{bind-throw}      \\ \hline\hline
 \multirow{4}{*}{\af{State}}        & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~λ~\ab{s}~→~\af{‵get}~𝓑~\ab{k}~\ab{s}\ \equiv\ \af{‵get}~𝓑~\ab{k}~\ab{s}~\ab{s}$} & \textit{get-get}         \\ \cline{2-3} 
-                                   & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~\af{‵put}\ \equiv\ \aF{return}~\ab{x}$} & \textit{get-put}         \\ \cline{2-3} 
-                                   & \multicolumn{1}{c|}{$\af{‵put}~\ab{s}~\af{≫}~\af{‵get}\ \equiv\ \af{‵put}~\ab{s}~\af{≫}~\aF{return}~\ab{s}$} & \textit{put-get}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~\af{‵put}\ \equiv\ \ac{pure}~\ab{x}$} & \textit{get-put}         \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵put}~\ab{s}~\af{≫}~\af{‵get}\ \equiv\ \af{‵put}~\ab{s}~\af{≫}~\ac{pure}~\ab{s}$} & \textit{put-get}         \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{`put}~\ab{s}~\af{≫}~\af{‵put}~\ab{s′}\ \equiv\ \af{‵put}~\ab{s′}$} & \textit{put-put}         \\ \hline\hline
 \multirow{3}{*}{\af{Reader}}       & \multicolumn{1}{c|}{$\af{‵ask}~\af{≫}~\ab{m}\ \equiv\ \ab{m}$} & \textit{ask-query}       \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\af{‵ask}~\af{𝓑}~\ab{k}~\ab{r}\ \equiv\ \af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{k}~\ab{r}~\ab{r}$} & \textit{ask-ask}         \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\ab{m}~\af{𝓑}~λ~\ab{x}~→~\af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{k}~\ab{x}~\ab{r}\ \equiv\ \af{‵ask}~\af{𝓑}~λ~\ab{r}~→~\ab{m}~\af{𝓑}~λ~\ab{x}~→~\ab{k}~\ab{x}~\ab{r}$} & \textit{ask-bind}        \\ \hline\hline
-\multirow{4}{*}{\af{LocalReader}}  & \multicolumn{1}{c|}{$\af{‵local}~\ab{f}~(\aF{return}\ \ab{x})\ \equiv\ \aF{return}\ \ab{x}$} & \textit{local-return}    \\ \cline{2-3} 
+\multirow{4}{*}{\af{LocalReader}}  & \multicolumn{1}{c|}{$\af{‵local}~\ab{f}~(\ac{pure}\ \ab{x})\ \equiv\ \ac{pure}\ \ab{x}$} & \textit{local-pure}    \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵local}~\ab{f}~(\ab{m}~\af{𝓑}~\ab{k})\ \equiv\ \af{‵local}~\ab{f}~\ab{m}~\af{𝓑}~\af{‵local}~\ab{f}~\af{∘}~\ab{k}$} & \textit{local-bind}      \\ \cline{2-3} 
-                                   & \multicolumn{1}{c|}{$\af{‵local}~\af{f}~\af{‵ask}\ \equiv\ \aF{return}~\af{∘}~\ab{f}$} & \textit{local-ask}       \\ \cline{2-3} 
+                                   & \multicolumn{1}{c|}{$\af{‵local}~\af{f}~\af{‵ask}\ \equiv\ \ac{pure}~\af{∘}~\ab{f}$} & \textit{local-ask}       \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵local}~(\ab{f}~\af{∘}~\ab{g})~\ab{m}\ \equiv\ \af{‵local}~\ab{g}~(\af{‵local}~\ab{f}~\ab{m})$} & \textit{local-local}     \\ \hline\hline
-\multirow{3}{*}{\af{Catch}}        & \multicolumn{1}{c|}{$\af{‵catch}~(\aF{return}~\ab{x})~\ab{m}\ \equiv\ \aF{return}~\ab{x}$} & \textit{catch-return}    \\ \cline{2-3} 
+\multirow{3}{*}{\af{Catch}}        & \multicolumn{1}{c|}{$\af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}$} & \textit{catch-pure}    \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵catch}~\af{‵throw}~\ab{m}\ \equiv\ \ab{m}$} & \textit{catch-throw$_1$} \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{`catch}~\ab{m}~\af{‵throw}\ \equiv\ \ab{m}$} & \textit{catch-throw$_2$} \\ \hline\hline
 \multirow{2}{*}{\af{Lambda}}       & \multicolumn{1}{c|}{$\af{‵abs}~\ab{f}~\af{𝓑}~λ~\ab{f′}~→~\af{‵app}~\ab{f′}~\ab{m}$} & \textit{beta}            \\ \cline{2-3} 
-                                   & \multicolumn{1}{c|}{$\aF{return}~\ab{f}\ \equiv\ \af{‵abs}~(λ~\ab{x}~→~\af{‵app}~\ab{f}~(\af{‵var}~\ab{x}))$} & \textit{eta}             \\ 
+                                   & \multicolumn{1}{c|}{$\ac{pure}~\ab{f}\ \equiv\ \af{‵abs}~(λ~\ab{x}~→~\af{‵app}~\ab{f}~(\af{‵var}~\ab{x}))$} & \textit{eta}             \\ 
 \end{tabular}
 }
 \vspace{1em}
