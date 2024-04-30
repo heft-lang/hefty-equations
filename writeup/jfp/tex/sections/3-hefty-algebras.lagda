@@ -421,8 +421,9 @@ the higher-order effect signature on the right:\footnote{\textsf{\ab{d}} is for
 \begin{code}[hide]
   record Effectᴴ⅋ : Set₂ where
     field  Opᴴ     : Set₁
-           Fork    : Opᴴ → Effect
            Retᴴ    : Opᴴ → Set
+           Fork    : Opᴴ → Set                       -- New
+           Ty      : {op : Opᴴ} (ψ : Fork op) → Set  -- New
   open Effectᴴ⅋
 \end{code}
 \end{minipage}%
@@ -431,9 +432,9 @@ the higher-order effect signature on the right:\footnote{\textsf{\ab{d}} is for
 \begin{code}
   Catch̅ : Effectᴴ⅋
   Opᴴ    Catch̅ = CatchOp̅
-  Fork   Catch̅ (catch̅ A)  = record
-    { Op = Bool; Ret = λ _ → A }
   Retᴴ   Catch̅ (catch̅ A)  = A
+  Fork   Catch̅ (catch̅ A)  = Bool
+  Ty     Catch̅ {catch̅ A} _  = A
 \end{code}
 \end{minipage}%
 \\
@@ -460,12 +461,12 @@ A universe of types is a (dependent) pair of a syntax of types
 by reflecting it into Agda's \ad{Set}:
 %
 \begin{code}
-  record Universe : Set₁ where
+  record Univ : Set₁ where
     field  Type  : Set
            ⟦_⟧ᵀ  : Type → Set
 \end{code}
 \begin{code}[hide]
-  open Universe ⦃ ... ⦄
+  open Univ ⦃ ... ⦄
 \end{code}
 %
 Using type universes, we can parameterize the \ac{catch} constructor on the left
@@ -475,14 +476,14 @@ computation parameters in the effect signature on the right below:
 %
 \begin{minipage}{0.495\linewidth}
 \begin{code}
-  data CatchOp ⦃ u : Universe ⦄ : Set where
+  data CatchOp ⦃ u : Univ ⦄ : Set where
     catch : Type → CatchOp
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
 \begin{minipage}{0.495\linewidth}
 \begin{code}
-  Catch : ⦃ u : Universe ⦄ → Effectᴴ
+  Catch : ⦃ u : Univ ⦄ → Effectᴴ
   Opᴴ    Catch            = CatchOp
   Retᴴ   Catch (catch t)  = ⟦ t ⟧ᵀ
   Fork   Catch (catch t)  = Bool
@@ -490,7 +491,7 @@ computation parameters in the effect signature on the right below:
 \end{code}
 \end{minipage}
 \begin{code}[hide]
-  ‵catch   : ⦃ u : Universe ⦄ ⦃ w : Catch ≲ᴴ H ⦄ {t : Type} 
+  ‵catch   : ⦃ u : Univ ⦄ ⦃ w : Catch ≲ᴴ H ⦄ {t : Type} 
            → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ  → Hefty H ⟦ t ⟧ᵀ
 \end{code}
 \begin{code}[hide]
@@ -589,7 +590,7 @@ module ElabModule where
     alg eNil ()
 \end{code}
 \begin{code}
-    eCatch : ⦃ u : Universe ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
     alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
       (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
 \end{code}
@@ -615,10 +616,10 @@ representations of higher-order operations instead.
         num   : Type
 
     private instance
-      TypeUniverse : Universe
-      Universe.Type TypeUniverse = Type
-      Universe.⟦ TypeUniverse ⟧ᵀ unit  = ⊤
-      Universe.⟦ TypeUniverse ⟧ᵀ num   = ℕ
+      TypeUniv : Univ
+      Univ.Type TypeUniv = Type
+      Univ.⟦ TypeUniv ⟧ᵀ unit  = ⊤
+      Univ.⟦ TypeUniv ⟧ᵀ num   = ℕ
 \end{code}
 %
 Using this elaboration, we can, for example, run the following example program
