@@ -81,6 +81,7 @@ swap-⊕-↔ = record
 
 \todo{We ought to refer to the Agda development somewhere around here}
 \todo{Point out somewhere how handler correctness is a separate concern}
+\todo{Use typeclass for monadic return} 
 
 A key aspect of algebraic effects and handlers is to state and prove equational
 \emph{laws} that characterize correct implementations of effectful
@@ -1006,17 +1007,38 @@ refer to \todo{cite agda development}.
 
 \subsection{Example Correctness Proof}
 
+To illustrate how the reasoning infrastructure build up in this section, we show
+how to verify the \emph{catch-return} law for the elaboration $\af{eCatch}$
+defined in \cref{sec:hefty-algebras}. First, we define the following syntax for
+invoking a known elaboration. 
+%
 \begin{code}
-  module ℰ (e : □ (Elaboration H) Δ) where  
+  module Elab (e : □ (Elaboration H) Δ) where  
     ℰ⟦_⟧ : Hefty H A → Free Δ A
     ℰ⟦ m ⟧ = elaborate (extract e) m
 \end{code}
-
+%
+When opening the module $\ab{Elab}$, we can use the syntax $\af{ℰ⟦}~\ab{m}
+\af{⟧}$ for elaborating $m$ with some known elaboration, which helps to simplify
+equational proofs for higher-order effects. 
+%
 \begin{code}[hide] 
   open _⊑_ 
   eCatch◂ : □ (Elaboration Catch) Throw
   □⟨ eCatch◂ ⟩ = ElabModule.eCatch
 \end{code}
+
+Now, to prove that $\af{eCatch}$ is correct with respect to a higher-order
+theory for the $\af{Catch}$ effect containing the \emph{catch-return} law, we
+must produce a proof that the programs
+$\af{ℰ}~\af{‵catch}~(\aF{return}~\ab{x})~\ab{m}~\af{⟧}$ and
+$\af{ℰ⟦}~\aF{return}~\af{⟧}$ are equal (in the sense of the inductive
+equivalence relation defined in \cref{sec:fo-equivalence}) with respect to some
+first-order theory for the $\af{Throw}$ effect. In this instance, we do not need
+any equations from this underlying theory to prove the equality, but sometimes
+it is necessary to invoke equations of the underlying first-order effects to
+prove correctness of an elaboration.
+
 \begin{code}
   eCatchCorrect : {T : Theory Throw} → Correctᴴ CatchTheory T eCatch◂ 
   eCatchCorrect {Δ′ = Δ′} e′ ⦃ ζ ⦄ (tt , refl) {γ = x , m} =
@@ -1031,9 +1053,38 @@ refer to \todo{cite agda development}.
     ∎
     where
       open ≈-Reasoning _
-      open ℰ e′
+      open Elab e′
 \end{code}
 \begin{code}[hide]
       postulate instance foo : ζ .≲-eff .proj₁ ≲ Δ′
       ♯◂ = ♯_ ⦃ foo ⦄
+
 \end{code}
+
+
+In the \todo{Artifact}, we verify correctness of elaborations for the
+higher-order operations defined in the 3MT library~\citep{delaware2013modular}.
+
+\begin{table}[]
+\begin{tabular}{|l|l|ll|}
+\hline
+\textbf{Effect} & \textbf{Operations} & \multicolumn{2}{l|}{\textbf{Laws}}            \\ \hline
+Throw           & throw               & \multicolumn{1}{l|}{} & \textit{bind-throw}   \\ \hline
+State           & get, put            & \multicolumn{1}{l|}{} & \textit{get-get}      \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{get-put}      \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{put-get}      \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{put-put}      \\ \hline
+Reader          & ask                 & \multicolumn{1}{l|}{} & \textit{ask-query}    \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{ask-ask}      \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{ask-bind}     \\ \hline
+Local Reader    & ask, local          & \multicolumn{1}{l|}{} & \textit{local-return} \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{local-bind}   \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{local-ask}    \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{local-local}  \\ \hline
+Catch           & catch, throw        & \multicolumn{1}{l|}{} & \textit{catch-return} \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{catch-throw1} \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{catch-throw2} \\ \hline
+Lambda          & var, abs, app       & \multicolumn{1}{l|}{} & \textit{beta}         \\ \hline
+                &                     & \multicolumn{1}{l|}{} & \textit{eta}          \\ \hline
+\end{tabular}
+\end{table}
