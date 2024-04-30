@@ -7,6 +7,7 @@ module tex.sections.2-algebraic-effects where
 open import Level
 
 open import Function
+open import Function.Construct.Identity
 open import Function.Construct.Symmetry
 open import Function.Construct.Composition
 
@@ -281,8 +282,6 @@ We can also define the following function, which uses a \ab{Δ₁}~\ad{≲}~\ab{
 \begin{code}[hide]
     injₗ : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟦ Δ₁ ⟧ A → ⟦ Δ ⟧ A
     injₗ ⦃ w ⦄ (c , k) = w .reorder .to (inj₁ c , k)
-
-    postulate ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ 
 \end{code}
 %
 
@@ -425,6 +424,137 @@ following type of \emph{parameterized handlers} defines how to fold respectively
 %
 \begin{code}[hide]
   open ⟨_!_⇒_⇒_!_⟩
+
+  open Inverse
+
+  _↦_ : Effect → Effect → Set₁
+  Δ₁ ↦ Δ₂ = ∀[ ⟦ Δ₁ ⟧ ⇒ ⟦ Δ₂ ⟧ ]
+
+  injˡ : ∀ Δ₂ → Δ₁ ↦ (Δ₁ ⊕ Δ₂)
+  injˡ _ (c , k) = (inj₁ c , k)
+
+  injʳ : ∀ Δ₁ → Δ₂ ↦ (Δ₁ ⊕ Δ₂)
+  injʳ _ (c , k) = (inj₂ c , k)
+
+  swapᶜ : ∀ Δ₁ Δ₂ → (Δ₁ ⊕ Δ₂) ↦ (Δ₂ ⊕ Δ₁)
+  swapᶜ _ _ (inj₁ c , k) = (inj₂ c , k)
+  swapᶜ _ _ (inj₂ c , k) = (inj₁ c , k)
+
+
+  swapᶜ-involutive : ∀ {A} (x : ⟦ Δ₁ ⊕ Δ₂ ⟧ A) → swapᶜ Δ₂ Δ₁ (swapᶜ Δ₁ Δ₂ x) ≡ x
+  swapᶜ-involutive (inj₁ x , k) = refl
+  swapᶜ-involutive (inj₂ y , k) = refl
+
+  ⊕-comm : ∀ Δ₁ Δ₂ → (∀ {X} → ⟦ Δ₁ ⊕ Δ₂ ⟧ X ↔ ⟦ Δ₂ ⊕ Δ₁ ⟧ X)
+  ⊕-comm Δ₁ Δ₂ = record
+    { to        = swapᶜ Δ₁ Δ₂
+    ; from      = swapᶜ Δ₂ Δ₁
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → swapᶜ-involutive _) ,  (λ where refl → swapᶜ-involutive _)
+    }
+
+  ⊕-congˡ : ∀ Δ₁ Δ₂ Δ → (∀ {X} → ⟦ Δ₁ ⟧ X ↔ ⟦ Δ₂ ⟧ X) → (∀ {X} → ⟦ Δ₁ ⊕ Δ ⟧ X ↔ ⟦ Δ₂ ⊕ Δ ⟧ X)
+  ⊕-congˡ Δ₁ Δ₂ Δ iso = record
+    { to        = to′
+    ; from      = from′
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _ 
+    }
+    where
+      to′ : ∀[ ⟦ Δ₁ ⊕ Δ ⟧ ⇒ ⟦ Δ₂ ⊕ Δ ⟧ ]
+      to′ (inj₁ c , k) = injˡ Δ (iso .to (c , k))
+      to′ (inj₂ c , k) = (inj₂ c , k)
+
+      from′ : ∀[ ⟦ Δ₂ ⊕ Δ ⟧ ⇒ ⟦ Δ₁ ⊕ Δ ⟧ ]
+      from′ (inj₁ c , k) = injˡ Δ (iso .from (c , k))
+      from′ (inj₂ c , k) = (inj₂ c , k)
+
+      cong-inverseˡ : ∀ x → to′ (from′ x) ≡ x
+      cong-inverseˡ (inj₁ c , k) = cong (injˡ Δ) (Inverse.inverse iso .proj₁ refl)
+      cong-inverseˡ (inj₂ c , k) = refl
+
+      cong-inverseʳ : ∀ x → from′ (to′ x) ≡ x 
+      cong-inverseʳ (inj₁ c , k) = cong (injˡ Δ) (Inverse.inverse iso .proj₂ refl)
+      cong-inverseʳ (inj₂ c , k) = refl
+
+
+  assocᶜʳ : ∀ Δ₁ Δ₂ Δ₃ → ((Δ₁ ⊕ Δ₂) ⊕ Δ₃) ↦ (Δ₁ ⊕ (Δ₂ ⊕ Δ₃))
+  assocᶜʳ _ _ _ (inj₁ (inj₁ c) , k) = (inj₁ c , k)
+  assocᶜʳ _ _ _ (inj₁ (inj₂ c) , k) = (inj₂ (inj₁ c) , k)
+  assocᶜʳ _ _ _ (inj₂ c        , k) = (inj₂ (inj₂ c) , k)
+
+  assocᶜˡ : ∀ Δ₁ Δ₂ Δ₃ → (Δ₁ ⊕ (Δ₂ ⊕ Δ₃)) ↦ ((Δ₁ ⊕ Δ₂) ⊕ Δ₃ ) 
+  assocᶜˡ _ _ _ (inj₁ c        , k) = (inj₁ (inj₁ c) , k)
+  assocᶜˡ _ _ _ (inj₂ (inj₁ c) , k) = ((inj₁ (inj₂ c)) , k)
+  assocᶜˡ _ _ _ (inj₂ (inj₂ c) , k) = (inj₂ c , k)
+
+  ⊕-assoc : ∀ Δ₁ Δ₂ Δ₃ → (∀ {X} → ⟦ Δ₁ ⊕ (Δ₂ ⊕ Δ₃) ⟧ X ↔ ⟦ (Δ₁ ⊕ Δ₂) ⊕ Δ₃ ⟧ X)
+  ⊕-assoc Δ₁ Δ₂ Δ₃ = record
+    { to        = assocᶜˡ Δ₁ Δ₂ Δ₃
+    ; from      = assocᶜʳ Δ₁ Δ₂ Δ₃
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → assoc-inverseˡ _) , (λ where refl → assoc-inverseʳ _) 
+    }
+    where
+      assoc-inverseˡ : ∀ x → assocᶜˡ Δ₁ Δ₂ Δ₃ (assocᶜʳ Δ₁ Δ₂ Δ₃ x) ≡ x
+      assoc-inverseˡ (inj₁ (inj₁ _) , _) = refl
+      assoc-inverseˡ (inj₁ (inj₂ _) , _) = refl
+      assoc-inverseˡ (inj₂ _        , _) = refl
+
+      assoc-inverseʳ : ∀ x → assocᶜʳ Δ₁ Δ₂ Δ₃ (assocᶜˡ Δ₁ Δ₂ Δ₃ x) ≡ x
+      assoc-inverseʳ (inj₁ _        , _) = refl
+      assoc-inverseʳ (inj₂ (inj₁ _) , _) = refl
+      assoc-inverseʳ (inj₂ (inj₂ _) , _) = refl
+
+  ⊕-congʳ : ∀ Δ₁ Δ₂ Δ → (∀ {X} → ⟦ Δ₁ ⟧ X ↔ ⟦ Δ₂ ⟧ X) → (∀ {X} → ⟦ Δ ⊕ Δ₁ ⟧ X ↔ ⟦ Δ ⊕ Δ₂ ⟧ X)
+  ⊕-congʳ Δ₁ Δ₂ Δ iso = record
+    { to        = to′
+    ; from      = from′
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _ 
+    }
+    where
+      to′ : (Δ ⊕ Δ₁) ↦ (Δ ⊕ Δ₂)
+      to′ (inj₁ c , k) = (inj₁ c , k)
+      to′ (inj₂ c , k) = injʳ Δ (iso .to (c , k))
+
+      from′ : (Δ ⊕ Δ₂) ↦ (Δ ⊕ Δ₁)
+      from′ (inj₁ c , k) = (inj₁ c , k)
+      from′ (inj₂ c , k) = injʳ Δ (iso .from (c , k))
+
+      cong-inverseˡ : ∀ x → to′ (from′ x) ≡ x
+      cong-inverseˡ (inj₁ x , k) = refl
+      cong-inverseˡ (inj₂ y , k) = cong (injʳ Δ) (Inverse.inverse iso .proj₁ refl)
+
+      cong-inverseʳ : ∀ x → from′ (to′ x) ≡ x 
+      cong-inverseʳ (inj₁ x , k) = refl
+      cong-inverseʳ (inj₂ y , k) = cong (injʳ Δ) (Inverse.inverse iso .proj₂ refl)
+
+  instance
+    unpack : ⦃ w : Δ ≲ Δ′ ⦄ → Δ ∙ proj₁ w ≈ Δ′
+    unpack ⦃ w ⦄ = proj₂ w
+
+  ≲-left : Δ ≲ (Δ ⊕ Δ′)
+  ≲-left {Δ′ = Δ′} = Δ′ , record { reorder = ↔-id _ }
+
+  ≲-right : ⦃ Δ ≲ Δ₂ ⦄ → Δ ≲ (Δ₁ ⊕ Δ₂)
+  ≲-right {Δ} {Δ₂} {Δ₁} ⦃ x , record { reorder = reorder } ⦄ =
+    (Δ₁ ⊕ _) , (record { reorder =
+      ⊕-congʳ _ _ _ reorder
+        ↔-∘ ( (↔-sym (⊕-assoc _ _ _)
+              ↔-∘ ( ⊕-congˡ _ _ _ (⊕-comm _ _)
+                    ↔-∘ ⊕-assoc _ _ _ )) ) })
+
+
+  ∙-comm : Δ₁ ∙ Δ₂ ≈ Δ → Δ₂ ∙ Δ₁ ≈ Δ
+  reorder (∙-comm record { reorder = re }) = re ↔-∘ ⊕-comm _ _
+
+  ∙-refl : Δ₁ ∙ Δ₂ ≈ (Δ₁ ⊕ Δ₂)
+  reorder ∙-refl = ↔-id _
 \end{code}
 %
 A handler of type
@@ -444,12 +574,12 @@ folding using \aF{ret}, \aF{hdl}, and a \ad{to-front} function:
     to-front : Δ₁ ∙ Δ₂ ≈ Δ → Free Δ A → Free (Δ₁ ⊕ Δ₂) A
     to-front w = hmap-free (w .reorder .from)
 
-    given_handle_ : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄ → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
+    given_handle_  : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄
+                   → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
     given_handle_  ⦃ w ⦄ h m = fold
       (ret h)
       ( λ where (inj₁ c , k) p → hdl h (c , k) p
-                (inj₂ c , k) p → impure (c , flip k p) 
-      ) 
+                (inj₂ c , k) p → impure (c , flip k p) ) 
       (to-front w m) 
 \end{code}
 %
@@ -483,7 +613,7 @@ ends:\\
   Ret  Nil = ⊥-elim
 \end{code}
 \begin{code}[hide]
-  instance ∙-unitᵣ : Δ ∙ Nil ≈ Δ
+  ∙-unitᵣ : Δ ∙ Nil ≈ Δ
   ∙-unitᵣ = record
     { reorder = record
       { to        = λ where (inj₁ c , k) → c , k
@@ -507,7 +637,7 @@ ends:\\
 \end{minipage}
 \\
 Using these, we can run a simple hello world program:\footnote{The \ac{refl} constructor is from the Agda standard library, and witnesses that a propositional equality (\ad{≡}) holds.}\\
-\begin{minipage}{0.445\linewidth}
+\begin{minipage}{0.440\linewidth}
 \begin{code}
   hello′ : ⦃ Output ≲ Δ ⦄ → Free Δ ⊤
   hello′ = do
@@ -515,7 +645,7 @@ Using these, we can run a simple hello world program:\footnote{The \ac{refl} con
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
-\begin{minipage}{0.545\linewidth}
+\begin{minipage}{0.55\linewidth}
 \begin{code}
   test-hello :  un (given hOut handle hello′ $ tt)
                 ≡ (tt , "Hello world!")
@@ -527,7 +657,7 @@ An example of parameterized (as opposed to unparameterized) handlers, is the sta
 \\
 \begin{figure}
 \centering
-\begin{minipage}{0.445\linewidth}
+\begin{minipage}{0.440\linewidth}
 \begin{code}
   data StateOp : Set where
     get :      StateOp
@@ -535,7 +665,7 @@ An example of parameterized (as opposed to unparameterized) handlers, is the sta
 \end{code}
 \end{minipage}
 \hfill\vline\hfill
-\begin{minipage}{0.545\linewidth}
+\begin{minipage}{0.55\linewidth}
 \begin{code}
   State : Effect
   Op State = StateOp
@@ -629,9 +759,6 @@ computation by inserting extra effects in an effect row:
 \end{code}
 \begin{code}[hide]
   ♯_ = inject 
-
-  instance ≲-to-∙ : ⦃ w : Δ₁ ≲ Δ₂ ⦄ → Δ₁ ∙ proj₁ w ≈ Δ₂
-  ≲-to-∙ ⦃ w ⦄ = proj₂ w
 \end{code}
 %
 Using this, the following elaboration defines a semantics for the \aF{catch} operation:\footnote{The \af{maybe} function is the eliminator for the \ad{Maybe} type.  Its first parameter is for eliminating a \ac{just}; the second  for \ac{nothing}.  Its type is \af{maybe}~\as{:}~\as{(}\ab{A}~\as{→}~\ab{B}\as{)}~\as{→}~\ab{B}~\as{→}~\ad{Maybe}~\ab{A}~\as{→}~\ab{B}.}
@@ -642,7 +769,7 @@ Using this, the following elaboration defines a semantics for the \aF{catch} ope
 \end{code}
 \begin{code}
     catch : ⦃ Throw ≲⅋ Δ ⦄ → Free Δ A → Free Δ A → Free Δ A
-    catch m₁ m₂ = (♯ ((given hThrow handle m₁) tt)) 𝓑 maybe pure m₂ 
+    catch m₁ m₂ = (♯ (given hThrow handle m₁) tt) 𝓑 maybe pure m₂ 
 \end{code}
 \begin{code}[hide]
       where instance _ = _ , ∙-comm (w .proj₂)

@@ -1,6 +1,4 @@
 \begin{code}[hide]
-{-# OPTIONS --overlapping-instances --instance-search-depth=10 #-}
-
 module tex.sections.3-hefty-algebras where
 
 open import tex.sections.2-algebraic-effects
@@ -318,7 +316,7 @@ the following smart constructor lets us represent any algebraic operation as a
       reorder : ∀ {M X} → ⟦ H₁ ∔ H₂ ⟧ᴴ M X ↔ ⟦ H ⟧ᴴ M X
 
   _≲ᴴ_ : (H₁ H₂ : Effectᴴ) → Set₁
-  H₁ ≲ᴴ H₂ = ∃ λ H → H₁ ∙ H ≋ H₂ 
+  H₁ ≲ᴴ H₂ = ∃ λ H → H₁ ∙ H ≋ H₂
 
   postulate ≲ᴴ-refl  : H ≲ᴴ H 
   postulate ≲ᴴ-trans : H₁ ≲ᴴ H₂ → H₂ ≲ᴴ H₃ → H₁ ≲ᴴ H₃
@@ -575,13 +573,161 @@ algebraic effects and handlers:
 \end{code}
 
 \paragraph*{Example.}
-The elaboration below is analogous to the non-modular \af{catch} elaboration:
+The elaboration below is analogous to the non-modular \af{catch} elaboration discussed in \cref{sec:higher-order-effects} and in the beginning of this subsection:
 \begin{code}[hide]
 module ElabModule where
   open FreeModule hiding (_𝓑_; _>>_)
   open HeftyModule hiding (_𝓑_; _>>_)
   open Algᴴ
   open Inverse ⦃ ... ⦄
+  open import Relation.Binary using (Reflexive ; Transitive ; Symmetric)
+  open import Function.Construct.Identity
+  open import Function.Construct.Symmetry
+  open import Function.Construct.Composition
+
+
+  -- Analogous to container morphisms, morphisms of signatures are the natural
+  -- transformations between their extension functors
+  _↦ᴴ_ : Effectᴴ → Effectᴴ → Set₁
+  H₁ ↦ᴴ H₂ = ∀ {F} → ∀[ ⟦ H₁ ⟧ᴴ F ⇒ ⟦ H₂ ⟧ᴴ F ]  
+
+  injᴴʳ : H₂ ↦ᴴ (H₁ ∔ H₂)
+  injᴴʳ (c , k , s) = (inj₂ c , k , s)
+
+  record _⇿ᴴ_ (H₁ H₂ : Effectᴴ) : Set₁ where
+    field
+      equivalenceᴴ : ∀ F X → ⟦ H₁ ⟧ᴴ F X ↔ ⟦ H₂ ⟧ᴴ F X
+      -- TODO: do we require proofs of naturality for this relation as well? 
+
+
+  open _⇿ᴴ_ public 
+
+  ⇿ᴴ-refl : Reflexive _⇿ᴴ_
+  ⇿ᴴ-refl =
+    record { equivalenceᴴ = λ _ _ → ↔-id _ } 
+
+  ⇿ᴴ-sym : Symmetric _⇿ᴴ_
+  ⇿ᴴ-sym eq =
+    record { equivalenceᴴ = λ X Y → ↔-sym (eq .equivalenceᴴ X Y) }
+
+  ⇿ᴴ-trans : Transitive _⇿ᴴ_
+  ⇿ᴴ-trans eq₁ eq₂ =
+    record { equivalenceᴴ = λ F X → eq₂ .equivalenceᴴ F X ↔-∘ eq₁ .equivalenceᴴ F X }
+
+  ⊥-sig : Effectᴴ
+  ⊥-sig = record
+    { Opᴴ  = ⊥
+    ; Retᴴ = λ()
+    ; Fork     = λ()
+    ; Ty  = (λ where {op = ()})
+    }
+
+  swap-sig : (H₁ ∔ H₂) ↦ᴴ (H₂ ∔ H₁)
+  swap-sig (inj₁ c , k , s) = (inj₂ c , k , s)
+  swap-sig (inj₂ c , k , s) = (inj₁ c , k , s)
+
+  swap-sig-involutive : {A : Set} → (x : ⟦ H₁ ∔ H₂ ⟧ᴴ F A) → swap-sig {x = A} (swap-sig {x = A} x) ≡ x
+  swap-sig-involutive (inj₁ c , k , s) = refl
+  swap-sig-involutive (inj₂ y , k , s) = refl
+
+  swap-sig-⇿ᴴ : (H₁ ∔ H₂) ⇿ᴴ (H₂ ∔ H₁)
+  equivalenceᴴ swap-sig-⇿ᴴ F X = record
+    { to        = swap-sig {x = X}
+    ; from      = swap-sig {x = X}
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → swap-sig-involutive _) , λ where refl → swap-sig-involutive _
+    }
+
+  assoc-sigʳ : ((H₁ ∔ H₂) ∔ H₃) ↦ᴴ (H₁ ∔ (H₂ ∔ H₃))  
+  assoc-sigʳ (inj₁ (inj₁ c) , k , s) = (inj₁ c , k , s)
+  assoc-sigʳ (inj₁ (inj₂ c) , k , s) = (inj₂ (inj₁ c) , k , s)
+  assoc-sigʳ (inj₂ c        , k , s) = (inj₂ (inj₂ c) , k , s)
+
+  assoc-sigˡ : (H₁ ∔ (H₂ ∔ H₃)) ↦ᴴ ((H₁ ∔ H₂) ∔ H₃)
+  assoc-sigˡ (inj₁ c        , k , s) = (inj₁ (inj₁ c) , k , s)
+  assoc-sigˡ (inj₂ (inj₁ c) , k , s) = (inj₁ (inj₂ c) , k , s)
+  assoc-sigˡ (inj₂ (inj₂ c) , k , s) = (inj₂ c , k , s)
+
+  assoc-sig-⇿ᴴ : ((H₁ ∔ H₂) ∔ H₃) ⇿ᴴ (H₁ ∔ (H₂ ∔ H₃)) 
+  equivalenceᴴ assoc-sig-⇿ᴴ F X = record
+    { to        = assoc-sigʳ {x = X}
+    ; from      = assoc-sigˡ {x = X}
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where {x} refl → assoc-inverseʳ x) , λ where {x} refl → assoc-inverseˡ x
+    }
+    where
+      assoc-inverseˡ : ∀ {A : Set} → (x : ⟦ ((H₁ ∔ H₂) ∔ H₃) ⟧ᴴ F A) → assoc-sigˡ (assoc-sigʳ {x = A} x) ≡ x
+      assoc-inverseˡ (inj₁ (inj₁ _) , _ , _) = refl
+      assoc-inverseˡ (inj₁ (inj₂ _) , _ , _) = refl
+      assoc-inverseˡ (inj₂ _        , _ , _) = refl
+
+      assoc-inverseʳ : ∀ {A : Set} → (x : ⟦ (H₁ ∔ (H₂ ∔ H₃)) ⟧ᴴ F A) → assoc-sigʳ (assoc-sigˡ {x = A} x) ≡ x
+      assoc-inverseʳ (inj₁ _        , _ , _) = refl
+      assoc-inverseʳ (inj₂ (inj₁ _) , _ , _) = refl
+      assoc-inverseʳ (inj₂ (inj₂ _) , _ , _) = refl
+
+  ⊕ᴴ-congˡ : H₁ ⇿ᴴ H₂ → (H₁ ∔ H) ⇿ᴴ (H₂ ∔ H)
+  equivalenceᴴ (⊕ᴴ-congˡ {H₁}{H₂}{H} eq) F X = record
+    { to        = to′ {F = F}
+    ; from      = from′ {F = F}
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _
+    }
+    where
+      to′ : (H₁ ∔ H) ↦ᴴ (H₂ ∔ H)
+      to′ {F = F} {X} (inj₁ c , k , s) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .to (c , k , s))
+      to′ (inj₂ c , k , s) = (inj₂ c , k , s)
+
+      from′ : (H₂ ∔ H) ↦ᴴ (H₁ ∔ H)
+      from′ {F = F} {X} (inj₁ c , k , s) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .from (c , k , s))
+      from′ (inj₂ c , k , s) = (inj₂ c , k , s)
+
+      cong-inverseˡ : ∀ {A} (x : ⟦ H₂ ∔ H ⟧ᴴ F A) → to′ {x = A} (from′ {x = A} x) ≡ x 
+      cong-inverseˡ {A = A} (inj₁ c , k , s) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
+      cong-inverseˡ (inj₂ c , k , s) = refl
+
+      cong-inverseʳ : ∀ {A} (x : ⟦ H₁ ∔ H ⟧ᴴ F A) → from′ {x = A} (to′ {x = A} x) ≡ x
+      cong-inverseʳ {A = A} (inj₁ c , k , s) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
+      cong-inverseʳ (inj₂ c , k , s) = refl
+
+
+  ⊕ᴴ-congʳ : H₁ ⇿ᴴ H₂ → (H ∔ H₁) ⇿ᴴ (H ∔ H₂)
+  equivalenceᴴ (⊕ᴴ-congʳ {H₁}{H₂}{H} eq) F X = record
+    { to        = to′ {F = F}
+    ; from      = from′ {F = F}
+    ; to-cong   = λ where refl → refl
+    ; from-cong = λ where refl → refl
+    ; inverse   = (λ where refl → cong-inverseˡ _) , λ where refl → cong-inverseʳ _
+    }
+    where
+      to′ : (H ∔ H₁) ↦ᴴ (H ∔ H₂)
+      to′ (inj₁ c , k , s) = (inj₁ c , k , s) 
+      to′ {F = F} (inj₂ c , k , s) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .to (c , k , s))
+
+      from′ : (H ∔ H₂) ↦ᴴ (H ∔ H₁)
+      from′ (inj₁ c , k , s) = (inj₁ c , k , s) 
+      from′ {F = F} (inj₂ c , k , s) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .from (c , k , s))
+
+      cong-inverseˡ : ∀ {A} (x : ⟦ H ∔ H₂ ⟧ᴴ F A) → to′ (from′ {F = F} x) ≡ x 
+      cong-inverseˡ (inj₁ c , k , s) = refl  
+      cong-inverseˡ {A = A} (inj₂ c , k , s) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
+
+      cong-inverseʳ : ∀ {A} (x : ⟦ H ∔ H₁ ⟧ᴴ F A)  → from′ (to′ {F = F} x) ≡ x
+      cong-inverseʳ (inj₁ c , k , s) = refl
+      cong-inverseʳ (inj₂ c , k , s) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
+
+  ≲ᴴ-left : H ≲ᴴ (H ∔ H′)
+  ≲ᴴ-left = _ , (record { reorder = ↔-id _ })
+
+  ≲ᴴ-right : ⦃ H ≲ᴴ H₂ ⦄ → H ≲ᴴ (H₁ ∔ H₂)
+  ≲ᴴ-right {H} {H₂} {H₁} ⦃ x , record { reorder = reorder } ⦄ =
+    (H₁ ∔ _) , (record { reorder = λ {M} {X} →
+      ⊕ᴴ-congʳ (record { equivalenceᴴ = λ F X → reorder {F} {X} }) .equivalenceᴴ M X
+        ↔-∘ (assoc-sig-⇿ᴴ .equivalenceᴴ M X
+            ↔-∘ (⊕ᴴ-congˡ swap-sig-⇿ᴴ .equivalenceᴴ M X ↔-∘ ↔-sym (assoc-sig-⇿ᴴ .equivalenceᴴ M X))) })
 
   module _ where
     open FreeModule using (_𝓑_)
@@ -595,7 +741,7 @@ module ElabModule where
       (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
 \end{code}
 \begin{code}[hide]
-      where postulate instance foo : proj₁ w ≲ _ 
+      where instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
 %
 The elaboration is essentially the same as its non-modular counterpart, except
@@ -641,16 +787,34 @@ operation in the program which gets the state.  By also defining elaborations
 for \ad{Lift} and \ad{Nil}, we can elaborate and run the program:
 %
 \begin{code}
-    eTransact : ⦃ Throw ≲ Δ ⦄ → ⦃ State ≲ Δ ⦄ → Elaboration (Catch ∔ Lift Throw ∔ Lift State ∔ Lift Nil) Δ
+    eTransact  :  ⦃ _ : Throw ≲ Δ ⦄ ⦃ _ : State ≲ Δ ⦄
+               →  Elaboration (Catch ∔ Lift Throw ∔ Lift State ∔ Lift Nil) Δ
     eTransact = eCatch ⋎ eLift ⋎ eLift ⋎ eNil
 \end{code}%
 \vspace{-1em}%
+\begin{code}[hide]
+    module _ where
+      private instance
+        x₀ : State ≲ (State ⊕ Nil)
+        x₀ = ≲-left
+        x₁ : State ≲ (Throw ⊕ State ⊕ Nil)
+        x₁ = ≲-right ⦃ ≲-left ⦄
+        x₂ : Throw ≲ (Throw ⊕ State ⊕ Nil)
+        x₂ = ≲-left
+        x₃ : Lift State ≲ᴴ (Catch ∔ Lift Throw ∔ Lift State ∔ Lift Nil)
+        x₃ = ≲ᴴ-right ⦃ ≲ᴴ-right ⦃ ≲ᴴ-left ⦄ ⦄
+        x₄ : Lift Throw ≲ᴴ (Catch ∔ Lift Throw ∔ Lift State ∔ Lift Nil)
+        x₄ = ≲ᴴ-right ⦃ ≲ᴴ-left ⦄
+        x₅ : Catch ≲ᴴ (Catch ∔ Lift Throw ∔ Lift State ∔ Lift Nil)
+        x₅ = ≲ᴴ-left
+\end{code}
 \begin{code}
-    -- test-transact : un (given hSt handle {!given hThrow handle ? $ tt!} $ 0) ≡ ((just 2 , 2))  un (  (  given hSt
-    --                           handle (  (  given hThrow
-    --                                        handle (elaborate eTransact transact)))
-    --                                     tt ) 0 ) ≡ (just 2 , 2) -} 
-    -- test-transact = refl
+      test-transact : un (  (  given hSt
+                               handle (  (  given hThrow
+                                           handle (elaborate eTransact transact) )
+                                         tt ) )
+                            0 ) ≡ (just 2 , 2)
+      test-transact = refl
 \end{code}
 %
 \noindent The program above uses a so-called \emph{global} interpretation of
