@@ -160,168 +160,187 @@ Using these isomorphisms, the following defines a call-by-value elaboration of f
 \end{code}
 %
 The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a value to the continuation, where the \aF{from} function mediates the sub-tree of type \aF{⟦~c}~\ab{t₁}~\aF{⟧ᵀ}~\as{→}~\ad{Free}~\ab{Δ}~\aF{⟦}~\ab{t₂}~\aF{⟧ᵀ} to a value type \aF{⟦}~\as{(}\aF{c}~\ab{t₁}\as{)}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}, using the isomorphism \af{iso₁}.
-%% -- The \ac{var} case uses the \aF{to} function to mediate a \aF{⟦~c}~\ab{t}~\aF{⟧ᵀ} value to a \aF{⟦}~\ab{t}~\aF{⟧ᵀ} value, using the isomorphism \af{iso₂}.
-%% -- The \ac{app} case first eagerly evaluates the argument expression of the application (in the sub-tree \ab{ψ}) to an argument value, and then passes the resulting value to the function value of the application.
-%% -- The resulting value is passed to the continuation.
-%% 
-%% -- Using the elaboration above, we can evaluate programs such as the following which uses both the higher-order lambda effect, the algebraic state effect, and assumes that our universe has a number type \aF{⟦}~\ab{num}~\aF{⟧ᵀ}~\ad{↔}~\ad{ℕ}:
-%% -- \begin{code}[hide]
-%% --     open import Data.Nat using (ℕ; _+_)
-%% --     module _ ⦃ u : LamUniv ⦄ {num : Ty}
-%% --              ⦃ iso₁ : ⟦ num ⟧ᵀ ↔ ℕ ⦄ where
-%% --       open HeftyModule using (_𝓑_; _>>_)
-%% 
-%% 
-%% --       private _>>=_ = _𝓑_
-%% -- \end{code}
-%% -- \begin{code}
-%% --       ex : Hefty (Lam ∔ Lift State ∔ Lift Nil) ℕ
-%% --       ex = do
-%% --         ↑ put 1
-%% --         f ← ‵lam (λ x → do
-%% --               n₁ ← ‵var x
-%% --               n₂ ← ‵var x
-%% --               pure (from ((to n₁) + (to n₂))))
-%% --         v ← ‵app f incr
-%% --         pure (to v)
-%% --         where incr = do s₀ ← ↑ get; ↑ put (s₀ + 1); s₁ ← ↑ get; pure (from s₁)
-%% -- \end{code}
-%% -- The program first sets the state to \an{1}.
-%% -- Then it constructs a function that binds a variable \ab{x}, dereferences the variable twice, and adds the two resulting values together.
-%% -- Finally, the application in the second-to-last line applies the function with an argument expression which increments the state by \an{1} and returns the resulting value.
-%% -- Running the program produces \an{4} since the state increment expression is eagerly evaluated before the function is applied.
-%% -- %
-%% -- \begin{code}[hide]
-%% --     module CBVExample where private
-%% --       open import Data.Nat using (ℕ)
-%% --       open HeftyModule using (_𝓑_; _>>_)
-%% --       open ElabModule
-%% --       open import Function.Construct.Identity    using (↔-id)
-%% --       open Inverse
-%% --       -- open Elab
-%% 
-%% 
-%% --       data Type : Set where
-%% --         _⟶_ : (t₁ t₂ : Type) → Type
-%% --         num : Type
-%% 
-%% --       instance
-%% --         CBVUniv : Univ
-%% --         Ty ⦃ CBVUniv ⦄ = Type
-%% --         ⟦_⟧ᵀ ⦃ CBVUniv ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
-%% --         ⟦_⟧ᵀ ⦃ CBVUniv ⦄ num       = ℕ
-%% 
-%% --         iso-num : ℕ ↔ ⟦ num ⟧ᵀ
-%% --         iso-num = ↔-id _
-%% 
-%% --         iso-fun : {t₁ t₂ : Type}
-%% --                 → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
-%% --         iso-fun = ↔-id _
-%% 
-%% --         iso-c : {t : Type} → ⟦ t ⟧ᵀ ↔ ⟦ id t ⟧ᵀ
-%% --         iso-c = ↔-id _
-%% 
-%% --         LamCBVUniv : LamUniv
-%% --         u    ⦃ LamCBVUniv ⦄ = CBVUniv
-%% --         _↣_  ⦃ LamCBVUniv ⦄ = _⟶_
-%% --         c    ⦃ LamCBVUniv ⦄ = id
-%% -- \end{code}
-%% -- \begin{code}
-%% -- --       elab-cbv : Elaboration (Lam ∔ Lift State ∔ Lift Nil) (State ⊕ Nil)
-%% -- --       elab-cbv = eLamCBV ⋎ eLift ⋎ eNil
-%% -- -- 
-%% -- --       test-ex-cbv : un ((given hSt handle (elaborate elab-cbv ex)) 0) ≡ (4 , 2)
-%% -- --       test-ex-cbv = refl
-%% -- \end{code}
-%% 
-%% -- \subsubsection{Call-by-Name}
-%% 
-%% -- The key difference between the call-by-value and the call-by-name interpretation of our $\lambda$ operations is that we now assume that thunks are computations.
-%% -- That is, we assume that the following isomorphisms hold for value types:
-%% -- \begin{code}[hide]
-%% -- --     module _ ⦃ u : LamUniv ⦄
-%% -- --              ⦃ iso₁ : {t₁ t₂ : Ty}
-%% -- --                     → ⟦ t₁ ↣ t₂ ⟧ᵀ ↔ (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)  ⦄
-%% -- --              ⦃ iso₂ : {t : Ty}
-%% -- --                     → ⟦ c t ⟧ᵀ ↔ Free Δ ⟦ t ⟧ᵀ ⦄ where
-%% -- --       open FreeModule using (_𝓑_; _>>_) 
-%% -- --       open import Data.Nat using (ℕ)
-%% -- --       open ElabModule
-%% -- -- --      open Elab
-%% -- -- 
-%% -- --       private postulate
-%% -- \end{code}
-%% -- \begin{code}
-%% -- --         iso₁⅋  :  {t₁ t₂ : Ty}  → ⟦ t₁ ↣ t₂ ⟧ᵀ  ↔  (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)
-%% -- --         iso₂⅋  :  {t : Ty}      → ⟦ c t ⟧ᵀ      ↔  Free Δ ⟦ t ⟧ᵀ
-%% -- \end{code}
-%% -- Using these isomorphisms, the following defines a call-by-name elaboration of functions:
-%% -- \begin{code}
-%% -- --       eLamCBN : Elaboration Lam Δ
-%% -- --       alg eLamCBN lam      ψ  k = k (from ψ)
-%% -- --       alg eLamCBN (var x)  _  k = to x 𝓑 k
-%% -- --       alg eLamCBN (app f)  ψ  k = to f (from (ψ tt)) 𝓑 k
-%% -- \end{code}
-%% -- \begin{code}[hide]
-%% --       -- instance
-%% --       --   eLamCBN′ : Elab Lam Δ
-%% --       --   orate eLamCBN′ = eLamCBN
-%% -- \end{code}
-%% -- %
-%% -- The case for \ac{lam} is the same as the call-by-value elaboration.
-%% -- The case for \ac{var} now needs to force the thunk by running the computation and passing its result to \ab{k}.
-%% -- The case for \ac{app} passes the argument sub-tree (\ab{ψ}) as an argument to the function \ab{f}, runs the computation resulting from doing so, and then passes its result to \ab{k}.
-%% -- %
-%% -- \begin{code}[hide]
-%% -- --     module CBNExample where private
-%% -- --       open import Data.Nat using (ℕ)
-%% -- --       open HeftyModule using (_𝓑_; _>>_)
-%% -- --       open ElabModule
-%% -- --       open import Function.Construct.Identity    using (↔-id)
-%% -- --       open Inverse ⦃ ... ⦄
-%% -- --       -- open Elab
-%% -- -- 
-%% -- -- 
-%% -- --       data Type : Set where
-%% -- --         _⟶_ : (t₁ t₂ : Type)   → Type
-%% -- --         num  :                     Type
-%% -- --         susp : Type              → Type
-%% -- -- 
-%% -- --       instance
-%% -- --         CBNUniv : Univ
-%% -- --         Ty ⦃ CBNUniv ⦄ = Type
-%% -- --         ⟦_⟧ᵀ ⦃ CBNUniv ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
-%% -- --         ⟦_⟧ᵀ ⦃ CBNUniv ⦄ num        = ℕ
-%% -- --         ⟦_⟧ᵀ ⦃ CBNUniv ⦄ (susp t)   = Free (State ⊕ Nil) ⟦ t ⟧ᵀ
-%% -- -- 
-%% -- --         iso-num : ℕ ↔ ⟦ num ⟧ᵀ
-%% -- --         iso-num = ↔-id _
-%% -- -- 
-%% -- --         iso-fun : {t₁ t₂ : Type}
-%% -- --                 → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
-%% -- --         iso-fun = ↔-id _
-%% -- -- 
-%% -- --         iso-susp : {t : Ty}
-%% -- --                  → Free (State ⊕ Nil) ⟦ t ⟧ᵀ ↔ ⟦ susp t ⟧ᵀ
-%% -- --         iso-susp = ↔-id _
-%% -- -- 
-%% -- --         LamCBNUniv : LamUniv
-%% -- --         u ⦃ LamCBNUniv ⦄ = CBNUniv
-%% -- --         _↣_ ⦃ LamCBNUniv ⦄ = _⟶_
-%% -- --         c ⦃ LamCBNUniv ⦄ = susp
-%% -- \end{code}
-%% -- %
-%% -- Running the example program \af{ex} from above now produces \an{5} as result, since the state increment expression in the argument of \af{‵app} is thunked and run twice during the evaluation of the called function.
-%% -- %
-%% -- \begin{code}
-%% -- --       elab-cbn : Elaboration (Lam ∔ Lift State ∔ Lift Nil) (State ⊕ Nil)
-%% -- --       elab-cbn = eLamCBN ⋎ eLift ⋎ eNil
-%% -- -- 
-%% -- --       test-ex-cbn : un ((given hSt handle (elaborate elab-cbn ex)) 0) ≡ (5 , 3)
-%% -- --       test-ex-cbn = refl
-%% -- \end{code}
-%% 
-%% 
+The \ac{var} case uses the \aF{to} function to mediate a \aF{⟦~c}~\ab{t}~\aF{⟧ᵀ} value to a \aF{⟦}~\ab{t}~\aF{⟧ᵀ} value, using the isomorphism \af{iso₂}.
+The \ac{app} case first eagerly evaluates the argument expression of the application (in the sub-tree \ab{ψ}) to an argument value, and then passes the resulting value to the function value of the application.
+The resulting value is passed to the continuation.
+
+Using the elaboration above, we can evaluate programs such as the following which uses both the higher-order lambda effect, the algebraic state effect, and assumes that our universe has a number type \aF{⟦}~\ab{num}~\aF{⟧ᵀ}~\ad{↔}~\ad{ℕ}:
+\begin{code}[hide]
+    open import Data.Nat using (ℕ; _+_)
+    module _ ⦃ u : LamUniv ⦄ {num : Type}
+             ⦃ iso₁ : ⟦ num ⟧ᵀ ↔ ℕ ⦄ where
+      open HeftyModule using (_𝓑_; _>>_)
+
+      private _>>=_ = _𝓑_
+
+      private instance
+        x₀ : Lam ≲ᴴ (Lam ∔ Lift State ∔ Lift Nil)
+        x₀ = ≲ᴴ-left
+        x₁ : Lift State ≲ᴴ (Lam ∔ Lift State ∔ Lift Nil)
+        x₁ = ≲ᴴ-right ⦃ ≲ᴴ-left ⦄
+\end{code}
+\begin{code}
+      ex : Hefty (Lam ∔ Lift State ∔ Lift Nil) ℕ
+      ex = do
+        ↑ put 1
+        f ← ‵lam (λ x → do
+              n₁ ← ‵var x
+              n₂ ← ‵var x
+              pure (from ((to n₁) + (to n₂))))
+        v ← ‵app f incr
+        pure (to v)
+        where incr = do s₀ ← ↑ get; ↑ put (s₀ + 1); s₁ ← ↑ get; pure (from s₁)
+\end{code}
+The program first sets the state to \an{1}.
+Then it constructs a function that binds a variable \ab{x}, dereferences the variable twice, and adds the two resulting values together.
+Finally, the application in the second-to-last line applies the function with an argument expression which increments the state by \an{1} and returns the resulting value.
+Running the program produces \an{4} since the state increment expression is eagerly evaluated before the function is applied.
+%
+\begin{code}[hide]
+    module CBVExample where private
+      open import Data.Nat using (ℕ)
+      open HeftyModule using (_𝓑_; _>>_)
+      open ElabModule
+      open import Function.Construct.Identity    using (↔-id)
+      open Inverse
+      -- open Elab
+
+
+      data LamType : Set where
+        _⟶_ : (t₁ t₂ : LamType) → LamType
+        num : LamType
+
+      instance
+        CBVUniv : Univ
+        Type ⦃ CBVUniv ⦄ = LamType
+        ⟦_⟧ᵀ ⦃ CBVUniv ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
+        ⟦_⟧ᵀ ⦃ CBVUniv ⦄ num       = ℕ
+
+        iso-num : ℕ ↔ ⟦ num ⟧ᵀ
+        iso-num = ↔-id _
+
+        iso-fun : {t₁ t₂ : LamType}
+                → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
+        iso-fun = ↔-id _
+
+        iso-c : {t : LamType} → ⟦ t ⟧ᵀ ↔ ⟦ id t ⟧ᵀ
+        iso-c = ↔-id _
+
+        LamCBVUniv : LamUniv
+        u    ⦃ LamCBVUniv ⦄ = CBVUniv
+        _↣_  ⦃ LamCBVUniv ⦄ = _⟶_
+        c    ⦃ LamCBVUniv ⦄ = id
+
+      module _ where
+        private instance
+          x₀ : Lam ≲ᴴ (Lam ∔ Lift State ∔ Lift Nil)
+          x₀ = ≲ᴴ-left
+          x₁ : Lift State ≲ᴴ (Lam ∔ Lift State ∔ Lift Nil)
+          x₁ = ≲ᴴ-right ⦃ ≲ᴴ-left ⦄
+
+          y₀ : State ≲ (State ⊕ Nil)
+          y₀ = ≲-left
+\end{code}
+\begin{code}
+        elab-cbv : Elaboration (Lam ∔ Lift State ∔ Lift Nil) (State ⊕ Nil)
+        elab-cbv = eLamCBV ⋎ eLift ⋎ eNil
+
+        test-ex-cbv : un ((given hSt handle (elaborate elab-cbv ex)) 0) ≡ (4 , 2)
+        test-ex-cbv = refl
+\end{code}
+
+\subsubsection{Call-by-Name}
+
+The key difference between the call-by-value and the call-by-name interpretation of our $\lambda$ operations is that we now assume that thunks are computations.
+That is, we assume that the following isomorphisms hold for value types:
+\begin{code}[hide]
+    module _ ⦃ u : LamUniv ⦄
+             ⦃ iso₁ : {t₁ t₂ : Type}
+                    → ⟦ t₁ ↣ t₂ ⟧ᵀ ↔ (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)  ⦄
+             ⦃ iso₂ : {t : Type}
+                    → ⟦ c t ⟧ᵀ ↔ Free Δ ⟦ t ⟧ᵀ ⦄ where
+      open FreeModule using (_𝓑_; _>>_) 
+      open import Data.Nat using (ℕ)
+      open ElabModule
+--      open Elab
+
+      private postulate
+\end{code}
+\begin{code}
+        iso₁⅋  :  {t₁ t₂ : Type}  → ⟦ t₁ ↣ t₂ ⟧ᵀ  ↔  (⟦ t₁ ⟧ᵀ → Free Δ ⟦ t₂ ⟧ᵀ)
+        iso₂⅋  :  {t : Type}      → ⟦ c t ⟧ᵀ      ↔  Free Δ ⟦ t ⟧ᵀ
+\end{code}
+Using these isomorphisms, the following defines a call-by-name elaboration of functions:
+\begin{code}
+      eLamCBN : Elaboration Lam Δ
+      alg eLamCBN (lam , k , ψ) = k (from ψ)
+      alg eLamCBN (var x , k , _) = to x 𝓑 k
+      alg eLamCBN (app f , k ,  ψ) = to f (from (ψ tt)) 𝓑 k
+\end{code}
+\begin{code}[hide]
+      -- instance
+      --   eLamCBN′ : Elaboration Lam Δ
+      --   elaborate eLamCBN′ = eLamCBN
+\end{code}
+%
+The case for \ac{lam} is the same as the call-by-value elaboration.
+The case for \ac{var} now needs to force the thunk by running the computation and passing its result to \ab{k}.
+The case for \ac{app} passes the argument sub-tree (\ab{ψ}) as an argument to the function \ab{f}, runs the computation resulting from doing so, and then passes its result to \ab{k}.
+%
+\begin{code}[hide]
+    module CBNExample where private
+      open import Data.Nat using (ℕ)
+      open HeftyModule using (_𝓑_; _>>_)
+      open ElabModule
+      open import Function.Construct.Identity    using (↔-id)
+      open Inverse ⦃ ... ⦄
+      -- open Elab
+
+
+      data LamType : Set where
+        _⟶_ : (t₁ t₂ : LamType)   → LamType
+        num  :                     LamType
+        susp : LamType              → LamType
+
+      instance
+        CBNUniv : Univ
+        Type ⦃ CBNUniv ⦄ = LamType
+        ⟦_⟧ᵀ ⦃ CBNUniv ⦄ (t ⟶ t₁)  = ⟦ t ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₁ ⟧ᵀ
+        ⟦_⟧ᵀ ⦃ CBNUniv ⦄ num        = ℕ
+        ⟦_⟧ᵀ ⦃ CBNUniv ⦄ (susp t)   = Free (State ⊕ Nil) ⟦ t ⟧ᵀ
+
+        iso-num : ℕ ↔ ⟦ num ⟧ᵀ
+        iso-num = ↔-id _
+
+        iso-fun : {t₁ t₂ : LamType}
+                → (⟦ t₁ ⟧ᵀ → Free (State ⊕ Nil) ⟦ t₂ ⟧ᵀ) ↔ ⟦ t₁ ⟶ t₂ ⟧ᵀ
+        iso-fun = ↔-id _
+
+        iso-susp : {t : Type}
+                 → Free (State ⊕ Nil) ⟦ t ⟧ᵀ ↔ ⟦ susp t ⟧ᵀ
+        iso-susp = ↔-id _
+
+        LamCBNUniv : LamUniv
+        u ⦃ LamCBNUniv ⦄ = CBNUniv
+        _↣_ ⦃ LamCBNUniv ⦄ = _⟶_
+        c ⦃ LamCBNUniv ⦄ = susp
+
+      module _ where
+        private instance y₀ : State ≲ (State ⊕ Nil)
+        y₀ = ≲-left
+\end{code}
+%
+Running the example program \af{ex} from above now produces \an{5} as result, since the state increment expression in the argument of \af{‵app} is thunked and run twice during the evaluation of the called function.
+%
+\begin{code}
+        elab-cbn : Elaboration (Lam ∔ Lift State ∔ Lift Nil) (State ⊕ Nil)
+        elab-cbn = eLamCBN ⋎ eLift ⋎ eNil
+
+        test-ex-cbn : un ((given hSt handle (elaborate elab-cbn ex)) 0) ≡ (5 , 3)
+        test-ex-cbn = refl
+\end{code}
+
+
 %% -- \subsection{Optionally Transactional Exception Catching}
 %% 
 %% -- A feature of scoped effect handlers~\cite{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
@@ -436,15 +455,15 @@ The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a va
 %% -- --       open import Data.Nat using (ℕ) renaming (_+_ to _ℕ+_)
 %% -- --       open import Effect.Monad
 %% -- -- 
-%% -- --       data Type : Set where
-%% -- --         num : Type
+%% -- --       data NumType : Set where
+%% -- --         num : NumType
 %% -- -- 
 %% -- --       instance
 %% -- --         NumUniv : Univ
-%% -- --         Ty   ⦃ NumUniv ⦄      = Type
+%% -- --         Ty   ⦃ NumUniv ⦄      = NumType
 %% -- --         ⟦_⟧ᵀ  ⦃ NumUniv ⦄ num  = ℕ
 %% -- -- 
-%% -- --       Cont : Effect → Set → Type → Set
+%% -- --       Cont : Effect → Set → NumType → Set
 %% -- --       Cont Δ A t = ⟦ t ⟧ᵀ → Free Δ A
 %% -- -- 
 %% -- --       ex₀ : Free (CC (Cont Δ ℕ) ⊕ Δ) ℕ
@@ -525,13 +544,13 @@ The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a va
 %% -- --       open import Function.Construct.Identity    using (↔-id)
 %% -- --       -- open Elab
 %% -- -- 
-%% -- --       data Type : Set where
-%% -- --         unit   : Type
-%% -- --         num : Type
+%% -- --       data CatchType : Set where
+%% -- --         unit   : CatchType
+%% -- --         num : CatchType
 %% -- -- 
 %% -- --       instance
 %% -- --         CatchUniv : Univ
-%% -- --         Ty   ⦃ CatchUniv ⦄ = Type
+%% -- --         Ty   ⦃ CatchUniv ⦄ = CatchType
 %% -- --         ⟦_⟧ᵀ ⦃ CatchUniv ⦄ unit   = ⊤
 %% -- --         ⟦_⟧ᵀ ⦃ CatchUniv ⦄ num = ℕ
 %% -- -- 
@@ -730,13 +749,13 @@ The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a va
 %% -- -- 
 %% -- --       private _>>=_ = _𝓑_
 %% -- -- 
-%% -- --       data Type : Set where
-%% -- --         num   : Type
-%% -- --         unit  : Type
+%% -- --       data OnceType : Set where
+%% -- --         num   : OnceType
+%% -- --         unit  : OnceType
 %% -- -- 
 %% -- --       private instance
 %% -- --         OnceUniv : Univ
-%% -- --         Ty ⦃ OnceUniv ⦄ = Type
+%% -- --         Ty ⦃ OnceUniv ⦄ = OnceType
 %% -- --         ⟦_⟧ᵀ ⦃ OnceUniv ⦄ num = ℕ
 %% -- --         ⟦_⟧ᵀ ⦃ OnceUniv ⦄ unit = ⊤
 %% -- -- 
@@ -902,13 +921,13 @@ The \ac{lam} case passes the function body given by the sub-tree \ab{ψ} as a va
 %% -- --       open CCModule
 %% -- --       -- open Elab
 %% -- -- 
-%% -- --       data Type : Set where
-%% -- --         unit : Type
-%% -- --         num : Type
+%% -- --       data ConcurType : Set where
+%% -- --         unit : ConcurType
+%% -- --         num : ConcurType
 %% -- -- 
 %% -- --       instance
 %% -- --         ConcurUniv : Univ
-%% -- --         Ty ⦃ ConcurUniv ⦄ = Type
+%% -- --         Ty ⦃ ConcurUniv ⦄ = ConcurType
 %% -- --         ⟦_⟧ᵀ ⦃ ConcurUniv ⦄ unit = ⊤
 %% -- --         ⟦_⟧ᵀ ⦃ ConcurUniv ⦄ num = ℕ
 %% -- \end{code}
