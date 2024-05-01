@@ -856,7 +856,7 @@ strictly positive.  Hence, there may be higher-order effects that are
 well-defined semantically, but which cannot be captured in the Agda encoding
 presented here.
 
-In recent work by \citet{DBLP:journals/corr/abs-2302-01415} introduced a
+Recent work by \citet{DBLP:journals/corr/abs-2302-01415} introduced a
 higher-order free monad that coincides with our \ad{Hefty} type.  Their work
 shows that hefty trees are, in fact, a free monad.  Furthermore, they
 demonstrate that a range of existing effects frameworks from the literature can
