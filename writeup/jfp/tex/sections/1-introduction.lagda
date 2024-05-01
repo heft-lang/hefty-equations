@@ -332,75 +332,17 @@ We make the following technical contributions:
   \cref{sec:hefty-trees-and-algebras} presents our solution to the modularity problem with higher-order operations.
   Our solution is to (1) type programs as \emph{higher-order effect trees} (which we dub \emph{hefty trees}), and (2) build modular elaboration algebras for folding hefty trees into algebraic effect trees and handlers.
   The computations of type $\HTyping{A}{H}$ discussed in \cref{sec:solving-the-modularity-problem} correspond to hefty trees, and the elaborations of type $\HTyping{A}{H} \Elabarr \Typing{A}{Δ}$ correspond to hefty algebras.
-\item 
-  \cref{sec:laws} shows that hefty algebras support formal reasoning on a par with algebraic effects and handlers, by verifying algebraic laws of higher-order effects for exception catching.
 \item
   \cref{sec:examples} presents examples of how to define hefty algebras for common higher-order effects from the literature on effect handlers.
+\item 
+  \cref{sec:modular-reasoning} shows that hefty algebras support formal and modular reasoning on a par with algebraic effects and handlers, by developing reasoning infrastructure that supports verification of equational laws for higher-order effects such as exception catching. Crucially, proofs of correctness of elaborations are compositional. When composing two proven correct elaboration, correctness of the combined elaboration follows immediately without requiring further proof work. 
 \end{itemize}
 %
 \cref{sec:related} discusses related work and \cref{sec:conclusion} concludes.
 An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\citep{heftyalgebraspopl23artifact}.
+A subset of the contributions of this paper were previously published in a conference paper~\citep{DBLP:journals/pacmpl/PoulsenR23}.
+While that version of the paper too discusses reasoning about higher-order effects, the correctness proofs were non-modular, in that they make assumptions about the order in which the algebraic effects implementing a higher-order effect are handled.
+When combining elaborations, these assumptions are often incompatible, meaning that correctness proofs for the individual elaborations do not transfer to the combined elaboration.
+As a result, one would have to re-prove correctness for every combination of elaborations. 
+For this extended version, we developed reasoning infrastructure to support modular reasoning about higher-order effects in \cref{sec:modular-reasoning}, and proved that correctness of elaborations is preserved under composition of elaborations. 
 
-
-\endinput
-
-Algebraic effects and handlers~\citep{Plotkin2009handlers} are a relatively new, and increasingly popular, solution to the problem of defining abstractions for programming constructs with side effects.
-Part of the reason behind its increasing popularity is that the solution supports a high degree of modularity, and requires less glue code than previous solutions like .
-This modularity, in theory, makes it possible to use algebraic effects and handlers to create reusable libraries of effectful abstractions, similar to the popular libraries for monad transformers in general use in the Haskell and Scala communities.
-In practice, most recent libraries (e.g., \cite{FIXME}) rely on a different, more general, notion of effect handler known as \emph{scoped effects and handlers}~\cite{WuSH14,PirogSWJ18,YangPWBS22}.
-The reason is that algebraic effects and handlers have a modularity problem with so-called \emph{higher-order operations} (i.e., operations that have computations as parameters).
-
-To understand the problem, we first informally summarize what notion of modularity we are concerned with.
-We wish to support a programming paradigm where programmers can (1) declare an interface of (possibly) side effectful operations that we program against; and (2) run programs by importing separately defined interface implementations.
-The latter requirement often requires some glue code.
-Algebraic effects and handlers generally requires less glue code than, e.g., monad transformers.
-
-Interface implementations should be separately definable, and 
-
-- ability to declare an interface separately from its definition
-
-- ability to seamlessly depend on different interfaces
-
-- ability to implement each interface separately with minimal glue code
-
-
-
- programmers to declare and work with effectful operations whose semantics can be defined modularly and separately from the programs use them.
-In other words
-
-% Benefit over monad transformers: programs with different effects can be seamlessly composed and handled without having to ``lift'' operations across monad transformer stacks
-
-Modularity: we can change the semantics of an effect without having to recompile the program that uses the effect
-
-problem: higher-order effects don't enjoy these properties
-
-main solutions in previous work:
-
-- scoped effects -- implemented in various Haskell frameworks
-- latent effects -- adds support for a class of constructs that are not commonly defined in terms of scoped effects
-- Frank, Koka, provides support for writing polymorphic handlers
-  + less flexible than scoped effects and latent effects -- e.g., global state semantics
-  + requires changing handler to get transactional state semantics
-
-in this paper:
-
-a simple alternative: desugarings like the ones you can express in Koka and Frank, but modular by construction
-
-treat computation as syntax to get same benefits as with plain algebraic effects:
-
-separation of concerns
-
-modularity
-
-we use Agda throughout and mechanically verify algebraic laws for both higher-order and algebraic operations
-
-Contributions:
-
-
-\cite{}
-
-\clearpage
-
-%%% Local Variables:
-%%% reftex-default-bibliography: ("../references.bib")
-%%% End:
