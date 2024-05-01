@@ -485,10 +485,10 @@ Thus, we encode \af{‵sub} and its handler as an algebraic effect.
 \end{code}
 
 
--- \subsubsection{Optionally Transactional Exception Catching}
--- \label{sec:optional-transactional}
+\subsubsection{Optionally Transactional Exception Catching}
+\label{sec:optional-transactional}
 
--- By using the \af{‵sub} and \af{‵jump} operations in our elaboration of \ad{catch}, we get a semantics of exception catching whose interaction with state depends on the order that the state effect and sub/jump effect is handled.
+By using the \af{‵sub} and \af{‵jump} operations in our elaboration of \ad{catch}, we get a semantics of exception catching whose interaction with state depends on the order that the state effect and sub/jump effect is handled.
 %
 \begin{code}[hide]
   module TransactionalCatch where
