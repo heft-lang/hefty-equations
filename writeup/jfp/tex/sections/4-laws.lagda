@@ -924,12 +924,13 @@ As the first step towards defining correctness of elaborations, we must specify
 what it means for an algebra over a higher-order effect signature $\ab{H}$ to
 respect an equation. The definition is broadly similar to its counterpart for
 first-order effects in \cref{sec:handler-correctness}, with the crucial
-difference that the notion of begin equation respecting for higher-order effects
-is parameterized over a binary relation $\ab{\_≈\_}$ between first-order effect
-trees. In practice, this binary relation will be instantiated with the inductive
-equivalence relation defined in \cref{sec:fo-equivalence}; propositional
-equality would be too restrictive, since that preclude us from equating programs
-using equations of the first-order effect(s) that we elaborate into. 
+difference that the definition of ``being equation respecting'' for algebras
+over higher-order effect signatures is parameterized over a binary relation
+$\ab{\_≈\_}$ between first-order effect trees. In practice, this binary relation
+will be instantiated with the inductive equivalence relation defined in
+\cref{sec:fo-equivalence}; propositional equality would be too restrictive,
+since that does not allow us prove equivalence of programs using equations of
+the first-order effect(s) that we elaborate into.
 %
 \begin{code}
   Respectsᴴ  : (_≈_ : ∀ {A} → Free Δ A → Free Δ A → Set₁)
@@ -939,13 +940,14 @@ using equations of the first-order effect(s) that we elaborate into.
 \end{code}
 
 Since elaborations are composed in parallel, the use of necessity in the
-defintion of equations has additional consequences for their definiton of
-correctness. That is, correctness of an elaboration is defined with a theory
-whose equations have left-hand and right-hand sides that may contain term
-metavariables that range over programs with more effects than those the
-elaboration is defined for. Therefore, to state correctness, we must also close
-over all possible ways these additional effects are elaborated. For this, we
-define the following binary relation on extensible elaborations. 
+defintion of equations has additional consequences for the definiton of
+elaboration correctness. That is, correctness of an elaboration is defined with
+respect to a theory whose equations have left-hand and right-hand sides that may
+contain term metavariables that range over programs with more higher-order
+effects than those the elaboration is defined for. Therefore, to state
+correctness, we must also close over all possible ways these additional effects
+are elaborated. For this, we define the following binary relation on extensible
+elaborations.
 %
 \begin{code}[hide]
   open Algᴴ
@@ -962,11 +964,12 @@ define the following binary relation on extensible elaborations.
            ≡  extract e₂ .alg (map-sigᴴ (λ {x} → e′ {x}) (injᴴ {X = A} m))
 \end{code}
 %
-A proof of the form $\ab{e₁}~⊑~\ab{e₂}$ witnesses that the elaboration
-$\ab{e₁}$ is included in $\ab{e₂}$, meaning that $\ab{e₂}$ may elaborate a
-bigger set of higher-order effects, for which it may need to refer to more
-first-order effects, but for those higher-order effects that are elaborated by
-both $\ab{e₁}$ and $\ab{e₂}$ they should produce the same result.
+A proof of the form $\ab{e₁}~⊑~\ab{e₂}$ witnesses that the elaboration $\ab{e₁}$
+is included in $\ab{e₂}$. Informally, this means that $\ab{e₂}$ may elaborate a
+bigger set of higher-order effects, for which it may need to refer to a bigger
+set of first-order effects, but for those higher-order effects that both
+$\ab{e₁}$ and $\ab{e₂}$ know how to elaborate, they should agree on how those
+effects are elaborated.
 
 We then define correctness of elaborations as follows. 
 %
@@ -982,13 +985,13 @@ We then define correctness of elaborations as follows.
 \end{code}
 %
 Which is to say that an elaboration is correct with respect to a theory of the
-higher-order effects it elaborates and a theory of the first-order effects it
-elaborates into, if all possible extensions of the elaboration respect all
-equations of the higher-order theory with respect to equivalence modulo the
-first-order theory.
+higher-order effects it elaborates ($\ab{Th}$) and a theory of the first-order
+effects it elaborates into ($\ab{T}$), if all possible extensions of said
+elaboration respect all equations of the higher-order theory, modulo the
+equations of the first-order theory.
 
-Crucially, correctness of elaborations is preserved under their
-composition. \cref{fig:correctness-composition} shows the type of the
+Crucially, correctness of elaborations is preserved under composition of
+elaborations. \cref{fig:correctness-composition} shows the type of the
 corresponding correctness theorem in Agda; for the full details of the proof we
 refer to the Agda formalization accompanying this paper~\citep{artifact}. We
 remark that correctness of a composed elaboration is defined with respect to the
@@ -1027,12 +1030,13 @@ composed first-order effect theory is a separate concern; a solution based on
 \label{fig:correctness-composition}
 \end{figure}
 
-\subsection{Example Correctness Proof}
+\subsection{Proving Correctness of Elaborations}
 
-To illustrate how the reasoning infrastructure build up in this section, we show
-how to verify the \emph{catch-return} law for the elaboration $\af{eCatch}$
-defined in \cref{sec:hefty-algebras}. First, we define the following syntax for
-invoking a known elaboration. 
+To illustrate how the reasoning infrastructure build up in this section can be
+applied to verify correctness of elaborations, we show how to verify the
+\emph{catch-return} law for the elaboration $\af{eCatch}$ defined in
+\cref{sec:hefty-algebras}. First, we define the following syntax for invoking a
+known elaboration.
 %
 \begin{code}
   module Elab (e : □ (Elaboration H) Δ) where  
@@ -1040,9 +1044,10 @@ invoking a known elaboration.
     ℰ⟦ m ⟧ = elaborate (extract e) m
 \end{code}
 %
-When opening the module $\ab{Elab}$, we can use the syntax $\af{ℰ⟦}~\ab{m}
-\af{⟧}$ for elaborating $m$ with some known elaboration, which helps to simplify
-equational proofs for higher-order effects. 
+When opening the module $\ab{Elab}$, we can use the syntax
+$\af{ℰ⟦}~\ab{m} \af{⟧}$ for elaborating $m$ with some known elaboration, which
+helps to simplify and improve readability of equational proofs for higher-order
+effects.
 %
 \begin{code}[hide] 
   open _⊑_ 
@@ -1084,8 +1089,8 @@ prove correctness of an elaboration.
 \end{code}
 %
 In the Agda formalization accompanying this paper~\citep{artifact}, we verify
-correctness of elaborations for the higher-order operations defined in the 3MT
-library by \citet{delaware2013modular}. \cref{tab:laws} shows an overview of
+correctness of elaborations for the higher-order operations that are part of the
+3MT library by \citet{delaware2013modular}. \cref{tab:laws} shows an overview of
 first-order and higher-order effects included in the development, and the laws
 which we prove about their handlers respectively elaborations.
 
