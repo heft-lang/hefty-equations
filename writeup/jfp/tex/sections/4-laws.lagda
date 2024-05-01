@@ -636,20 +636,36 @@ hStCorrect (tt , refl) {_ ∷ []} {γ = k} = refl
 For the most part, equations and theories for higher-order effects are defined
 in the same way as for first-order effects and support many of the same
 operations. Indeed, the definition of equations ranging over higher-order
-effects is exactly the same as its first-order counterpart, the only difference
-being that the left-hand and right-hand side are now defined as Hefty trees:
+effects is exactly the same as its first-order counterpart, the most major
+difference being that the left-hand and right-hand side are now defined as Hefty
+trees. To ensure compatibility with the use of type universes to avoid
+size-issues, we must also allow type metavariables to range over the types in a
+universe in addition to $\ad{Set}$. For this reason, the set of type
+metavariables is no longer described by a natural number, but rather by a list
+of kinds, which stores for each type metavariable whether it ranges over a types
+in a universe, or an Agda $\ad{Set}$. 
 %
+\begin{AgdaAlign}
 \begin{code}[hide]
 module _ ⦃ _ : Univ ⦄ where 
 \end{code}
 \begin{code}
   data Kind : Set where set type : Kind 
-
+\end{code}
+%
+A $\af{TypeContext}$ carries unapplied substitutions for a given set of type
+metavariables, and is defined by induction over a list of kinds. 
+%
+\begin{code}
   TypeContext : List Kind → Set₁
   TypeContext []            = Level.Lift _ ⊤
   TypeContext (set   ∷ vs)  = Set × TypeContext vs
   TypeContext (type  ∷ vs)  = Level.Lift (sℓ 0ℓ) Type × TypeContext vs
-
+\end{code}
+%
+Equations of higher-order effects are then defined as follows. 
+%
+\begin{code}
   record Equationᴴ (H : Effectᴴ) : Set₁ where
     field
       V        : List Kind 
@@ -657,6 +673,7 @@ module _ ⦃ _ : Univ ⦄ where
       R        : TypeContext V → Set 
       lhs rhs  : (vs : TypeContext V) → Γ vs → Hefty H (R vs)
 \end{code}
+\end{AgdaAlign}
 %
 This definition of equations suffers the same problem when it comes to term
 metavariables, which here too can only range over programs that exhibit the
@@ -674,14 +691,13 @@ relation:
 %
 To illustrate: we can define the \emph{catch-return} law from the introduction of
 this section as a value of type $\ad{■}~\ad{Equationᴴ}~\af{Catch}$ a
-follows:~\footnote{For the sake of simplicity, we gloss over the use of type
-  universes to avoid size issues here.}\todo{UPDATE: quantification over types
-  and sets} 
+follows. Since the $\af{‵catch}$ operation relies on a type universe to avoid
+size issues, the sole type metavariable of this equation must range over the types
+in this universe as well. 
 %
 \begin{code}[hide]
   open ■
   open Equationᴴ 
-
 \end{code}
 \begin{code} 
   catch-return : ■ Equationᴴ Catch
@@ -1094,7 +1110,8 @@ which we prove about their handlers respectively elaborations.
 \multirow{3}{*}{\af{Catch}}        & \multicolumn{1}{c|}{$\af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}$} & \textit{catch-pure}    \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵catch}~\af{‵throw}~\ab{m}\ \equiv\ \ab{m}$} & \textit{catch-throw$_1$} \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{`catch}~\ab{m}~\af{‵throw}\ \equiv\ \ab{m}$} & \textit{catch-throw$_2$} \\ \hline\hline
-\multirow{2}{*}{\af{Lambda}}       & \multicolumn{1}{c|}{$\af{‵abs}~\ab{f}~\af{𝓑}~λ~\ab{f′}~→~\af{‵app}~\ab{f′}~\ab{m}$} & \textit{beta}            \\ \cline{2-3} 
+\multirow{2}{*}{\af{Lambda}}       &
+                                     \multicolumn{1}{c|}{$\af{‵abs}~\ab{f}~\af{𝓑}~λ~\ab{f′}~→~\af{‵app}~\ab{f′}~\ab{m}\ \equiv\ \ab{m}~\af{𝓑}~\ab{f}$} & \textit{beta}            \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\ac{pure}~\ab{f}\ \equiv\ \af{‵abs}~(λ~\ab{x}~→~\af{‵app}~\ab{f}~(\af{‵var}~\ab{x}))$} & \textit{eta}             \\ 
 \end{tabular}
 }
