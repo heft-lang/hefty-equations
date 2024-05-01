@@ -321,7 +321,7 @@ Higher-order operations now have the same modularity benefits as algebraic opera
 
 This paper formalizes the ideas sketched in this introduction by shallowly embedding them in Agda.
 However, the ideas transcend Agda.
-Similar shallow embeddings can be implemented in other dependently typed languages, such as Idris~\citep{brady2013idris}; but also in less dependently typed languages like Haskell, OCaml, or Scala.\footnote{The artifact accompanying this paper~\citep{heftyalgebraspopl23artifact} contains a shallow embedding of elaboration algebras in Haskell.}
+Similar shallow embeddings can be implemented in other dependently typed languages, such as Idris~\citep{brady2013idris}; but also in less dependently typed languages like Haskell, OCaml, or Scala.\footnote{The artifact accompanying this paper~\citep{artifact} contains a shallow embedding of elaboration algebras in Haskell.}
 By working in a dependently typed language we can state algebraic laws about interfaces of effectful operations, and prove that implementations of the interfaces respect the laws.
 We make the following technical contributions:
 
@@ -339,7 +339,7 @@ We make the following technical contributions:
 \end{itemize}
 %
 \cref{sec:related} discusses related work and \cref{sec:conclusion} concludes.
-An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\citep{heftyalgebraspopl23artifact}.
+An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\citep{artifact}.
 A subset of the contributions of this paper were previously published in a conference paper~\citep{DBLP:journals/pacmpl/PoulsenR23}.
 While that version of the paper too discusses reasoning about higher-order effects, the correctness proofs were non-modular, in that they make assumptions about the order in which the algebraic effects implementing a higher-order effect are handled.
 When combining elaborations, these assumptions are often incompatible, meaning that correctness proofs for the individual elaborations do not transfer to the combined elaboration.

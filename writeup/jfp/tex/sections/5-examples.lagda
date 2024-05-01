@@ -24,7 +24,7 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 
 As discussed in \cref{sec:higher-order-effects}, there is a wide range of examples of higher-order effects that cannot be defined as algebraic operations directly, and are typically defined as non-modular elaborations instead.
 In this section we give examples of such effects and show to define them modularly using hefty algebras.
-The artifact~\cite{heftyalgebraspopl23artifact} contains the full examples.
+The artifact~\cite{artifact} contains the full examples.
 
 
 \subsection{$\lambda$ as a Higher-Order Operation}
