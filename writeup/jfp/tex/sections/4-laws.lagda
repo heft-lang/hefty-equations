@@ -509,9 +509,12 @@ witness.
 %% sub-theory proof $\ab{sub}$ is used to close the equation $\ab{eq}$, allowing us
 %% to prove equality of its left and right hand side with respect to any larger
 %% theory that includes that equation.
-%% 
-The $\ac{≈-eq}$ lets us sequence the left and right hand sides of an
-equation with an arbitrary continuation $\ab{k}$. 
+%%
+With the $\ac{≈-eq}$ constructor, we can prove equivalence between the left-hand
+and right-hand side of an equation, sequenced with an arbitrary continuation
+$\ab{k}$. For convenience, we define the following lemma that allows us to apply
+an equation where the sides of the equation do not have a continuation.
+%
 \begin{code}[hide]
 postulate 𝓑-idʳ-≈ : {T : Theory Δ} → ⦃ _ : Δ ≲ Δ′ ⦄ → (m : Free Δ′ A) → m ≈⟨ T ⟩ (m 𝓑 pure) 
 \end{code}
@@ -528,13 +531,14 @@ use-equation  :  ⦃ _ : Δ ≲ Δ′ ⦄
 use-equation eq px vs {γ} = ≈-trans (𝓑-idʳ-≈ _) (≈-trans (≈-eq eq px vs γ pure) (≈-sym $ 𝓑-idʳ-≈ _))
 \end{code}
 %
-The definition of \af{use-equation} follows immediately from the right-identity
-law for monads, i.e., $m\ 𝓑\ \ac{pure} \equiv m$. 
+The definition of \af{use-equation} follows readily from the right-identity law
+for monads, i.e., $m\ 𝓑\ \ac{pure} \equiv m$, which allows us to instantiate
+$\ac{≈-eq}$ with $\ac{pure}$.
 
 To construct proofs of equality it is convenient to use the following set of
 combinators to write proof terms in an equational style. They are completely
 analogous to the combinators commonly used to construct proofs of Agda's
-propositional equality. 
+propositional equality, for example, as found in PLFA~\citep{plfa}.
 %
 \begin{code}
 module ≈-Reasoning (T : Theory Δ) ⦃ _ : Δ ≲ Δ′ ⦄ where 
@@ -1075,7 +1079,7 @@ which we prove about their handlers respectively elaborations.
 \begin{table}[]
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{c|cl}
-\textbf{Effect}                    & \multicolumn{2}{l}{\textbf{Laws}}                \\ \hline\hline
+\textbf{Effect}                    & \multicolumn{2}{c}{\textbf{Laws}}                \\ \hline\hline
 \af{Throw}                         & \multicolumn{1}{c|}{$\af{‵throw}~\af{𝓑}~\ab{k}\ \equiv\ \ab{k}$} & \textit{bind-throw}      \\ \hline\hline
 \multirow{4}{*}{\af{State}}        & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~λ~\ab{s}~→~\af{‵get}~𝓑~\ab{k}~\ab{s}\ \equiv\ \af{‵get}~𝓑~\ab{k}~\ab{s}~\ab{s}$} & \textit{get-get}         \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵get}~\af{𝓑}~\af{‵put}\ \equiv\ \ac{pure}~\ab{x}$} & \textit{get-put}         \\ \cline{2-3} 
