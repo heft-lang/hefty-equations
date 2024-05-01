@@ -571,16 +571,16 @@ folding using \aF{ret}, \aF{hdl}, and a \ad{to-front} function:
     open Inverse
 \end{code}
 \begin{code}
-    to-front : Δ₁ ∙ Δ₂ ≈ Δ → Free Δ A → Free (Δ₁ ⊕ Δ₂) A
-    to-front w = hmap-free (w .reorder .from)
+    to-front : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Free Δ A → Free (Δ₁ ⊕ Δ₂) A
+    to-front ⦃ w ⦄ = hmap-free (w .reorder .from)
 
     given_handle_  : ⦃ w : Δ₁ ∙ Δ₂ ≈ Δ ⦄
                    → ⟨ A ! Δ₁ ⇒ P ⇒ B ! Δ₂ ⟩ → Free Δ A → (P → Free Δ₂ B)
-    given_handle_  ⦃ w ⦄ h m = fold
+    given_handle_  h m = fold
       (ret h)
       ( λ where (inj₁ c , k) p → hdl h (c , k) p
                 (inj₂ c , k) p → impure (c , flip k p) ) 
-      (to-front w m) 
+      (to-front m) 
 \end{code}
 %
 Comparing with the syntax we used to explain algebraic effects and handlers in
