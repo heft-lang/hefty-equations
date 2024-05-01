@@ -1,4 +1,4 @@
-g\begin{code}[hide]
+\begin{code}[hide]
 {-# OPTIONS --overlapping-instances #-}
 module tex.sections.4-laws where
 
@@ -35,7 +35,7 @@ open _∙_≈_
 
 private variable M : Set → Set
 
-open Universe ⦃ ... ⦄
+open Univ ⦃ ... ⦄
 
 _𝓑_ : Free Δ A → (A → Free Δ B) → Free Δ B
 m 𝓑 k = bindF m k
@@ -637,7 +637,7 @@ effects is exactly the same as its first-order counterpart, the only difference
 being that the left-hand and right-hand side are now defined as Hefty trees:
 %
 \begin{code}[hide]
-module _ ⦃ _ : Universe ⦄ where 
+module _ ⦃ _ : Univ ⦄ where 
 \end{code}
 \begin{code}
   data Kind : Set where set type : Kind 
