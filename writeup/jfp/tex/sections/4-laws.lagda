@@ -71,7 +71,7 @@ theory}~\citep{DBLP:journals/tcs/HylandPP06,Plotkin2002notions,PlotkinP03,DBLP:j
 concept of effect theory extends to \emph{higher-order effect theories}, which
 describe the intended behavior of higher-order effects. In this section, we
 first discuss how to define theories for algebraic effects in Agda by adapting
-the exposition of \cite{DBLP:journals/pacmpl/YangW21}, and show how correctness
+the exposition of \citet{DBLP:journals/pacmpl/YangW21}, and show how correctness
 of implementations with respect to a given theory can be stated and proved.  We
 then extend this reasoning infrastructure to higher-order effects, allowing for
 modular reasoning about the correctness of elaborations of higher-order effects.
@@ -455,7 +455,7 @@ the effects involved, such as the equality in \cref{eq:get-get-throw}. The
 solution is to define an inductive relation that captures syntactic equivalence
 modulo some effect theory. We base our definition of syntactic equality of
 effectful programs on the relation defining equivalent computations by
-\cite{DBLP:journals/pacmpl/YangW21}, Definition 3.1, adapting their definition
+\citet{DBLP:journals/pacmpl/YangW21}, Definition 3.1, adapting their definition
 where necessary to account for the use of modal necessity in the definition of
 $\ad{Theory}$. 
 %
@@ -539,7 +539,6 @@ propositional equality.
 %
 \begin{code}
 module ≈-Reasoning (T : Theory Δ) ⦃ _ : Δ ≲ Δ′ ⦄ where 
-
   begin_ : {m₁ m₂ : Free Δ′ A} → m₁ ≈⟨ T ⟩ m₂ → m₁ ≈⟨ T ⟩ m₂ 
   begin eq = eq 
 
@@ -586,19 +585,19 @@ get-get-throw {A = A} = begin
     ‵get 𝓑 (λ s → ‵get 𝓑 (λ s′ → ‵throw))
   ≈⟪ use-equation get-get◂ (tt , refl) (A ∷ [])  ⟫
     ‵get 𝓑 (λ s → ‵throw)
-  ∎ 
+  ∎
   where open ≈-Reasoning StateTheory
 \end{code}
 
 \subsection{Handler Correctness}
 \label{sec:handler-correctness}
 
-Broadly speaking, a handler is correct with respect to a given theory if
+A handler is correct with respect to a given theory if
 handling syntactically equal programs yields equal results. Since handlers are
 defined as algebras over effect signatures, we start by defining what it means
 for an algebra of an effect $Δ$ to respect an equation of the same effect,
-adapting Definition 2.1 in the exposition by
-\cite{DBLP:journals/pacmpl/YangW21}.
+adapting Definition 2.1 from the exposition of
+\citet{DBLP:journals/pacmpl/YangW21}.
 %
 \begin{code}
 Respects : Alg Δ A → Equation Δ → Set₁
@@ -607,13 +606,12 @@ Respects alg eq = ∀ {vs γ k} →
 \end{code}
 %
 An algebra $\ab{alg}$ respects an equation $\ab{eq}$ if folding with that
-algebra produces propositionally equal results for the left and right hand side
+algebra produces propositionally equal results for the left- and right-hand side
 of the equation, for all possible instantiations of its type and term
 metavariables, and continuations $k$.
 
 A handler $\ab{H}$ is correct with respect to a given theory $\ab{T}$ if its
-algebra respects all equations of $\ab{T}$ (\cite{DBLP:journals/pacmpl/YangW21},
-Definition 4.3). 
+algebra respects all equations of $\ab{T}$ \citep[Definition 4.3]{DBLP:journals/pacmpl/YangW21}. 
 %
 \begin{code}
 Correct : {P : Set} → Theory Δ → ⟨ A ! Δ ⇒ P ⇒ B ! Δ′ ⟩ → Set₁
@@ -622,7 +620,7 @@ Correct T H = ∀ {eq} → eq ◄ T → Respects (H .hdl) (extract eq)
 %
 We can now show that the handler for the $\ad{State}$ effect defined in
 \cref{fig:state-effect-handler} is correct with respect to
-$\af{StateTheory}$; the proof follows immediately by reflexivity.
+$\af{StateTheory}$.  The proof follows immediately by reflexivity.
 %
 \begin{code}
 hStCorrect : Correct {A = A} {Δ′ = Δ} StateTheory hSt
@@ -672,7 +670,7 @@ relation:
 %
 To illustrate: we can define the \emph{catch-return} law from the introduction of
 this section as a value of type $\ad{■}~\ad{Equationᴴ}~\af{Catch}$ a
-follows:~\footnote{For simplicities sake, we gloss over the use of type
+follows:~\footnote{For the sake of simplicity, we gloss over the use of type
   universes to avoid size issues here.}\todo{UPDATE: quantification over types
   and sets} 
 %
@@ -977,7 +975,7 @@ remark that correctness of a composed elaboration is defined with respect to the
 composition of the theories of the first-order effects that the respective
 elaborations use. Constructing a handler that is correct with respect to this
 composed first-order effect theory is a separate concern; a solution based on
-\emph{fusion} is detailed in the work by \cite{DBLP:journals/pacmpl/YangW21}.
+\emph{fusion} is detailed in the work by \citet{DBLP:journals/pacmpl/YangW21}.
 
 \begin{code}[hide]
   compose-elab  :  ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄
@@ -1067,7 +1065,7 @@ prove correctness of an elaboration.
 %
 In the Agda formalization accompanying this paper~\citep{artifact}, we verify
 correctness of elaborations for the higher-order operations defined in the 3MT
-library by \cite{delaware2013modular}. \cref{tab:laws} shows an overview of
+library by \citet{delaware2013modular}. \cref{tab:laws} shows an overview of
 first-order and higher-order effects included in the development, and the laws
 which we prove about their handlers respectively elaborations.
 
