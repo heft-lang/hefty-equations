@@ -1,4 +1,4 @@
-\begin{code}[hide]
+g\begin{code}[hide]
 {-# OPTIONS --overlapping-instances #-}
 module tex.sections.4-laws where
 
@@ -243,13 +243,13 @@ open □
       } 
 \end{code}
 %
-Intuitively, the $□$ modifier transforms, for any effect-indexed type, an
+Intuitively, the $□$ modality transforms, for any effect-indexed type, an
 \emph{exact} specification of the set of effects to a \emph{lower bound} on the
 set of effects. For equations, the difference between terms of type
 $\ad{Equation}~\ab{Δ}$ and $\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former
 defining an equation relating programs that have exactly effects $Δ$, while the
 latter defines an equation relating programs that have at least the effects $Δ$
-but potentially more. The $\ad{□}$ modifier is a comonad; the counit witnesses
+but potentially more. The $\ad{□}$ modality is a comonad; the counit witnesses
 that we can always transform a lower bound on effects to an exact specification,
 by instantiating the extension witness with a proof of reflexivity.
 %
@@ -282,8 +282,8 @@ in turn allows us to instantiate $k$ with $\af{throw}$.
 
 Equations for an effect $Δ$ can be combined into a \emph{theory} for $Δ$. A
 theory for the effect $Δ$ is simply a collection of equations, transformed using
-the $\ad{□}$ modifier to ensure that term metavariables can range over programs
-that include more effects than just $Δ$: 
+the $\ad{□}$ modality to ensure that term metavariables can range over programs
+that include more effects than just $Δ$. 
 %
 \begin{code}
 record Theory (Δ : Effect) : Set₁ where
@@ -292,17 +292,18 @@ record Theory (Δ : Effect) : Set₁ where
     equations  : arity → □ Equation Δ
 \end{code}
 %
-We can think of effect theories as defining a specification for how
-implementations of an effect ought to behave. Although implementations may vary,
-depending for example on whether they are tailored to readability or efficiency,
-they should at least respect the equations of the theory of the effect they
-implement. We will make precise what it means for an implementation to respect
-an equation in \cref{sec:handler-correctness}.
+An effect theory consists of an \aF{arity}, that defines the number of equations
+in the theory, and a function that maps arities to equations. We can think of
+effect theories as defining a specification for how implementations of an effect
+ought to behave. Although implementations may vary, depending for example on
+whether they are tailored to readability or efficiency, they should at least
+respect the equations of the theory of the effect they implement. We will make
+precise what it means for an implementation to respect an equation in
+\cref{sec:handler-correctness}.
 
 Effect theories are closed under several composition operations that allow us to
 combine the equations of different theories into single theory. The most basic
-way of combining effect theories is by concatenating their respective lists of
-equations.
+way of combining effect theories is by summing their arities.
 %
 \begin{code}[hide]
 open Equation
@@ -316,10 +317,11 @@ equations  (T₁ ⟨+⟩ T₂)  (inj₂ a) = equations T₂ a
 \end{code}
 %
 This way of combining effects is somewhat limiting, as it imposes that the
-theories we combine are theories for the exact same effect. It is more likely,
-however, that we would want to combine theories for different effects. To do so
-requires the ability to \emph{weaken} effect theories 
-
+theories we are combining are theories for the exact same effect. It is more
+likely, however, that we would want to combine theories for different
+effects. This requires that we can \emph{weaken} effect theories with respect to
+the $\_≲\_$ relation. 
+%
 \begin{code}
 weaken-□ : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → □ P Δ₂ 
 □⟨ weaken-□ ⦃ w ⦄ px ⟩ ⦃ w′ ⦄ = □⟨ px ⟩ ⦃ ≲-trans w w′ ⦄
@@ -334,11 +336,12 @@ we can transform a value of type $P\ \ab{Δ₁}$ to a value of type $P\ \ab{Δ�
 we know that $\ab{Δ₁}~\ad{≲}~\ab{Δ₂}$ is equivalent to saying that $P$ is a
 functor from the category of containers and container morphisms to the categorie
 of sets. From this perspective, the existence of weakening for free $\ad{Free}$,
-as witnessed by the $\af{♯}$ operation, implies that it too is a such a functor.
+as witnessed by the $\af{♯}$ operation implies that it too is a such a functor.
 
 With weakening for theories at our disposal, we can combine effect theories for
-different effects into a theory ranging over their coproduct.  This requires us
-to first define appropriate instances relating coproducts to effect inclusion:
+different effects into a theory of the coproduct of their respective effects.
+This requires us to first define appropriate witnesses relating coproducts to
+effect inclusion. 
 %
 \begin{code}
 ≲-⊕-left   : Δ₁ ≲ (Δ₁ ⊕ Δ₂)
@@ -349,9 +352,8 @@ to first define appropriate instances relating coproducts to effect inclusion:
 ≲-⊕-right = _ , λ where .reorder → swap-⊕-↔
 \end{code}
 %
-With these instances in scope, it is straightforward to show that effect
-theories are closed under the coproduct of effects, by summing the weakened
-theories.
+It is now straightforward to show that effect theories are closed under the
+coproduct of effect signatures, by summing the weakened theories.
 %
 \begin{code}
 _[+]_ : Theory Δ₁ → Theory Δ₂ → Theory (Δ₁ ⊕ Δ₂)
@@ -359,9 +361,9 @@ T₁ [+] T₂ = weaken-theory ⦃ ≲-⊕-left ⦄ T₁ ⟨+⟩ weaken-theory �
 \end{code}
 %
 While this operation is in principle sufficient for our purposes, it forces a
-specific order on the effects of the combined theory. We can generalize the
+specific order on the effects combined theories. We can further generalize the
 operation above to allow for the effects of the combined theory to appear in any
-order. This requires the following instances:
+order. This requires the following instances. 
 %
 \begin{code}
 ≲-∙-left   : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ →  Δ₁ ≲ Δ
@@ -372,19 +374,19 @@ order. This requires the following instances:
 ≲-∙-right ⦃ w ⦄ = _ , λ where .reorder → w .reorder ↔-∘ swap-⊕-↔ 
 \end{code}
 %
-Again, we show that effect theories are closed under coproducts up to reordering
-by summing the weakened theories: 
+We show that effect theories are closed under coproducts up to reordering by,
+again, summing the weakened theories.
 %
 \begin{code}
 compose-theory : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Theory Δ₁ → Theory Δ₂ → Theory Δ
 compose-theory T₁ T₂
   = weaken-theory ⦃ ≲-∙-left ⦄ T₁ ⟨+⟩ weaken-theory ⦃ ≲-∙-right ⦄ T₂ 
 \end{code}
-
-Since equations are defined by storing the syntax trees corresponding their left
-hand side and right hand side, we would expect them to be weakenable
-too. Indeed, we can define the following function witnessing weakenability of
-equations.
+%
+Since equations are defined by storing the syntax trees that define their
+left-hand and right-hand side, and effect trees are weakenable, we would expect
+equations to be weakenable too. Indeed, we can define the following function
+witnessing weakenability of equations.
 %
 \begin{code}
 weaken-eq : ⦃ Δ₁ ≲ Δ₂ ⦄ → Equation Δ₁ → Equation Δ₂ 
@@ -397,26 +399,21 @@ lhs (weaken-eq eq) = λ vs γ → ♯ lhs eq vs γ
 rhs (weaken-eq eq) = λ vs γ → ♯ rhs eq vs γ
 \end{code}
 %
-This begs the question: why would we opt to rely on weakenability of the $□$
-modifier to show that theories are weakenable rather than using $\af{weaken-eq}$
-directly? Although the latter approach would indeed allow us to define
-composition of effect theories as well as to apply equations to programs that
-have more effects than the effect the equation was originally defined for, the
-possible ways we can instantiate term metavariables remains too
+This begs the question: why would we opt to use weakenability of the
+$□$ modality (or, bother with the
+$□$ modality at all) to show that theories are weakenable, rather than using
+$\af{weaken-eq}$ directly? Although the latter approach would indeed allow us to
+define the composition operations for effect theories defined above, the
+possible ways in which we can instantiate term metavariables remains too
 restrictive. That is, we still would not be able to prove the equality in
-\cref{eq:get-get-throw}. Despite the fact that we can weaken the \emph{get-get}
-law so that it applies to programs that use the $\ad{Throw}$ effect as well,
-instantiations of $k$ will be limited to weakened effect trees, precluding any
-instantiation that use operations of effects other than $\ad{State}$, such as
-$\af{throw}$.
+\cref{eq:get-get-throw}, despite the fact that we can weaken the \emph{get-get}
+law so that it applies to programs that use the
+$\ad{Throw}$ effect as well. Instantiations of the term metavariable
+$k$ will be limited to weakened effect trees, precluding any instantiation that
+use operations of effects other than $\ad{State}$, such as $\af{throw}$.
 
-Finally, we must define what it means for a theory to be included in a bigger
-theory. Given two theories, $\ab{T₁}$ and $\ab{T₂}$, ranging over effects
-$\ab{Δ₁}$ and $\ab{Δ₂}$ respectively, we say that $\ab{T₁}$ is a
-\emph{sub-theory} of $\ab{T₂}$ if (1) $Δ₁$ is a sub-effect of $Δ₂$, and all
-equations of $\ab{T₁}$ are, in their weakened form, also part of $\ab{T₂}$. The
-following record type captures this definition of sub-theories in Agda:
-\todo{UPDATE!}
+Finally, we define the following predicate to witness that an equation is part
+of a theory.
 %
 \begin{code}[hide]
 variable T T₁ T₂ T₃ T′ : Theory Δ
@@ -431,23 +428,35 @@ _◄_ : □ Equation Δ → Theory Δ → Set₁
 eq ◄ T = ∃ λ a → T .equations a ≡ eq  
 \end{code}
 %
-Here, the field $\aF{ext}$ witnesses that the effects of $\ab{T₁}$ are included
-in the effects of $\ab{T₂}$, while the $\aF{sub}$ field transforms proofs that
-an equation is included in $\ab{T₁}$ into a proof that its weakened form is
-included in $\ab{T₂}$. 
+We construct a proof $\ab{eq}~\af{◄}~\ab{T}$ that an equation $\ab{eq}$ is part
+of a theory $\ab{T}$ by providing an arity together with a proof that $\ab{T}$
+maps to $\ab{eq}$ for that arity.
 
+%% Finally, we must define what it means for a theory to be included in a bigger
+%% theory. Given two theories, $\ab{T₁}$ and $\ab{T₂}$, ranging over effects
+%% $\ab{Δ₁}$ and $\ab{Δ₂}$ respectively, we say that $\ab{T₁}$ is a
+%% \emph{sub-theory} of $\ab{T₂}$ if (1) $Δ₁$ is a sub-effect of $Δ₂$, and all
+%% equations of $\ab{T₁}$ are, in their weakened form, also part of $\ab{T₂}$. The
+%% following record type captures this definition of sub-theories in Agda:
+%% \todo{UPDATE!}
+%% %
+%% Here, the field $\aF{ext}$ witnesses that the effects of $\ab{T₁}$ are included
+%% in the effects of $\ab{T₂}$, while the $\aF{sub}$ field transforms proofs that
+%% an equation is included in $\ab{T₁}$ into a proof that its weakened form is
+%% included in $\ab{T₂}$. 
+%% 
 \subsection{Syntactic Equivalence of Effectful Programs}
 \label{sec:fo-equivalence} 
 
 As discussed, propositional equality of effectful programs is too strict, as it
 precludes us from proving equalities that rely on a semantic understanding of
-the effects involved, such as the equality in \cref{eq:eq-get-get-throw}. The
+the effects involved, such as the equality in \cref{eq:get-get-throw}. The
 solution is to define an inductive relation that captures syntactic equivalence
 modulo some effect theory. We base our definition of syntactic equality of
 effectful programs on the relation defining equivalent computations by
 \cite{DBLP:journals/pacmpl/YangW21}, Definition 3.1, adapting their definition
 where necessary to account for the use of modal necessity in the definition of
-$\ad{Theory}$.
+$\ad{Theory}$. 
 %
 \begin{AgdaAlign}
 \begin{code}
@@ -489,14 +498,18 @@ of an effect theory.
 \end{code}
 \end{AgdaAlign}
 %
-Fundamentally, the $\ac{≈-eq}$ constructor equates the left hand side and right
-hand side of any given equation. Due to the use of the $\ad{□}$ modifier, when
-proving equality with respect to a theory $T₂$ we can actually use equations of
-any sub-theory $T₁$ to prove equality. The extension witness stored in the
-sub-theory proof $\ab{sub}$ is used to close the equation $\ab{eq}$, allowing us
-to prove equality of its left and right hand side with respect to any larger
-theory that includes that equation.
+Since the equations of a theory are wrapped in the $\ad{□}$ modality, we cannot
+refer to its components directly, but we must first provide a suitable extension
+witness.
 
+%% Fundamentally, the $\ac{≈-eq}$ constructor equates the left hand side and right
+%% hand side of any given equation. Due to the use of the $\ad{□}$ modality, when
+%% proving equality with respect to a theory $T₂$ we can actually use equations of
+%% any sub-theory $T₁$ to prove equality. The extension witness stored in the
+%% sub-theory proof $\ab{sub}$ is used to close the equation $\ab{eq}$, allowing us
+%% to prove equality of its left and right hand side with respect to any larger
+%% theory that includes that equation.
+%% 
 The $\ac{≈-eq}$ lets us sequence the left and right hand sides of an
 equation with an arbitrary continuation $\ab{k}$. 
 \begin{code}[hide]
