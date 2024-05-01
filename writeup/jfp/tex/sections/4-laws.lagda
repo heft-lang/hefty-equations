@@ -320,7 +320,7 @@ This way of combining effects is somewhat limiting, as it imposes that the
 theories we are combining are theories for the exact same effect. It is more
 likely, however, that we would want to combine theories for different
 effects. This requires that we can \emph{weaken} effect theories with respect to
-the $\_≲\_$ relation. 
+the $\ad{\_≲\_}$ relation. 
 %
 \begin{code}
 weaken-□ : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁ → □ P Δ₂ 
@@ -328,7 +328,7 @@ weaken-□ : {P : Effect → Set₁} → ⦃ Δ₁ ≲ Δ₂ ⦄ → □ P Δ₁
 
 weaken-theory : ⦃ Δ₁ ≲ Δ₂ ⦄ → Theory Δ₁ → Theory Δ₂
 arity     (weaken-theory T) = arity T 
-equations (weaken-theory T) = λ a → weaken-□ $ T .equations a 
+equations (weaken-theory T) = λ a → weaken-□ (T .equations a)
 \end{code}
 %
 Categorically speaking, the observation that for a given effect-indexed type $P$
@@ -336,7 +336,8 @@ we can transform a value of type $P\ \ab{Δ₁}$ to a value of type $P\ \ab{Δ�
 we know that $\ab{Δ₁}~\ad{≲}~\ab{Δ₂}$ is equivalent to saying that $P$ is a
 functor from the category of containers and container morphisms to the categorie
 of sets. From this perspective, the existence of weakening for free $\ad{Free}$,
-as witnessed by the $\af{♯}$ operation implies that it too is a such a functor.
+as witnessed by the $\af{♯}$ operation discussed in
+\cref{sec:hefty-trees-and-algebras} implies that it too is a such a functor.
 
 With weakening for theories at our disposal, we can combine effect theories for
 different effects into a theory of the coproduct of their respective effects.
@@ -361,7 +362,7 @@ T₁ [+] T₂ = weaken-theory ⦃ ≲-⊕-left ⦄ T₁ ⟨+⟩ weaken-theory �
 \end{code}
 %
 While this operation is in principle sufficient for our purposes, it forces a
-specific order on the effects combined theories. We can further generalize the
+specific order on the effects of the combined theories. We can further generalize the
 operation above to allow for the effects of the combined theory to appear in any
 order. This requires the following instances. 
 %
@@ -400,8 +401,8 @@ rhs (weaken-eq eq) = λ vs γ → ♯ rhs eq vs γ
 \end{code}
 %
 This begs the question: why would we opt to use weakenability of the
-$□$ modality (or, bother with the
-$□$ modality at all) to show that theories are weakenable, rather than using
+$\ad{□}$ modality (or, bother with the
+$\ad{□}$ modality at all) to show that theories are weakenable, rather than using
 $\af{weaken-eq}$ directly? Although the latter approach would indeed allow us to
 define the composition operations for effect theories defined above, the
 possible ways in which we can instantiate term metavariables remains too
@@ -460,8 +461,8 @@ $\ad{Theory}$.
 %
 \begin{AgdaAlign}
 \begin{code}
-data _≈⟨_⟩_ {Δ Δ′} ⦃ _ : Δ ≲ Δ′ ⦄
-  : (m₁ : Free Δ′ A) → Theory Δ → (m₂ : Free Δ′ A) → Set₁ where 
+data  _≈⟨_⟩_ {Δ Δ′} ⦃ _ : Δ ≲ Δ′ ⦄
+      : (m₁ : Free Δ′ A) → Theory Δ → (m₂ : Free Δ′ A) → Set₁ where 
 \end{code}
 %
 A value of type $\ab{m₁}~\ad{≈⟨}~\ab{T}~\ad{⟩}~\ab{m₂}$ witnesses that programs
@@ -773,8 +774,8 @@ with higher-order effects modulo the equations of a given theory.
 
 \begin{AgdaAlign}
 \begin{code}
-    data _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄
-      : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
+    data   _≅⟨_⟩_ ⦃ _ : H₁ ≲ᴴ H₂ ⦄
+           : (m₁ : Hefty H₂ A) → Theoryᴴ H₁ → (m₂ : Hefty H₂ A) → Set₁ where
 \end{code}
 %
 To ensure that it is indeed an equivalence relation, we include constructors for
