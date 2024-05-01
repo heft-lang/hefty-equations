@@ -838,7 +838,8 @@ sense, hefty algebras provide a modular abstraction layer over standard
 algebraic effects that, although it adds an extra layer of indirection by
 requiring both elaborations and handlers to give a semantics to hefty trees, is
 comparatively cheap and implemented using only standard techniques such as
-$F$-algebras.
+$F$-algebras.  As we show in \cref{sec:modular-reasoning}, hefty algebras also
+let us define higher-order effect theories, akin to algebraic effect theories.
 
 Conceptually, we expect that hefty trees can capture any \emph{monadic}
 higher-order effect whose signature is given by a higher-order functor on
@@ -854,6 +855,12 @@ constructively enforcing that all occurrences of the computation type are
 strictly positive.  Hence, there may be higher-order effects that are
 well-defined semantically, but which cannot be captured in the Agda encoding
 presented here.
+
+In recent work by \citet{DBLP:journals/corr/abs-2302-01415} introduced a
+higher-order free monad that coincides with our \ad{Hefty} type.  Their work
+shows that hefty trees are, in fact, a free monad.  Furthermore, they
+demonstrate that a range of existing effects frameworks from the literature can
+be viewed as instances of hefty trees.
 
 When comparing hefty trees to scoped effects, we observe two important
 differences.  The first difference is that the syntax of programs with
