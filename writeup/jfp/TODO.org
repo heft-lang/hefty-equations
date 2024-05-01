@@ -1,8 +1,8 @@
 * TODO Artifact URL
 
-* TODO Sentence in intro explaining how the paper relates to the old one
-
-* TODO Update list of contributions to reflect new contribution
-
 * TODO Relation to https://arxiv.org/pdf/2302.01415 in 3.5 and related work
+* TODO consistency of using period/colon preceding a code example
 
+Done: 
+* TODO Sentence in intro explaining how the paper relates to the old one
+* TODO Update list of contributions to reflect new contribution
