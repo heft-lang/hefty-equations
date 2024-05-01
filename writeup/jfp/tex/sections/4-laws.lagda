@@ -64,17 +64,17 @@ swap-⊕-↔ = record
 \label{sec:modular-reasoning}
 
 A key aspect of algebraic effects and handlers is the ability to state and prove
-equational \emph{laws} that characterize correct implementations of effectful
+\emph{equational laws} that characterize correct implementations of effectful
 operations. Usually, an effect comes equipped with multiple laws that govern its
-intended behavior, which altogether we refer to a as a \emph{theory} of that
-effect. The concept of effect theories extends to \emph{higher-order effect
-  theories}, which describe the intended behavior of higher-order effects. In
-this section, we discuss how to define theories for algebraic effects in Agda by
-adapting the exposition of \cite{DBLP:journals/pacmpl/YangW21}, and show how
-correctness of implementations with respect to a given theory can be stated and
-proved. We extend this reasoning infrastructure to higher-order effects,
-allowing for modular reasoning about the correctness of elaborations of
-higher-order effects.
+intended behavior.  An effect and its laws is generally known as as \emph{effect
+theory}~\citep{DBLP:journals/tcs/HylandPP06,Plotkin2002notions,PlotkinP03,DBLP:journals/pacmpl/YangW21}. This
+concept of effect theory extends to \emph{higher-order effect theories}, which
+describe the intended behavior of higher-order effects. In this section, we
+first discuss how to define theories for algebraic effects in Agda by adapting
+the exposition of \cite{DBLP:journals/pacmpl/YangW21}, and show how correctness
+of implementations with respect to a given theory can be stated and proved.  We
+then extend this reasoning infrastructure to higher-order effects, allowing for
+modular reasoning about the correctness of elaborations of higher-order effects.
 
 Let us consider the state effect as an example, which comprises the $\af{get}$
 and $\af{put}$ operations. With the state effect, we typically associate a set
@@ -87,11 +87,10 @@ the $\af{put}$ operation in between:
   \af{‵get}\ 𝓑\ λ s →\ \af{‵get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{‵get}\ 𝓑\ λ s →\ k\ s\ s
 \end{equation*}
 %
-In a similar fashion, we an also define equational laws for higher-order
-effects. For example, the following \emph{catch-return} law is usually
-associated with the $\af{‵catch}$ operation of the $\af{Catch}$ effect, stating
-that catching exceptions in a computation that only returns a value does
-nothing.  
+We an define equational laws for higher-order effects in a similar fashion. For
+example, the following \emph{catch-return} law for the
+$\af{‵catch}$ operation of the $\af{Catch}$ effect, stating that catching
+exceptions in a computation that only returns a value does nothing.
 %
 \begin{equation*}
   \af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}
@@ -102,37 +101,37 @@ theory is defined by comparing the implementations of programs that are equal
 under that theory. That is, if we can show that two programs are equal using the
 equations of a theory for its effects, handling the effects should produce equal
 results. For instance, a way to implement the state effect is by mapping
-programs to functions of the form $\ab{S}~\to~S×A$. Such an implementation would
-be correct if programs that are equal with respect to a theory of the state
-effect are mapped to functions that give the same value and output state for
-every input state.
+programs to functions of the form $\ab{S}~\to~\ab{S}×\ab{A}$. Such an
+implementation would be correct if programs that are equal with respect to a
+theory of the state effect are mapped to functions that give the same value and
+output state for every input state.
 
 For higher-order effects, correctness is defined in a similar manner. However,
-since higher-order effects are implemented by elaborating into algebraic
-effects, correctness of elaborations with respect to a higher-order effect
-theory is defined by comparing the elaborated programs. Crucially, the
-elaborated programs do not have to be syntactically equal, but rather we should
-be able to prove them equal using a theory of the algebraic effects used to
-implement a higher-order effect.
+since we define higher-order effects by elaborating them into algebraic effects,
+correctness of elaborations with respect to a higher-order effect theory is
+defined by comparing the elaborated programs. Crucially, the elaborated programs
+do not have to be syntactically equal, but rather we should be able to prove
+them equal using a theory of the algebraic effects used to implement a
+higher-order effect.
 
 Effect theories are known to be closed under the co-product of effects, by
 combining the equations into a new theory that contains all equations for both
 effects~\citep{DBLP:journals/tcs/HylandPP06}. Similarly, theories of
-higher-order effects too are closed under sums of higher-order effect
-signatures. In \cref{sec:elaboration-correctness}, we show that composing two
-elaborations preserves their correctness, with respect to the sum of their
-respective theories. 
+higher-order effects are closed under sums of higher-order effect signatures. In
+\cref{sec:elaboration-correctness}, we show that composing two elaborations
+preserves their correctness, with respect to the sum of their respective
+theories.
 
 \subsection{Theories of Algebraic Effects}
 
 Theories of effects are collections of equations, so we start defining the type
 of equations in Agda. At its core, an equation for an effect $Δ$ is given by a
-pair of effect trees of type $\ad{Free}~\ab{Δ}~A$, that define the left-hand
-respectively right-hand side of the equation. However, looking at the
+pair of effect trees of type $\ad{Free}~\ab{Δ}~A$, that define the left-
+and right-hand side of the equation. However, looking at the
 \emph{get-get} law above, we see that this equation contains a \emph{term
-  metavariable}, i.e., $\ab{k}$. Furthermore, when considering the type of
+  metavariable}; i.e., $\ab{k}$. Furthermore, when considering the type of
 $\ab{k}$, which is $\ab{S}~\to~\ab{S}~\to~\ad{Free}~\ab{Δ}~\ab{A}$, we see that
-it refers to a \emph{type metavariable}, i.e., $\ab{A}$. Generally speaking, an
+it refers to a \emph{type metavariable}; i.e., $\ab{A}$. Generally speaking, an
 equation may refer to any number of term metavariables, which, in turn, may
 depend on any number of type metavariables. Moreover, the type of the value
 returned by the left hand side and right hand side of an equation may depend on
@@ -196,7 +195,7 @@ rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 
 The current definition of equations is too weak, in the sense that it does not
 apply in many situations where it should. The issue is that it fixes the set of
-effects that can be used in the left-hand and right-hand side. To illustrate why
+effects that can be used in the left- and right-hand side. To illustrate why
 this is problematic, consider the following equality:
 %
 \begin{equation}\label{eq:get-get-throw}
@@ -207,14 +206,14 @@ We might expect to be able to prove this equality using the \emph{get-get} law,
 but using the embedding of the law defined above---i.e., \af{get-get}---this is
 not possible. The reason for this is that we cannot pick an appropriate
 instantiation for the term metavariable $k$: it ranges over values of type
-$\ab{S}~\to~\ab{S}~\to~Free State A$, inhibiting all references to effectful
+$\ab{S}~\to~\ab{S}~\to~\ad{Free}~\ad{State}~\ab{A}$, inhibiting all references to effectful
 operation that are not part of the state effect, such as $\af{throw}$.
 
 Given an equation for the effect $Δ$, the solution to this problem is to view
 $Δ$ as a \emph{lower bound} on the effects that might occur in the left-hand and
 right-hand side of the equation, rather than an exact
 specification. Effectively, this means that we close over all posible contexts
-of effects in which the equation can occur. This ``pattern'' of closing over all
+of effects in which the equation can occur. This pattern of closing over all
 possible extensions of a type index is
 well-known~\citep{DBLP:journals/jfp/AllaisACMM21,
   DBLP:journals/pacmpl/RestPRVM22}, and corresponds to a shallow embedding of
@@ -243,15 +242,16 @@ open □
       } 
 \end{code}
 %
-Intuitively, the $□$ modality transforms, for any effect-indexed type, an
-\emph{exact} specification of the set of effects to a \emph{lower bound} on the
-set of effects. For equations, the difference between terms of type
-$\ad{Equation}~\ab{Δ}$ and $\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former
-defining an equation relating programs that have exactly effects $Δ$, while the
-latter defines an equation relating programs that have at least the effects $Δ$
-but potentially more. The $\ad{□}$ modality is a comonad; the counit witnesses
-that we can always transform a lower bound on effects to an exact specification,
-by instantiating the extension witness with a proof of reflexivity.
+Intuitively, the $\ad{□}$ modality transforms, for any effect-indexed type
+(\ab{P}~\as{:}~\ad{Effect}~\as{→}~\ad{Set₁}), an \emph{exact} specification of
+the set of effects to a \emph{lower bound} on the set of effects. For equations,
+the difference between terms of type $\ad{Equation}~\ab{Δ}$ and
+$\ad{□}~\ad{Equation}~\ab{Δ}$ amounts to the former defining an equation
+relating programs that have exactly effects $Δ$, while the latter defines an
+equation relating programs that have at least the effects $Δ$ but potentially
+more. The $\ad{□}$ modality is a \emph{comonad}: the counit (\af{extract} below) witnesses that we can
+always transform a lower bound on effects to an exact specification, by
+instantiating the extension witness with a proof of reflexivity.
 %
 \begin{code}
 extract : {P : Effect → Set₁} → □ P Δ → P Δ
@@ -270,7 +270,7 @@ lhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → ‵get 𝓑 λ s
 rhs  □⟨ get-get◂ ⟩ (A ∷ []) k  = ‵get 𝓑 λ s → k s s
 \end{code}
 %
-The above definition of the \emph{get-get} law now actually does allow us to
+The above definition of the \emph{get-get} law now lets us
 prove the equality in \cref{eq:get-get-throw}; the term metavariable $k$ ranges
 ranges over all continuations that return a tree of type
 $\ad{Free}\ \ab{Δ′}\ \ab{A}$, for all $\ab{Δ′}$ such that
