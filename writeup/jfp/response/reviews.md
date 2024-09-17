@@ -1,0 +1,410 @@
+> Comments to the Author
+> # Summary
+> 
+> It is well-known in the literature that higher-order effects can be
+> simulated with algebraic effects and handlers at the cost of broken
+> modularity. Existing approaches either lose the separation between
+> syntax and semantics (implementing higher-order effects as handling),
+> lose the modularity of handler composition (implementing higher-order
+> effects as algebraic effects), or require extra mechanisms for
+> composing handlers of higher-order effects (the line of work on scoped
+> effects and handlers).
+> 
+> This paper proposes a simple approach to solving the modularity
+> problem of higher-order effects via a modular elaboration of
+> higher-order effects to algebraic effects and handlers. The
+> elaboration is achieved by hefty trees and hefty algebras, a
+> generalisation of free monads to higher-order functors. The
+> elaboration is modular in the sense that the hefty algebras of
+> different higher-order effects can be combined together in the same
+> way as combining algebras of algebraic effects. Hefty algebras also
+> support modular reasoning of correctness with respect to equational
+> theories of higher-order effects.
+> 
+> This paper is well-written and clearly explains the problems and
+> solutions. The idea of elaboration is succinct and works well.
+> 
+> Compared with the previous conference version, I think the new
+> material on the modular equational reasoning approach covers 25% of
+> the paper.
+> 
+> # Comments
+> 
+> I have two main comments.
+> 
+> ## Comparing Hefty Algebras with Scoped Effects
+> 
+> The line of work on scoped effects and handlers require extra
+> forwarding (or weaving) mechanisms for scoped effects. van den Berg &
+> Schrijvers (2023) genelise this to higher-order effects. In Section
+> 3.5, the paper discusses that hefty algebras are modular in a
+> different way to higher-order effects with forwarding. It appears to
+> me that forwarding seems to give a stronger notion of modularity than
+> hefty algebras, since it allows us to compose handlers together,
+> instead of composing algebras together and putting them into one
+> elaboration process. I wonder if the restriction of having one
+> [elaboration that elaborates all higher-order effects would harm
+> modularity in practice.
+
+Not necessary to elaborate all effects at once
+
+More crisp discription of modularity needed
+
+elaborations are possible in sequence, and can be commuted scoped effect
+handlers can be sequenced to but not commutative. Reordering gives different
+semantics.
+
+> 
+> In Section 4.2, the paper uses sub and jump to simulate the
+> transactional semantics derived by swapping the order of handlers with
+> scoped effects and handlers. I wonder if it is always possible to do
+> so, i.e., if there exists a semantics-preserving encoding from a
+> handler sequence of scoped effects (the order of this sequence implies
+> the order of handler composition) to hefty algebras such that they
+> give the same semantics for scoped effects to the same programs. I do
+> not expect this paper to include such an encoding, but I'd like to get
+> some intuitions on whether it is possible and how it would work.
+>
+
+Q: is there equivalence btween AEH (sub/jump) and scoped effects, and if so does
+that mean we can encode any h.o. scoped effect by elaborating into sub/jump.
+
+Route to answer: there's an encoding in the original scoped effects paper based
+on markers. This might be equivalent to sub/jump. Effect handlers in scope S7-9 
+
+> ## Modular Reasoning of Higher-Order Effects
+> 
+> Zhixuan and Wu (2023) proposes a general categorical framework for
+> algebraic and higher-order effects with support for equational
+> theories. Lindley et al. (2024) proposes a new perspective on scoped
+> effects which enables us to reason about scoped effects using
+> parameterised algebraic theories. I wonder how the modular reasoning
+> approach in Section 5 is related to these two papers. Especially, what
+> are the advantages and disadvantages of reasoning with hefty algebras
+> compared to other approaches?
+> 
+
+TODO: compare in S5/related work to Lindley et al. 
+
+> # Minor Comments and Typos
+> 
+> - 121: I would expect `A = () -> C!Δ'` since `A` should be a value
+>  type while `C!Δ'` is a computation type
+> 
+> - 1136: I would use `\citep` for the citation of Levy (2006).
+> 
+> - 1154 1160 1169 1172: There are some `-`s.
+> 
+> - 1299: Using sub and jump really feels like cheating to me. I wonder
+>  if they are avoidable.
+> 
+> - 1461: "an define"
+> 
+> - 1507: I cannot parse "... the term metavariables respectively return
+>  type of the equation".
+> 
+> - 1626: "categorie"
+> 
+> - 1662: "still would"
+> 
+> - 1692: "that establish"
+> 
+> - 2084: the apostrophe of `catch` is different from others
+> 
+> # References
+> 
+> Zhixuan Yang, Nicolas Wu:
+> Modular Models of Monoids with Operations. Proc. ACM Program. Lang. 7(ICFP): 566-603 (2023)
+> 
+> Birthe van den Berg, Tom Schrijvers:
+> A framework for higher-order effects & handlers. Sci. Comput. Program. 234: 103086 (2024)
+> 
+> Sam Lindley, Cristina Matache, Sean K. Moss, Sam Staton, Nicolas Wu, Zhixuan Yang:
+> Scoped Effects as Parameterized Algebraic Theories. ESOP (1) 2024: 3-21
+> 
+> Referee: 2
+> 
+> Comments to the Author
+> # Summary
+> 
+
+> The paper studies a modularity problem with handling higher-order effects,
+> where arguments of effect operations may be computations with scoped
+> effects. Scoped effect handlers proposed by Wu et al. address a similar
+> problem, but they have limitations such that they require some glue code to
+> resolve type mismatch and reject implementations of some higher-order
+> effects. As a solution that overcomes the limitations of scoped effect
+> handlers, the paper proposed hefty trees, which are effect trees built using a
+> higher-order signature functor, and hefty algebras, which elaborate hefty
+> trees into effect trees built using a first-order signature functor. Based on
+> the development of hefty trees and algebras, the paper also provides an
+> infrastructure for equational reasoning about computations with higher-order
+> effects and handlers elaborating them. The proposed framework is presented
+> based on the development on Agda.
+>
+
+> # Assessment
+> 
+> I find the following strengths in the paper.
+> 
+> - The paper includes the formalization of algebraic effects and handlers,
+>   scoped effects and handlers, and hefty trees and algebras on Agda. This
+>   structure makes the paper readable and clarifies the differences among
+>   algebraic effect handlers, scoped effect handlers, and hefty algebras, as
+>   well as those among the effect tree representations that the handlers or
+>   algebras address. Significantly, the paper clearly describes the limitations
+>   of algebraic and scoped effect handlers, why a new framework is necessary,
+>   and how the proposed framework, hefty trees and algebras, resolve the
+>   limitations. The presentation based on the development on Agda would
+>   contribute to avoiding the misunderstanding or ambiguity on the technical
+>   part (provided that the reader is familiar with Agda; below I will describe
+>   the points that may confuse someone who is, like me, unfamiliar with Agda).
+> 
+> - The paper builds an equational reasoning infrastructure on top of hefty
+>   trees and algebras and shows that it can verify the correctness of hefty
+>   algebras with respect to an equational theory. This is a significant delta
+>   compared with the conference version.
+> 
+> Therefore, I'm positive for the technical development of the paper.
+> 
+> However, I have several concerns about the current form.
+> 
+> The first concern is about high-level contributions of the paper. To describe
+> the concern more specifically, recall the elaboration of the operation censor
+> (line 169):
+> 
+>  censor f m = do (x,s) <- (with hOut handle m); out (f s); return x
+> 
+> where hOut is the handler for the operation out.
+> 
+> If I understand correctly, the paper says that implementing censor as the
+> above _function_ results in losing the modularity benefit of algebraic
+> operations. I agree with this claim, but it seems possible to implement censor
+> as an _algebraic operation_ in a language with algebraic effect handlers and
+> recursive functions:
+> 
+> let rec f' g = with hCensor handle (g ())
+> where hCensor = handler { (return x)      -> return x
+>                          (censor f m; k) -> do (x,s) <- (with hOut handle (f' (λ(). do m))); out (f s); k x}
+> 
+
+- In what sense is this algebraic 
+
+- Unclear how to encode censor in first-order effect trees -> only possible
+  using impredicative quantification, which is against the (non specified)
+  requirements for our solution 
+  
+  
+
+> The recursive function f' takes a thunk g that may perform censor, and
+> executes g under the handler hCensor for censor. The censor case in hCensor
+> runs a computation argument m under hOut and hCensor enabled by the recursive
+> call of f' (this enabling may be reminiscent of the encoding of deep effect
+> handlers through shallow handlers (Daniel Hillerström and Sam Lindley,
+> "Shallow Effect Handlers", APLAS 2018)). Note that f' can be polymorphic over
+> the return type of g, so the application f' (λ(). do m) could be typed
+> whatever the type of m is. 
+
+> Furthermore, as hefty algebras elaborate all higher-order effects in one go,
+> we should be able to assume that m performs no effect operations other than
+> censor. Thus, the function f' with hCensor seems able to handle censor
+> performed by g in the same way as the hefty algebra eCensor. Because censor is
+> an algebraic operation, it could retain the benefit of modularity.
+> 
+> Does the above f' do the same thing as eCensor as I expect? If it is not, I
+> would like to see a discussion that exposes the critical difference between f'
+> and eCensor. Otherwise, what contributions the authors can claim compared with
+> existing languages that can accommodate the above encoding (thus, can fold
+> higher-order effect trees into first-order effect trees)? Perhaps Koka and
+> Frank would be such languages as they support higher-order effects (line 2143)
+> and recursion. I guess the contributions may be discovering some pattern of
+> effect handlers for higher-order effects, giving a formal model characterizing
+> the pattern, and formalizing it on Agda, but I'm not sure. I think clarifying
+> such or (if any) other contributions helps identify where the paper is
+> positioned in a broader context of the research on effect handlers, not just
+> the proposed solution is more beneficial than scoped effect handlers.
+> 
+> Another concern is that the explanation of the modularity problem with
+> higher-order operations (Section 1.2) is unclear to me. The paper first
+> reminds the readers that "effect handlers are not applied recursively to
+> parameters of operations" (lines 122--126). This is a good reminder, but its
+> implication (lines 127--129) is unclear. Why the only way to ensure the
+> argument v has the type whose effects match those of the operation clause is
+> to apply handlers of higher-order effects before applying other handlers? Why
+> can programs contain at most one higher-order effect? What happens if we apply
+> the effect handler closest to the operation call? (Since effect handlers, as
+> well as hefty algebras, presented in the paper assume to provide some
+> implementations with all the effects that handled computations may perform,
+> the closest effect handler should be able to handle all the operations
+> including higher-order ones.) In summary, the latter half of the first
+> paragraph of Section 1.2 confuses me. The confusion also causes me to be
+> unconvinced about the second paragraph. Specifically, I am not sure what "this
+> restriction" (line 134) is and why the computation parameters of higher-order
+> operations must be continuation-like (lines 134--135).
+> 
+> For the equational reasoning, the paper shows what equational laws can be
+> proven, but does not discuss what cannot be. I think demonstrating the ability
+> to reject invalid laws is also important to make it convincing that the
+> equational reasoning system is well defined because only "proving" laws is
+> possible even in the reasoning system that admits any law.
+> 
+> Also, while the paper explains most of Agda's notations, more notes would be necessary for readers not very familiar with Agda. Specifically, explaining the following notations would be helpful and make the paper more self-contained.
+> 
+> - L330: Σ (Op Δ) λ op -> ...: Is this a dependent sum type like Σ op : (Op Δ) . ...?
+> - L421--422: ∃  λ Δ' -> ...: Is this an existential type ∃  Δ'. ...?
+> - L511: λ where ...: Is this a lambda abstraction that does pattern-matching against arguments?
+> - L512: flip: It is explained on page 16, but too late.
+> - L678: (k : ...) (r : G C) -> ...: Does this just mean ... -> G C -> ... except that k and r may be referred to in the return type (i.e., the latter "...")? If so, why are k and c named here even though they are not referenced?
+> - L1027: {| w = w |}  Here, does it mean the argument for w is explicitly given, but the argument for u is omitted?
+> - L1555: What is a "constructor" in record?
+> - L1688--1690: T occurs free. Is it implicitly universally quantified in each line?
+> - L1780: A and B occur free. Why is it okay? Isn't it universally quantified?
+> - L1785--1786: What do { A = A }, { Δ' = Δ }, and { γ = k } mean?
+> - L1809--1812: What do Level.Lift and Level.Lift sl 0l mean?
+> - L1838: What does lift mean?
+> 
+> Finally, I think the presentation of the paper needs to be improved. The issues I found are the following.
+> 
+> - L53: "as argument" --> "as an argument"?
+> - L117--118: I think the types A and B are the argument and return type, respectively, of op, but it is not described, so what A and B are is unclear.
+> - L120 "it is only k whose ...": What is "it" here? Perhaps what the sentence wants to say is "only k has a type compatible ..."?
+> - L231: For the type of hOut', adding parentheses like "(String -> String) -> _(_ A ! Output, Δ => (A * String) ! Δ _)_" would help reading.
+> - L236: "do x <- " -> "do (x,s) <- "
+> - L344 :"We co-products" --> co-product?
+> - L646-651: It is difficult to understand the intuition of the enter constructor in the current form. It would be helpful to give here an instance that illustrates how the enter constructor is used, specifically, how computation arguments and continuations are represented as a term of the type "Prog Δ γ (Prog Δ γ A)"  to express some examples shown in Section 2.6.2. I guess outer computations mean computation arguments and inner ones mean continuations, but they are not explained so clearly.
+> - L706--710: This part is confusing and needs to be clarified, partly because it is unclear which parts in line 704 correspond to sc, B, and (G B), respectively. Exposing the types of subterms of the argument of the enter constructor might be helpful.
+> - L720--725: This is also confusing as m1 and m2 do not appear in the code and the continuation is specified by k in the main text but I think the continuation in the code should correspond to f. I suspect the explanations in lines 706--710 and 720--725 are for the code in the conference version and are not updated for the submitted article.
+> - L916: The motivation to consider the question of how to address computation parameters with polymorphic return types is unclear at first glance.
+> - L963: It is not clear why "using a type universe" is more natural in modeling types as an interface of programming.
+> - Page 22: Please give a concrete instance of Univ.
+> - Page 26: Many inappropriate hyphens are inserted, like "- Here `lam is" (line 1154)
+> - L1172: "interpretation [to] `lam"
+> - L1180: "matches [that of] the function type"
+> - footnote 26: The isomorphism has been explained in footnote 17.
+> - L1294: Why the contents type of Ref is τ, while the argument type of k is [[ τ ]]?
+> - L1325: It is unclear what "invoking a handler before another handler" means.
+> - L1368: "definition" --> defined?
+> - Page 32. It is not clear how interleave is implemented. This makes me feel why the algebra of eConcur for atomic is given by `sub (λ ref -> ψ tt >>= `jump ref) k. It seems the same as ψ tt >>= k due to the second law of sub/jump (line 1302), no?
+> - L1445: "An effect and its laws is" --> An effect and its laws constitute?
+> - L1457: "get operation[s]"
+> - L1461: "We [c]an define"
+> - L1506: "the fields Γ and R define the term metavariables respectively return type of the equation  I cannot read. Please consider rephrasing.
+> - L1508: Please explain what unapplied substitutions are.
+> - L1515--1519: "the return type of the program on ... should be equal to this type metavariable." What do you mean by the return type of the program? The type of the program should be N -> Free State A, not the type metavariable A.
+> - L1676: "As discussed"  Where?
+> - L1681: "where necessary" --> where it is necessary?
+> - L1852: What is "abeq"?
+> - L1922: "We can define the same reasoning combinators"  As what?
+> - L1955: "Catch effe[ct]"
+> - Section 5.8: Why isn't the equation for first-order effect trees parameterized over the equality of the remaining effects?
+> - L1994: The meaning of inj^H { X = A} m is not clear.
+> 
+> - Many citations need more appropriate parentheses, such as "Levy's call-by-push-value Levy (2006)" --> "Levy's call-by-push-value (Levy 2006)". Similar issues are found in:
+>  - L1160
+>  - L1257
+>  - L1275
+>  - L1367
+>  - Section 6
+> 
+> 
+> Referee: 3
+> 
+> Comments to the Author In this paper, the authors introduce "hefty algebras,"
+> a generalisation of algebraic effects to higher-order operations that utilise
+> their computational arguments in a non-algebraic way (i.e., not as
+> continuations that commute with the evaluation context). This approach is
+> similar to scoped effects, but hefty algebras interpret operations in two
+> stages: in the first stage, higher-order operations are elaborated (i.e.,
+> term-expanded) into computations using standard algebraic effects, which are
+> then further interpreted through handlers in the second stage.
+> 
+> After summarising ordinary algebraic effects and handlers, the paper
+> demonstrates how to generalise this approach to higher-order operations and
+> how such elaborations can be composed. Next, the paper provides several
+> examples that highlight the modularity of this approach and develops an
+> equational logic for specifying higher-order operations and validating their
+> elaborations. This development generalises established reasoning techniques
+> for algebraic effects and is the primary addition to this version from the
+> conference presentation.
+> 
+> As in the original version, the entire paper, including the new developments,
+> is formalised in Agda. I commend the effort; having an Agda formalisation is a
+> significant asset. However, I would still appreciate it if more of the
+> development were done independently of Agda, as even with all the pretty
+> notation that Agda provides, the reader can easily become lost in the
+> encodings.
+> 
+> Given that the work on hefty algebras has been accepted at a major conference,
+> I assume the community finds it interesting and meaningful. The additions in
+> this version are significant enough to consider it for journal
+> acceptance. However, I cannot shake the feeling that the approach introduces a
+> roundabout and unnecessary way of achieving modularity through a variant of
+> handlers. The two distinguishing features of handlers are dynamic scoping and
+> their exclusive application to continuations. Without the latter, we unfold
+> operation definitions everywhere, which is exactly what the usual binding
+> constructs already accomplish. With scoped handlers, the programmer at least
+> has control over the level at which interpretations are applied (as described
+> from line 1101 onward). In contrast, with hefty algebras, one must unfold
+> elaborations of all higher-order operations at the same time (line 1113), and
+> I struggle to see the advantages of this approach.
+> 
+> For example, in line 175 (and later in line 578), you state that you can
+> refactor the semantics of a program only by modifying or copying
+> code. However, instead of using higher-order operations, you could employ
+> well-established higher-order functions and define `censorHello` as:
+> 
+>    censorHello = λ(censor : (String → String) → (A!Δ,Out → A!Δ)).
+>      censor (λs. …) hello
+> 
+> Then, instead of the two elaborations, define the functions:
+> 
+>    eCensor f = do (x, s) ← (with hOut handle m); out (f s)
+>    eCensor' f = do x ← (with hOut' f handle m); x
+> 
+> and use them as:
+> 
+>    with HOut handle (censorHello eCensor)
+>    with HOut handle (censorHello eCensor')
+> 
+> Such functions would also be naturally polymorphic and would avoid the
+> overhead of encoding types through universes, as done in section 3.4. Instead
+> of higher-order functions, one could impose even more structure by using
+> modules and functors.
+
+Finally Tagless, Bruno's blog, Wand final algebras
+
+What is our focus: compositional denotational semantics for h.o. effects by
+unfolding definitions. 
+
+Could have been done a different way. Probably equivalent, at least in terms of
+complexity, but doesn't exist to our knowledge so we can't compare. 
+
+> 
+> CONCLUSION
+> 
+> Perhaps I am missing something, but I remain reluctant to accept the paper. At
+> the very least, I would like the authors to explain what their approach offers
+> over established constructs for ensuring modularity—not just in the context of
+> effects, but standard ones such as higher-order functions or functors.
+> 
+> MINOR NOTES
+> 
+> - line 61: A reader would benefit from an example of an effect with multiple operations (e.g., state).
+> - line 68: Point out that this is a type of a specific effect handler for Output.
+> - line 93: Note that the ability to extend a handler type on both sides with Δ₂ does not hold in general. For example, in call-by-value (CbV), a handler returning a thunk of the continuation has the type `A!Δ,Eff ⇒ (⊤ → A!Δ)!Δ`, and extending Δ does not merely extend it on the RHS but also modifies the return type `⊤ → A!Δ`.
+> - line 120: It is not true that only `k` has a type compatible with the RHS; you could also return a value of type `C`.
+> - line 129: This reasoning is difficult to follow. Can you provide a concrete example? You could explicitly handle the value `v` by inserting an additional handler, which would clarify the order of handler application.
+> - line 143: Operations without computation parameters are known in the algebraic effect literature as "generic effects."
+> - line 150: All the examples of "operations" you give are actually handlers. What is the rationale for including them under operations if they are of a different nature?
+> - line 236: Doesn't `hOut'` already output the modified strings, making `out s` unnecessary (and also ill-typed)?
+> - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
+> - line 330: Σ is never explained.
+> - line 344: Typo: "We co-products…" should be "We use co-products…"
+> - line 422: ∃ is never explained.
+> - line 492: Why do you restrict handlers only to those targeting the free monad? If you allowed arbitrary codomains given suitable algebras, you could avoid passing around an explicit set of parameters `P`.
+> - line 1154: Some redundant dashes appear at the start of this and the following few paragraphs.
+> - line 1185: How is "lam" related to "`lam"? And similarly for other constructs?
+> - line 1979: Typo: "defintion" should be "definition."
+> - line 2054: Missing opening bracket in �� catch.
+> - line 2101: The majority of citations in this section are in the incorrect form, i.e., using "Name (YEAR)" instead of "(Name YEAR)" when not referring to authors.
+> 
