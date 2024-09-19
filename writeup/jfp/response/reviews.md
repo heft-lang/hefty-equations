@@ -50,11 +50,11 @@ Not necessary to elaborate all effects at once
 
 More crisp discription of modularity needed
 
-elaborations are possible in sequence, and can be commuted scoped effect
-handlers can be sequenced to but not commutative. Reordering gives different
-semantics.
+Elaborations are possible in sequence, and can be commuted.
 
-> 
+Scoped effect handlers can be sequenced to but not commutative. Reordering gives
+different semantics.
+
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
 > scoped effects and handlers. I wonder if it is always possible to do
@@ -70,7 +70,9 @@ Q: is there equivalence btween AEH (sub/jump) and scoped effects, and if so does
 that mean we can encode any h.o. scoped effect by elaborating into sub/jump.
 
 Route to answer: there's an encoding in the original scoped effects paper based
-on markers. This might be equivalent to sub/jump. Effect handlers in scope S7-9 
+on markers. This might be equivalent to sub/jump. Effect handlers in scope S7-9
+
+Proving this is future work.
 
 > ## Modular Reasoning of Higher-Order Effects
 > 
@@ -82,9 +84,8 @@ on markers. This might be equivalent to sub/jump. Effect handlers in scope S7-9
 > approach in Section 5 is related to these two papers. Especially, what
 > are the advantages and disadvantages of reasoning with hefty algebras
 > compared to other approaches?
-> 
 
-TODO: compare in S5/related work to Lindley et al. 
+TODO: compare in S5/related work to Zhixuan+Wu & Lindley et al.
 
 > # Minor Comments and Typos
 > 
@@ -121,12 +122,15 @@ TODO: compare in S5/related work to Lindley et al.
 > 
 > Sam Lindley, Cristina Matache, Sean K. Moss, Sam Staton, Nicolas Wu, Zhixuan Yang:
 > Scoped Effects as Parameterized Algebraic Theories. ESOP (1) 2024: 3-21
-> 
+
+
+--------------------------------------------------------------------------------
+
 > Referee: 2
 > 
 > Comments to the Author
 > # Summary
-> 
+
 
 > The paper studies a modularity problem with handling higher-order effects,
 > where arguments of effect operations may be computations with scoped
@@ -142,7 +146,6 @@ TODO: compare in S5/related work to Lindley et al.
 > effects and handlers elaborating them. The proposed framework is presented
 > based on the development on Agda.
 >
-
 > # Assessment
 > 
 > I find the following strengths in the paper.
@@ -186,16 +189,7 @@ TODO: compare in S5/related work to Lindley et al.
 > let rec f' g = with hCensor handle (g ())
 > where hCensor = handler { (return x)      -> return x
 >                          (censor f m; k) -> do (x,s) <- (with hOut handle (f' (λ(). do m))); out (f s); k x}
-> 
-
-- In what sense is this algebraic 
-
-- Unclear how to encode censor in first-order effect trees -> only possible
-  using impredicative quantification, which is against the (non specified)
-  requirements for our solution 
-  
-  
-
+>
 > The recursive function f' takes a thunk g that may perform censor, and
 > executes g under the handler hCensor for censor. The censor case in hCensor
 > runs a computation argument m under hOut and hCensor enabled by the recursive
@@ -204,43 +198,74 @@ TODO: compare in S5/related work to Lindley et al.
 > "Shallow Effect Handlers", APLAS 2018)). Note that f' can be polymorphic over
 > the return type of g, so the application f' (λ(). do m) could be typed
 > whatever the type of m is. 
-
+>
 > Furthermore, as hefty algebras elaborate all higher-order effects in one go,
 > we should be able to assume that m performs no effect operations other than
 > censor. Thus, the function f' with hCensor seems able to handle censor
 > performed by g in the same way as the hefty algebra eCensor. Because censor is
 > an algebraic operation, it could retain the benefit of modularity.
-> 
-> Does the above f' do the same thing as eCensor as I expect? If it is not, I
-> would like to see a discussion that exposes the critical difference between f'
-> and eCensor. Otherwise, what contributions the authors can claim compared with
-> existing languages that can accommodate the above encoding (thus, can fold
-> higher-order effect trees into first-order effect trees)? Perhaps Koka and
-> Frank would be such languages as they support higher-order effects (line 2143)
-> and recursion. I guess the contributions may be discovering some pattern of
-> effect handlers for higher-order effects, giving a formal model characterizing
-> the pattern, and formalizing it on Agda, but I'm not sure. I think clarifying
-> such or (if any) other contributions helps identify where the paper is
-> positioned in a broader context of the research on effect handlers, not just
-> the proposed solution is more beneficial than scoped effect handlers.
-> 
+>
+> Does the above f' do the same thing as eCensor as I expect?
+
+
+No: higher-order effect trees can contain multiple operations.  Those operations
+could not be handled in a modular way using this scheme.
+
+Elaborations can also be done in multiple passes.
+
+If we use shallow handlers, it seems we can indeed get similar modularity
+benefits as hefty algebras.  Less clear how we can get modular equational
+theories for shallow handlers (but we would be happy to know if we have
+overlooked something).
+
+> If it is not, I would like to see a discussion that exposes the critical
+> difference between f' and eCensor. Otherwise, what contributions the authors
+> can claim compared with existing languages that can accommodate the above
+> encoding (thus, can fold higher-order effect trees into first-order effect
+> trees)? Perhaps Koka and Frank would be such languages as they support
+> higher-order effects (line 2143) and recursion. I guess the contributions may
+> be discovering some pattern of effect handlers for higher-order effects,
+> giving a formal model characterizing the pattern, and formalizing it on Agda,
+> but I'm not sure. I think clarifying such or (if any) other contributions
+> helps identify where the paper is positioned in a broader context of the
+> research on effect handlers, not just the proposed solution is more beneficial
+> than scoped effect handlers.
+
+We will discuss the relationship with shallow handlers in the introduction and
+related work.
+
 > Another concern is that the explanation of the modularity problem with
 > higher-order operations (Section 1.2) is unclear to me. The paper first
 > reminds the readers that "effect handlers are not applied recursively to
 > parameters of operations" (lines 122--126). This is a good reminder, but its
-> implication (lines 127--129) is unclear. Why the only way to ensure the
-> argument v has the type whose effects match those of the operation clause is
-> to apply handlers of higher-order effects before applying other handlers? Why
-> can programs contain at most one higher-order effect? What happens if we apply
-> the effect handler closest to the operation call? (Since effect handlers, as
-> well as hefty algebras, presented in the paper assume to provide some
-> implementations with all the effects that handled computations may perform,
-> the closest effect handler should be able to handle all the operations
-> including higher-order ones.) In summary, the latter half of the first
-> paragraph of Section 1.2 confuses me. The confusion also causes me to be
-> unconvinced about the second paragraph. Specifically, I am not sure what "this
-> restriction" (line 134) is and why the computation parameters of higher-order
-> operations must be continuation-like (lines 134--135).
+> implication (lines 127--129) is unclear.
+
+The implication is that the only way to handle these effects, is to apply a
+handler in-line, which is non-modular.
+
+> Why the only way to ensure the argument v has the type whose effects match
+> those of the operation clause is to apply handlers of higher-order effects
+> before applying other handlers? Why can programs contain at most one
+> higher-order effect? What happens if we apply the effect handler closest to
+> the operation call? (Since effect handlers, as well as hefty algebras,
+> presented in the paper assume to provide some implementations with all the
+> effects that handled computations may perform, the closest effect handler
+> should be able to handle all the operations including higher-order ones.)
+
+Effect handlers are not applied dynamically, like in the operational semantics
+found, e.g., in Koka papers.
+
+They are catamorphisms over a tree.
+
+[EXAMPLE]
+
+We will elaborate the paper with this example.
+
+> In summary, the latter half of the first paragraph of Section 1.2 confuses
+> me. The confusion also causes me to be unconvinced about the second
+> paragraph. Specifically, I am not sure what "this restriction" (line 134) is
+> and why the computation parameters of higher-order operations must be
+> continuation-like (lines 134--135).
 > 
 > For the equational reasoning, the paper shows what equational laws can be
 > proven, but does not discuss what cannot be. I think demonstrating the ability
