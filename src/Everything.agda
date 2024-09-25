@@ -48,7 +48,7 @@ open import Effect.Elaborate
 --
 -- Adapted from the exposition in "Reasoning about Effect Interaction by Fusion,
 -- Zhixuan Yang and Nicholas Wu"
---open import Effect.Theory.FirstOrder
+open import Effect.Theory.FirstOrder
 open import Effect.Theory.HigherOrder 
 
 {- Effect instances -} 

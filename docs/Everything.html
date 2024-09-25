@@ -49,42 +49,42 @@
 <a id="1669" class="Comment">--</a>
 <a id="1672" class="Comment">-- Adapted from the exposition in &quot;Reasoning about Effect Interaction by Fusion,</a>
 <a id="1753" class="Comment">-- Zhixuan Yang and Nicholas Wu&quot;</a>
-<a id="1786" class="Comment">--open import Effect.Theory.FirstOrder</a>
-<a id="1825" class="Keyword">open</a> <a id="1830" class="Keyword">import</a> <a id="1837" href="Effect.Theory.HigherOrder.html" class="Module">Effect.Theory.HigherOrder</a> 
+<a id="1786" class="Keyword">open</a> <a id="1791" class="Keyword">import</a> <a id="1798" href="Effect.Theory.FirstOrder.html" class="Module">Effect.Theory.FirstOrder</a>
+<a id="1823" class="Keyword">open</a> <a id="1828" class="Keyword">import</a> <a id="1835" href="Effect.Theory.HigherOrder.html" class="Module">Effect.Theory.HigherOrder</a> 
 
-<a id="1865" class="Comment">{- Effect instances -}</a> 
+<a id="1863" class="Comment">{- Effect instances -}</a> 
 
-<a id="1890" class="Comment">-- Empty effect</a>
-<a id="1906" class="Keyword">open</a> <a id="1911" class="Keyword">import</a> <a id="1918" href="Effect.Instance.Empty.Syntax.html" class="Module">Effect.Instance.Empty.Syntax</a> 
+<a id="1888" class="Comment">-- Empty effect</a>
+<a id="1904" class="Keyword">open</a> <a id="1909" class="Keyword">import</a> <a id="1916" href="Effect.Instance.Empty.Syntax.html" class="Module">Effect.Instance.Empty.Syntax</a> 
 
-<a id="1949" class="Comment">-- Abort</a>
-<a id="1958" class="Keyword">open</a> <a id="1963" class="Keyword">import</a> <a id="1970" href="Effect.Instance.Abort.Syntax.html" class="Module">Effect.Instance.Abort.Syntax</a>
-<a id="1999" class="Keyword">open</a> <a id="2004" class="Keyword">import</a> <a id="2011" href="Effect.Instance.Abort.Theory.html" class="Module">Effect.Instance.Abort.Theory</a>
-<a id="2040" class="Keyword">open</a> <a id="2045" class="Keyword">import</a> <a id="2052" href="Effect.Instance.Abort.Handler.html" class="Module">Effect.Instance.Abort.Handler</a>
+<a id="1947" class="Comment">-- Abort</a>
+<a id="1956" class="Keyword">open</a> <a id="1961" class="Keyword">import</a> <a id="1968" href="Effect.Instance.Abort.Syntax.html" class="Module">Effect.Instance.Abort.Syntax</a>
+<a id="1997" class="Keyword">open</a> <a id="2002" class="Keyword">import</a> <a id="2009" href="Effect.Instance.Abort.Theory.html" class="Module">Effect.Instance.Abort.Theory</a>
+<a id="2038" class="Keyword">open</a> <a id="2043" class="Keyword">import</a> <a id="2050" href="Effect.Instance.Abort.Handler.html" class="Module">Effect.Instance.Abort.Handler</a>
 
-<a id="2083" class="Comment">-- State</a>
-<a id="2092" class="Keyword">open</a> <a id="2097" class="Keyword">import</a> <a id="2104" href="Effect.Instance.State.Syntax.html" class="Module">Effect.Instance.State.Syntax</a> 
-<a id="2134" class="Keyword">open</a> <a id="2139" class="Keyword">import</a> <a id="2146" href="Effect.Instance.State.Theory.html" class="Module">Effect.Instance.State.Theory</a>
-<a id="2175" class="Keyword">open</a> <a id="2180" class="Keyword">import</a> <a id="2187" href="Effect.Instance.State.Handler.html" class="Module">Effect.Instance.State.Handler</a> 
+<a id="2081" class="Comment">-- State</a>
+<a id="2090" class="Keyword">open</a> <a id="2095" class="Keyword">import</a> <a id="2102" href="Effect.Instance.State.Syntax.html" class="Module">Effect.Instance.State.Syntax</a> 
+<a id="2132" class="Keyword">open</a> <a id="2137" class="Keyword">import</a> <a id="2144" href="Effect.Instance.State.Theory.html" class="Module">Effect.Instance.State.Theory</a>
+<a id="2173" class="Keyword">open</a> <a id="2178" class="Keyword">import</a> <a id="2185" href="Effect.Instance.State.Handler.html" class="Module">Effect.Instance.State.Handler</a> 
 
-<a id="2219" class="Comment">-- Reader</a>
-<a id="2229" class="Keyword">open</a> <a id="2234" class="Keyword">import</a> <a id="2241" href="Effect.Instance.Reader.Syntax.html" class="Module">Effect.Instance.Reader.Syntax</a>
-<a id="2271" class="Keyword">open</a> <a id="2276" class="Keyword">import</a> <a id="2283" href="Effect.Instance.Reader.Theory.html" class="Module">Effect.Instance.Reader.Theory</a>
-<a id="2313" class="Keyword">open</a> <a id="2318" class="Keyword">import</a> <a id="2325" href="Effect.Instance.Reader.Handler.html" class="Module">Effect.Instance.Reader.Handler</a>
+<a id="2217" class="Comment">-- Reader</a>
+<a id="2227" class="Keyword">open</a> <a id="2232" class="Keyword">import</a> <a id="2239" href="Effect.Instance.Reader.Syntax.html" class="Module">Effect.Instance.Reader.Syntax</a>
+<a id="2269" class="Keyword">open</a> <a id="2274" class="Keyword">import</a> <a id="2281" href="Effect.Instance.Reader.Theory.html" class="Module">Effect.Instance.Reader.Theory</a>
+<a id="2311" class="Keyword">open</a> <a id="2316" class="Keyword">import</a> <a id="2323" href="Effect.Instance.Reader.Handler.html" class="Module">Effect.Instance.Reader.Handler</a>
 
-<a id="2357" class="Comment">-- Exception catching</a>
-<a id="2379" class="Keyword">open</a> <a id="2384" class="Keyword">import</a> <a id="2391" href="Effect.Instance.Catch.Syntax.html" class="Module">Effect.Instance.Catch.Syntax</a>
-<a id="2420" class="Keyword">open</a> <a id="2425" class="Keyword">import</a> <a id="2432" href="Effect.Instance.Catch.Theory.html" class="Module">Effect.Instance.Catch.Theory</a> 
-<a id="2462" class="Keyword">open</a> <a id="2467" class="Keyword">import</a> <a id="2474" href="Effect.Instance.Catch.Elaboration.html" class="Module">Effect.Instance.Catch.Elaboration</a> 
+<a id="2355" class="Comment">-- Exception catching</a>
+<a id="2377" class="Keyword">open</a> <a id="2382" class="Keyword">import</a> <a id="2389" href="Effect.Instance.Catch.Syntax.html" class="Module">Effect.Instance.Catch.Syntax</a>
+<a id="2418" class="Keyword">open</a> <a id="2423" class="Keyword">import</a> <a id="2430" href="Effect.Instance.Catch.Theory.html" class="Module">Effect.Instance.Catch.Theory</a> 
+<a id="2460" class="Keyword">open</a> <a id="2465" class="Keyword">import</a> <a id="2472" href="Effect.Instance.Catch.Elaboration.html" class="Module">Effect.Instance.Catch.Elaboration</a> 
 
-<a id="2510" class="Comment">-- Lambda</a>
-<a id="2520" class="Keyword">open</a> <a id="2525" class="Keyword">import</a> <a id="2532" href="Effect.Instance.Lambda.Syntax.html" class="Module">Effect.Instance.Lambda.Syntax</a>
-<a id="2562" class="Keyword">open</a> <a id="2567" class="Keyword">import</a> <a id="2574" href="Effect.Instance.Lambda.Theory.html" class="Module">Effect.Instance.Lambda.Theory</a>
-<a id="2604" class="Keyword">open</a> <a id="2609" class="Keyword">import</a> <a id="2616" href="Effect.Instance.Lambda.ElaborationCBV.html" class="Module">Effect.Instance.Lambda.ElaborationCBV</a>
+<a id="2508" class="Comment">-- Lambda</a>
+<a id="2518" class="Keyword">open</a> <a id="2523" class="Keyword">import</a> <a id="2530" href="Effect.Instance.Lambda.Syntax.html" class="Module">Effect.Instance.Lambda.Syntax</a>
+<a id="2560" class="Keyword">open</a> <a id="2565" class="Keyword">import</a> <a id="2572" href="Effect.Instance.Lambda.Theory.html" class="Module">Effect.Instance.Lambda.Theory</a>
+<a id="2602" class="Keyword">open</a> <a id="2607" class="Keyword">import</a> <a id="2614" href="Effect.Instance.Lambda.ElaborationCBV.html" class="Module">Effect.Instance.Lambda.ElaborationCBV</a>
 
-<a id="2655" class="Comment">-- Reader w/ local</a>
-<a id="2674" class="Keyword">open</a> <a id="2679" class="Keyword">import</a> <a id="2686" href="Effect.Instance.LocalReader.Syntax.html" class="Module">Effect.Instance.LocalReader.Syntax</a>
-<a id="2721" class="Keyword">open</a> <a id="2726" class="Keyword">import</a> <a id="2733" href="Effect.Instance.LocalReader.Theory.html" class="Module">Effect.Instance.LocalReader.Theory</a>
-<a id="2768" class="Keyword">open</a> <a id="2773" class="Keyword">import</a> <a id="2780" href="Effect.Instance.LocalReader.Elaboration.html" class="Module">Effect.Instance.LocalReader.Elaboration</a>
+<a id="2653" class="Comment">-- Reader w/ local</a>
+<a id="2672" class="Keyword">open</a> <a id="2677" class="Keyword">import</a> <a id="2684" href="Effect.Instance.LocalReader.Syntax.html" class="Module">Effect.Instance.LocalReader.Syntax</a>
+<a id="2719" class="Keyword">open</a> <a id="2724" class="Keyword">import</a> <a id="2731" href="Effect.Instance.LocalReader.Theory.html" class="Module">Effect.Instance.LocalReader.Theory</a>
+<a id="2766" class="Keyword">open</a> <a id="2771" class="Keyword">import</a> <a id="2778" href="Effect.Instance.LocalReader.Elaboration.html" class="Module">Effect.Instance.LocalReader.Elaboration</a>
 
 </pre></body></html>
