@@ -54,21 +54,19 @@ Below we include inline responses to the comments and questions raised by the re
 > elaboration that elaborates all higher-order effects would harm
 > modularity in practice.
 
-The question of the modularity of scoped effects vs. higher-order
-effects+elaborations is an interesting one.
+Good question.
 
-We will clarify in 3.5 that it is an open question of whether forwarding gives
+Our intuition is that it is possible to encode scoped effects and handlers in
+general as algebraic effects with explicit operations for entering and leaving a
+scope.  We discuss this intuition below.
+
+However, this intuition remains to be tried and tested in future work.  We will
+clarify in 3.5 that it is an open question of whether forwarding gives
 modularity benefits that we cannot recover using modular elaborations.
 
-Our expectation is that it is possible to encode scoped effects in general,
-using only algebraic effects and handlers with explicit scoping delimiters, akin
-to Sect. 7 of Wu, Schrijvers, and Hinze's "Effect Handlers in Scope", and akin
-to how the sub/jump encoding of the exception catching operation we give in
-Sect. 4.2.2 works.
-
-Furthermore, we will clarify that scoped effects with forwarding can, in
-principle, be applied to scoped operations inside of hefty trees, since scoped
-operations are a special case of higher-order operations.
+We will also clarify in the discussion in Sect. 3.5 that scoped effects with
+forwarding can, in principle, be applied to scoped operations inside hefty
+trees, since scoped operations are a special case of higher-order operations.
 
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
@@ -79,15 +77,91 @@ operations are a special case of higher-order operations.
 > give the same semantics for scoped effects to the same programs. I do
 > not expect this paper to include such an encoding, but I'd like to get
 > some intuitions on whether it is possible and how it would work.
->
 
-Q: is there equivalence btween AEH (sub/jump) and scoped effects, and if so does
-that mean we can encode any h.o. scoped effect by elaborating into sub/jump.
+Good question again!
 
-Route to answer: there's an encoding in the original scoped effects paper based
-on markers. This might be equivalent to sub/jump. Effect handlers in scope S7-9
+We agree that this is beyond the scope of the paper.  Below we elaborate on our
+intuition.
 
-Proving this is future work.
+We conjecture that there exists a semantics-preserving encoding scoped effects
+and handlers, into algebraic effects and handlers.  This conjecture is based on
+the observation by Wu, Schrijvers, and Hinze's "Effect Handlers in Scope",
+Sect. 7-9, that we can represent scoped operations using explicit markers for
+entering and leaving a scope.
+
+To provide some more intuition, we sketch below how we expect a conversion of
+scoped effects into algebraic effects could work.
+
+Our conversion uses the following encoding of scoped effects, which is
+equivalent (via the co-Yoneda lemma) to the definition of scoped effects we give
+in the paper:
+
+    data Prog (Δ γ : Effect) (A : Set) : Set where
+      return  : A                                                → Prog Δ γ A
+      call    : ⟦ Δ ⟧ (Prog Δ γ A)                                → Prog Δ γ A
+      enter   : {B : Set} → ⟦ γ ⟧ (Prog Δ γ B) → (B → Prog Δ γ A) → Prog Δ γ A
+
+First, we can desugar any scoped effect `γ` (encoded as a container in Agda),
+into a different effect with explicit operations for entering and leaving a
+scope:
+
+    data ScopedOp (Ref : Set → Set) (γ : Effect) : Set where
+      sub-scope : Set → Op γ → ScopedOp Ref γ
+      sub-end   : (B : Set) → Ref B → B → ScopedOp Ref γ
+
+Here, a `sub-scope B o` operation represents a scoped operation `o`, whose
+return type `B` is a value that will be passed to the continuation of a scoped
+operation; i.e., the "inner" computation:
+
+    enter   : {B : Set} → ⟦ γ ⟧ (Prog Δ γ B) → (B → Prog Δ γ A) → Prog Δ γ A
+                                               ^^^^^^^^^^^^^^^
+                                                    inner
+
+A `sub-end` operation represents a marker that we will use to delimit the end of
+a scope.  It represents a jump, similarly to the `jump` operation of the
+`sub/jump` effect discussed in Sect. 4.2.2.  Specifically, for an operation
+`sub-end B c x`, `c : Ref B` represents a pointer to some continuation from
+where we should proceed after reaching the end of the scope.  The `sub-end`
+operation applies this continuation to a value of type `B`---i.e., `x : B`---to
+"jump" to that program point.
+
+Using `ScopedOp`, the following function converts a scoped effect container into
+an algebraic effect container:
+
+    conv-Effect : Effect → (Set → Set) → Effect
+    Op (conv-Effect Δ Ref) = ScopedOp Ref Δ
+    Ret (conv-Effect Δ Ref) (sub-scope B o) = Ref B × Ret Δ o -- Scope
+                                            ⊎ B               -- Continuation
+    Ret (conv-Effect Δ Ref) (sub-end _ _ _) = ⊥
+
+Here, `sub-scope` has a co-product return type, representing the fact that a
+scoped operation is encoded as an algebraic operation that has two possible
+continuations:
+
+1. A continuation parameterized by `Ref B × Ret Δ o`, representing a sub-scope
+   that will be delimited by a jump given by a `sub-end` operation.
+   
+2. A continuation parameterized by `B`, representing the continuation of the
+   sub-scope, which the delimiting `sub-end` operation will jump to.
+   
+The following `convert` function uses the `conv-Effect` function and intuition
+above to convert scoped effect trees into algebraic effect trees:
+
+    convert : (Ref : Set → Set)
+            → Prog Δ γ A
+            → Free (conv-Effect γ Ref ⊕ Δ) A
+    convert Ref (return x) = pure x
+    convert Ref (call (o , k)) = impure (inj₂ o , convert Ref ∘ k)
+    convert Ref (enter {B = B} (o , k₁) k₂) = impure (inj₁ (inj₁ (B , o)) , λ where
+      (inj₁ (c , r)) → convert Ref (k₁ r) >>= λ b → impure (inj₁ (inj₂ (B , c , b)) , ⊥-elim)
+      (inj₂ y) → convert Ref (k₂ y))
+
+As the example in 4.2.2 illustrates, this style of scoped syntax lets us
+simulate transactional exception handling.
+
+However, verifying that the algebraic effect trees resulting from this
+conversion has similar modularity characteristics as scoped effects and handlers
+in general is a topic for future work.
 
 > ## Modular Reasoning of Higher-Order Effects
 > 
