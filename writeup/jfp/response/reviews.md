@@ -1,3 +1,11 @@
+We would like to thank the reviewers for their time and helpful comments!
+
+The main concern raised by reviewers relates to the motivation behind our work.
+
+[FIXME] We have revised the introduction to clarify the questions raised by the reviewers.
+
+Below we include inline responses to the comments and questions raised by the reviewers.
+
 > Comments to the Author
 > # Summary
 > 
@@ -43,17 +51,24 @@
 > hefty algebras, since it allows us to compose handlers together,
 > instead of composing algebras together and putting them into one
 > elaboration process. I wonder if the restriction of having one
-> [elaboration that elaborates all higher-order effects would harm
+> elaboration that elaborates all higher-order effects would harm
 > modularity in practice.
 
-Not necessary to elaborate all effects at once
+The question of the modularity of scoped effects vs. higher-order
+effects+elaborations is an interesting one.
 
-More crisp discription of modularity needed
+We will clarify in 3.5 that it is an open question of whether forwarding gives
+modularity benefits that we cannot recover using modular elaborations.
 
-Elaborations are possible in sequence, and can be commuted.
+Our expectation is that it is possible to encode scoped effects in general,
+using only algebraic effects and handlers with explicit scoping delimiters, akin
+to Sect. 7 of Wu, Schrijvers, and Hinze's "Effect Handlers in Scope", and akin
+to how the sub/jump encoding of the exception catching operation we give in
+Sect. 4.2.2 works.
 
-Scoped effect handlers can be sequenced to but not commutative. Reordering gives
-different semantics.
+Furthermore, we will clarify that scoped effects with forwarding can, in
+principle, be applied to scoped operations inside of hefty trees, since scoped
+operations are a special case of higher-order operations.
 
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
