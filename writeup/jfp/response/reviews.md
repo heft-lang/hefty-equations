@@ -4,6 +4,9 @@
 
   + [FIXME] Clarifying remark in Sect. 1.3 summarizng that `H` can (and will in general)
     contain operations other than the `Censor`.
+    
+  + [FIXME] Mention shallow handlers in the introduction, and acknowledge that
+    they may have benefits for defining higher-order effects
 
 - [FIXME] Revise 3.5 to clarify that modularity characteristics of scoped
   effects may differ from the modularity benefits you get from "classical" hefty
@@ -261,10 +264,9 @@ All fixed. Many thanks!
 > higher-order signature functor, and hefty algebras, which elaborate hefty
 > trees into effect trees built using a first-order signature functor. 
 
-Good summary!
-
-We might add: another difference from scoped effects is that some higher-order
-operations are not scoped operations, such as functions with effectful bodies.
+Good summary.  We would add that another difference from scoped effects is that
+some higher-order operations are not scoped operations, such as operations for
+effectful lambdas (see, e.g., the discussion in 2.6.4).
 
 Latent effects and handlers address this problem with scoped effects, but they
 also require glue code.
@@ -330,12 +332,14 @@ also require glue code.
 
 Could you elaborate on what type `censor` has in your example?
 
-One option is:
+Based on your comment below, it seems you assign it the following type:
 
     censor : ∀ {A} → (String -> String) -> (A ! Censor,Output) -> (A ! Censor)
 
-This type restricts sub-trees of `censor` to only contain operations of type
-`Censor` and `Output`, which is not modular.
+This type restricts sub-trees of the `censor` operation to only contain
+operations of type `Censor` and `Output`, which is not modular.  Higher-order
+effect trees (`Hefty` trees) admit sub-trees that have effects other than
+`Censor` and `Output`.
 
 Another option is to use some concrete effect row `Δ`:
 
@@ -358,15 +362,13 @@ We have added this as a clarifying remark in Sect. 1.3.
 > Thus, the function f' with hCensor seems able to handle censor performed by g
 > in the same way as the hefty algebra eCensor. Because censor is an algebraic
 > operation, it could retain the benefit of modularity.
-
+>
 > Does the above f' do the same thing as eCensor as I expect?
 
-Elaborations can also be done in multiple passes.
+Not as far as we can tell, for the reasons summarized above.
 
-If we use shallow handlers, it seems we can indeed get similar modularity
-benefits as hefty algebras.  Less clear how we can get modular equational
-theories for shallow handlers (but we would be happy to know if we have
-overlooked something).
+We hope the added remark in the introduction helps prevent confusion for
+readers.
 
 > If it is not, I would like to see a discussion that exposes the critical
 > difference between f' and eCensor. Otherwise, what contributions the authors
@@ -381,8 +383,29 @@ overlooked something).
 > research on effect handlers, not just the proposed solution is more beneficial
 > than scoped effect handlers.
 
-We will discuss the relationship with shallow handlers in the introduction and
+If we use shallow handlers, it seems we can indeed get similar modularity
+benefits as hefty algebras, as that could allow us to use a type of `censor`
+akin to the following:
+
+    censor : ∀ {A Δ} → (String -> String) -> (A ! Censor, Output, Δ) -> (A ! Censor)
+
+(Ignoring for now the fact that this operation requires quantifying over effect
+trees in operations, which seems to give rise to universe size issues that make
+this style of operation non-trivial to encode in, e.g., Agda.)
+
+It seems a shallow handler for a `censor` operation with the type above could
+leave `Δ` completely polymorphic, and simply forward the effects to its
+surrounding context, to obtain a similar effect as elaboration algebras.
+
+On the other hand, it is less clear to us how modular equational theories for
+shallow handlers would look and work.
+
+We will discuss this relationship with shallow handlers in the introduction and
 related work.
+
+If you have pointers, we would also be happy to learn more about what
+higher-order effects Koka supports in practice.  We have found claims to this
+end online, but struggled to find a precise characterization.
 
 > Another concern is that the explanation of the modularity problem with
 > higher-order operations (Section 1.2) is unclear to me. The paper first
@@ -392,6 +415,8 @@ related work.
 
 The implication is that the only way to handle these effects, is to apply a
 handler in-line, which is non-modular.
+
+We have added a clarifying sentence after the sentence on line 127--129.
 
 > Why the only way to ensure the argument v has the type whose effects match
 > those of the operation clause is to apply handlers of higher-order effects

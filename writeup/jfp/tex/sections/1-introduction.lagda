@@ -141,14 +141,16 @@ In theory, the parameter type $v$ would also be compatible if $A = () \to \Typin
 However, encoding computations as parameters in this way is non-modular.
 The reason is that effect handlers are not applied recursively to parameters of operations~\citep{Plotkin2009handlers,Pretnar15}; i.e., if $h$ handles operations other than $\Op{op}$, then
 %
-\begin{equation*}
+\begin{equation}
 \With{h}{(\Do~x \leftarrow \Op{op}~v; m)}\
 \equiv\
 \Do~x \leftarrow \Op{op}~v; (\With{h}{m})
-\end{equation*}
+\label{eq:hdl-pretnar}
+\end{equation}
 %
 This implies that the only way to ensure that $v$ has type $A = \Typing{C}{Δ′}$ whose effects match the context of the operation (e.g., $k : B \to \Typing{C}{Δ′}$), is to apply handlers of higher-order effect encodings (such as $\Op{op}$) before applying other handlers (such as $h$).
-In turn, this means that programs can contain at most one higher-order effect encoded in this way (otherwise, which handler do we apply first?).
+Otherwise, the effects contained in the value $v$ of $\Op{op}~v$ in \cref{eq:hdl-pretnar} above escape their scope, because handlers are not propagated into the computation contained in $v$.
+Since we must apply handlers of higher-order effects first, this means that programs can contain at most one higher-order effect encoded in this way (otherwise, which handler do we apply first?).
 Consequently, encoding computation parameters in terms of the value $v$ carried by an operation does not support modular definition, composition, and handling of higher-order effects.
 
 A consequence of this restriction is that algebraic effects and handlers only support higher-order operations whose computation parameters are \emph{continuation-like}.
