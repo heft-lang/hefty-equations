@@ -2,8 +2,11 @@
 
 - Revise introduction
 
-- Revise 3.5 to clarify that modularity characteristics of scoped effects may
-  differ from the modularity benefits you get from "classical" hefty
+  + [FIXME] Clarifying remark in Sect. 1.3 summarizng that `H` can (and will in general)
+    contain operations other than the `Censor`.
+
+- [FIXME] Revise 3.5 to clarify that modularity characteristics of scoped
+  effects may differ from the modularity benefits you get from "classical" hefty
   algebras+alg. effects.  But that we can get similar interaction in at least
   some cases, as we illustrate in Sect. 4.2.2.
 
@@ -248,7 +251,6 @@ All fixed. Many thanks!
 > Comments to the Author
 > # Summary
 
-
 > The paper studies a modularity problem with handling higher-order effects,
 > where arguments of effect operations may be computations with scoped
 > effects. Scoped effect handlers proposed by Wu et al. address a similar
@@ -257,12 +259,22 @@ All fixed. Many thanks!
 > effects. As a solution that overcomes the limitations of scoped effect
 > handlers, the paper proposed hefty trees, which are effect trees built using a
 > higher-order signature functor, and hefty algebras, which elaborate hefty
-> trees into effect trees built using a first-order signature functor. Based on
-> the development of hefty trees and algebras, the paper also provides an
-> infrastructure for equational reasoning about computations with higher-order
-> effects and handlers elaborating them. The proposed framework is presented
-> based on the development on Agda.
->
+> trees into effect trees built using a first-order signature functor. 
+
+Good summary!
+
+We might add: another difference from scoped effects is that some higher-order
+operations are not scoped operations, such as functions with effectful bodies.
+
+Latent effects and handlers address this problem with scoped effects, but they
+also require glue code.
+
+> Based on the development of hefty trees and algebras, the paper also provides
+> an infrastructure for equational reasoning about computations with
+> higher-order effects and handlers elaborating them. The proposed framework is
+> presented based on the development on Agda.
+
+
 > # Assessment
 > 
 > I find the following strengths in the paper.
@@ -305,7 +317,7 @@ All fixed. Many thanks!
 > 
 > let rec f' g = with hCensor handle (g ())
 > where hCensor = handler { (return x)      -> return x
->                          (censor f m; k) -> do (x,s) <- (with hOut handle (f' (λ(). do m))); out (f s); k x}
+>                           (censor f m; k) -> do (x,s) <- (with hOut handle (f' (λ(). do m))); out (f s); k x}
 >
 > The recursive function f' takes a thunk g that may perform censor, and
 > executes g under the handler hCensor for censor. The censor case in hCensor
@@ -314,19 +326,40 @@ All fixed. Many thanks!
 > handlers through shallow handlers (Daniel Hillerström and Sam Lindley,
 > "Shallow Effect Handlers", APLAS 2018)). Note that f' can be polymorphic over
 > the return type of g, so the application f' (λ(). do m) could be typed
-> whatever the type of m is. 
->
+> whatever the type of m is.
+
+Could you elaborate on what type `censor` has in your example?
+
+One option is:
+
+    censor : ∀ {A} → (String -> String) -> (A ! Censor,Output) -> (A ! Censor)
+
+This type restricts sub-trees of `censor` to only contain operations of type
+`Censor` and `Output`, which is not modular.
+
+Another option is to use some concrete effect row `Δ`:
+
+    censor : ∀ {A} → (String -> String) -> (A ! Censor, Output, Δ) -> (A ! Censor)
+    
+This type requires us to apply the handler for `censor` as the first handler,
+which has the problems we explain on line 131 in the introduction of our paper.
+To summarize, if we do not apply it first, then either `Δ` will contain _more_
+effects than the rest of the tree, whereby we cannot handle it.
+
 > Furthermore, as hefty algebras elaborate all higher-order effects in one go,
 > we should be able to assume that m performs no effect operations other than
-> censor. Thus, the function f' with hCensor seems able to handle censor
-> performed by g in the same way as the hefty algebra eCensor. Because censor is
-> an algebraic operation, it could retain the benefit of modularity.
->
+> censor. 
+
+No.  Higher-order effect trees can contain multiple effects, so the `m` in
+`censor f m` can perform effect operations other than `censor`.
+
+We have added this as a clarifying remark in Sect. 1.3.
+
+> Thus, the function f' with hCensor seems able to handle censor performed by g
+> in the same way as the hefty algebra eCensor. Because censor is an algebraic
+> operation, it could retain the benefit of modularity.
+
 > Does the above f' do the same thing as eCensor as I expect?
-
-
-No: higher-order effect trees can contain multiple operations.  Those operations
-could not be handled in a modular way using this scheme.
 
 Elaborations can also be done in multiple passes.
 
