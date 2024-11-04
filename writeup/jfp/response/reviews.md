@@ -1,4 +1,19 @@
+# Response
+
+We would like to thank the reviewers for their time and helpful comments!
+
+The main concern raised by reviewers relates to the motivation behind our work.
+
+[FIXME] We have revised the introduction to clarify the questions raised by the
+reviewers.
+
+Below we include inline responses to the comments and questions raised by the
+reviewers.
+
 # Changelist
+
+[FIXME] Update line numbers throughout response to reflect line numbers in
+submitted manuscript.
 
 - Revise introduction
 
@@ -13,18 +28,9 @@
   algebras+alg. effects.  But that we can get similar interaction in at least
   some cases, as we illustrate in Sect. 4.2.2.
 
+- [FIXME] Relate to shallow handlers in related work section.
 
-# Response
-
-We would like to thank the reviewers for their time and helpful comments!
-
-The main concern raised by reviewers relates to the motivation behind our work.
-
-[FIXME] We have revised the introduction to clarify the questions raised by the
-reviewers.
-
-Below we include inline responses to the comments and questions raised by the
-reviewers.
+# Detailed response
 
 > Comments to the Author
 > # Summary
@@ -276,7 +282,6 @@ also require glue code.
 > higher-order effects and handlers elaborating them. The proposed framework is
 > presented based on the development on Agda.
 
-
 > # Assessment
 > 
 > I find the following strengths in the paper.
@@ -300,9 +305,14 @@ also require glue code.
 >   compared with the conference version.
 > 
 > Therefore, I'm positive for the technical development of the paper.
-> 
+
+Thank you!
+
 > However, I have several concerns about the current form.
-> 
+
+We respond to each, and summarize how we have revised the paper to hopefully
+clarify where the existing explanations seem to have been lacking.
+
 > The first concern is about high-level contributions of the paper. To describe
 > the concern more specifically, recall the elaboration of the operation censor
 > (line 169):
@@ -332,32 +342,51 @@ also require glue code.
 
 Could you elaborate on what type `censor` has in your example?
 
-Based on your comment below, it seems you assign it the following type:
+Based on your comment below, it seems you assign it the following type (in
+Agda-inspired syntax):
 
     censor : ∀ {A} → (String -> String) -> (A ! Censor,Output) -> (A ! Censor)
 
-This type restricts sub-trees of the `censor` operation to only contain
+This type restricts sub-trees of the `censor` operation to _only_ contain
 operations of type `Censor` and `Output`, which is not modular.  Higher-order
 effect trees (`Hefty` trees) admit sub-trees that have effects other than
 `Censor` and `Output`.
 
-Another option is to use some concrete effect row `Δ`:
+Another option for how to type `censor` is to use some concrete effect row `Δ`:
 
     censor : ∀ {A} → (String -> String) -> (A ! Censor, Output, Δ) -> (A ! Censor)
     
 This type requires us to apply the handler for `censor` as the first handler,
 which has the problems we explain on line 131 in the introduction of our paper.
-To summarize, if we do not apply it first, then either `Δ` will contain _more_
-effects than the rest of the tree, whereby we cannot handle it.
+To summarize, if we do not apply it first, then either: 
+
+(1) `Δ` will contain _more_ effects than the rest of the tree, which means we
+    must manually apply handlers to make the sub-tree match the effects of the
+    surrounding computation, which is non-modular.
+
+(2) `Δ` will initially contain _fewer_ effects than its surrounding context,
+    which means we cannot type all programs we want.
 
 > Furthermore, as hefty algebras elaborate all higher-order effects in one go,
 > we should be able to assume that m performs no effect operations other than
 > censor. 
 
 No.  Higher-order effect trees can contain multiple effects, so the `m` in
-`censor f m` can perform effect operations other than `censor`.
+`censor f m` can perform effect operations other than `censor`.  As summarized
+on line 216 of the paper, the so-called "smart constructor" (Sect. 2.2) for
+`censor` has the following type:
 
-We have added this as a clarifying remark in Sect. 1.3.
+    censor : (String -> String) -> A !! H -> A !! H
+                                       ^^^       ^^^
+                           sub-computation       effects of the context
+                                   effects       the operation occurs in
+
+Here `censor` is polymorphic in the higher-order effect row `H`, and the effects
+in the sub-computation matches the effects of the context the operation occurs
+in.
+
+We have revised the explanation of higher-order effects in Sect. 1.2 to
+hopefully make this clearer.
 
 > Thus, the function f' with hCensor seems able to handle censor performed by g
 > in the same way as the hefty algebra eCensor. Because censor is an algebraic
@@ -367,8 +396,7 @@ We have added this as a clarifying remark in Sect. 1.3.
 
 Not as far as we can tell, for the reasons summarized above.
 
-We hope the added remark in the introduction helps prevent confusion for
-readers.
+We hope the revised explanations in the introduction help clear up confusion.
 
 > If it is not, I would like to see a discussion that exposes the critical
 > difference between f' and eCensor. Otherwise, what contributions the authors
