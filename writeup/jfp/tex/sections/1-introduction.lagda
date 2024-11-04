@@ -137,7 +137,7 @@ Following \citet{Plotkin2009handlers,Pretnar15}, the left and right hand sides o
 \end{equation*}
 %
 Here it is only $k$ whose type is compatible with the right hand side.
-In theory, the parameter type $v$ would also be compatible if $A = \Typing{C}{Δ′}$.
+In theory, the parameter type $v$ would also be compatible if $A = () \to \Typing{C}{Δ′}$.
 However, encoding computations as parameters in this way is non-modular.
 The reason is that effect handlers are not applied recursively to parameters of operations~\citep{Plotkin2009handlers,Pretnar15}; i.e., if $h$ handles operations other than $\Op{op}$, then
 %

@@ -1,10 +1,24 @@
+# Changelist
+
+- Revise introduction
+
+- Revise 3.5 to clarify that modularity characteristics of scoped effects may
+  differ from the modularity benefits you get from "classical" hefty
+  algebras+alg. effects.  But that we can get similar interaction in at least
+  some cases, as we illustrate in Sect. 4.2.2.
+
+
+# Response
+
 We would like to thank the reviewers for their time and helpful comments!
 
 The main concern raised by reviewers relates to the motivation behind our work.
 
-[FIXME] We have revised the introduction to clarify the questions raised by the reviewers.
+[FIXME] We have revised the introduction to clarify the questions raised by the
+reviewers.
 
-Below we include inline responses to the comments and questions raised by the reviewers.
+Below we include inline responses to the comments and questions raised by the
+reviewers.
 
 > Comments to the Author
 > # Summary
@@ -139,13 +153,13 @@ scoped operation is encoded as an algebraic operation that has two possible
 continuations:
 
 1. A continuation parameterized by `Ref B × Ret Δ o`, representing a sub-scope
-   that will be delimited by a jump given by a `sub-end` operation.
+   that will be delimited by a jump (`sub-end`) operation.
    
 2. A continuation parameterized by `B`, representing the continuation of the
    sub-scope, which the delimiting `sub-end` operation will jump to.
-   
+
 The following `convert` function uses the `conv-Effect` function and intuition
-above to convert scoped effect trees into algebraic effect trees:
+above to convert scoped effect trees into algebraic effect trees with a scoped syntax:
 
     convert : (Ref : Set → Set)
             → Prog Δ γ A
@@ -157,11 +171,13 @@ above to convert scoped effect trees into algebraic effect trees:
       (inj₂ y) → convert Ref (k₂ y))
 
 As the example in 4.2.2 illustrates, this style of scoped syntax lets us
-simulate transactional exception handling.
+simulate transactional exception handling.  Intuitively, we expect that this
+observation generalizes, and that we can get interaction à la scoped effects in
+general, from this style of encoding of scoped effects as scoped algebraic
+effect syntax.
 
-However, verifying that the algebraic effect trees resulting from this
-conversion has similar modularity characteristics as scoped effects and handlers
-in general is a topic for future work.
+Verifying this, and comparing other modularity characteristics, is a topic for
+future work.
 
 > ## Modular Reasoning of Higher-Order Effects
 > 
@@ -174,33 +190,45 @@ in general is a topic for future work.
 > are the advantages and disadvantages of reasoning with hefty algebras
 > compared to other approaches?
 
-TODO: compare in S5/related work to Zhixuan+Wu & Lindley et al.
+Thanks for the reminders.
+
+[FIXME] We have expanded Sect. 5 to compare with these works.
 
 > # Minor Comments and Typos
 > 
 > - 121: I would expect `A = () -> C!Δ'` since `A` should be a value
 >  type while `C!Δ'` is a computation type
-> 
+
+Indeed, thanks! Fixed.
+
 > - 1136: I would use `\citep` for the citation of Levy (2006).
-> 
+>
 > - 1154 1160 1169 1172: There are some `-`s.
-> 
+
+Both fixed.
+
 > - 1299: Using sub and jump really feels like cheating to me. I wonder
 >  if they are avoidable.
-> 
+
+I think you're right that they're avoidable.  We believe the general-purpose
+`convert` discussed earlier could be used instead.
+
 > - 1461: "an define"
-> 
+>
 > - 1507: I cannot parse "... the term metavariables respectively return
 >  type of the equation".
-> 
+>
 > - 1626: "categorie"
-> 
+>
 > - 1662: "still would"
-> 
+>
 > - 1692: "that establish"
-> 
+>
 > - 2084: the apostrophe of `catch` is different from others
-> 
+
+All fixed. Many thanks!
+
+
 > # References
 > 
 > Zhixuan Yang, Nicolas Wu:

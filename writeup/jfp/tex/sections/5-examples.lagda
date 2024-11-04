@@ -43,7 +43,7 @@ module AbstractionModule where
 \end{code}
 
 As recently observed by \citet{BergSPW21}, the (higher-order) operations for $\lambda$ abstraction and application are neither algebraic nor scoped effects.
-We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value \cite{Levy06}.
+We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value \citep{Levy06}.
 The interface we will consider is parametric in a universe of types given by the following record:
 
 \begin{code}
@@ -106,21 +106,21 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
       ‵app f m = impure (injᴴ {M = Hefty _} (app f , pure , λ _ → m))
 \end{code}
 %
--- Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}).
--- The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
--- The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
+Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}).
+The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
+The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
 
--- The interface above defines a kind of \emph{higher-order abstract syntax}~\cite{PfenningE88} which piggy-backs on Agda functions for name binding.
--- However, unlike most Agda functions, the constructors above represent functions with side-effects.
--- The representation in principle supports functions with arbitrary side-effects since it is parametric in what  the higher-order effect signature \ab{H} is.
--- Furthermore, we can assign different operational interpretations to the operations in the interface without having to change the interface or programs written against the interface.
--- To illustrate we give two different implementations of the interface: one that implements a call-by-value evaluation strategy, and one that implements call-by-name.
+The interface above defines a kind of \emph{higher-order abstract syntax}~\cite{PfenningE88} which piggy-backs on Agda functions for name binding.
+However, unlike most Agda functions, the constructors above represent functions with side-effects.
+The representation in principle supports functions with arbitrary side-effects since it is parametric in what  the higher-order effect signature \ab{H} is.
+Furthermore, we can assign different operational interpretations to the operations in the interface without having to change the interface or programs written against the interface.
+To illustrate we give two different implementations of the interface: one that implements a call-by-value evaluation strategy, and one that implements call-by-name.
 
 
--- \subsubsection{Call-by-Value}
+\subsubsection{Call-by-Value}
 
--- We give a call-by-value interpretation \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
--- Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):\footnote{The two sides of an isomorphism \ab{A}~\ad{↔}~\ab{B} are given by the functions \aF{to}~\as{:}~\ab{A}~\as{→}~\ab{B} and \aF{from}~\as{:}~\ab{B}~\as{→}~\ab{A}.}
+We give a call-by-value interpretation \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
+Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):\footnote{The two sides of an isomorphism \ab{A}~\ad{↔}~\ab{B} are given by the functions \aF{to}~\as{:}~\ab{A}~\as{→}~\ab{B} and \aF{from}~\as{:}~\ab{B}~\as{→}~\ab{A}.}
 \begin{code}[hide]
     module _ ⦃ l : LamUniv ⦄
              ⦃ iso₁ : {t₁ t₂ : Type}
@@ -403,7 +403,7 @@ The algebraic effects are summarized by the following smart constructors where \
 
     CC : ⦃ u : Univ ⦄ (Ref : Type → Set) → Effect
     Op  (CC Ref) = CCOp Ref
-    Ret (CC Ref) (sub {t})         = Ref t ⊎ ⟦ t ⟧ᵀ
+    Ret (CC Ref) (sub {t})     = Ref t ⊎ ⟦ t ⟧ᵀ
     Ret (CC Ref) (jump ref x)  = ⊥
 
     module _ ⦃ u : Univ ⦄ {Ref : Type → Set} {t : Type} where

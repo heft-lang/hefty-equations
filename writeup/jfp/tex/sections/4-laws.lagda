@@ -87,7 +87,7 @@ the $\af{put}$ operation in between:
   \af{‵get}\ 𝓑\ λ s →\ \af{‵get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{‵get}\ 𝓑\ λ s →\ k\ s\ s
 \end{equation*}
 %
-We an define equational laws for higher-order effects in a similar fashion. For
+We can define equational laws for higher-order effects in a similar fashion. For
 example, the following \emph{catch-return} law for the
 $\af{‵catch}$ operation of the $\af{Catch}$ effect, stating that catching
 exceptions in a computation that only returns a value does nothing.
@@ -149,7 +149,7 @@ record Equation (Δ : Effect) : Set₁ where
 %
 An equation consists of five components. The field $\aF{V}$ defines the number
 of type metavariables used in the equation. Then, the fields $\aF{Γ}$ and
-$\aF{R}$ define the term metavariables respectively return type of the
+$\aF{R}$ respectively define the term metavariables (\ad{Vec}~\ad{Set}~\aF{V}~\as{→}~\ad{Set}) and return type (\ad{Vec}~\ad{Set}~\aF{V}~\as{→}~\ad{Set}) of the
 equation. Both may depend on the type metavariables of the equation, hence they
 depend on a vector of length $\aF{V}$ containing unapplied substitutions for all
 type metavariables. Finally, the left-hand side ($\aF{lhs}$) and right-hand side
@@ -334,7 +334,7 @@ equations (weaken-theory T) = λ a → weaken-□ (T .equations a)
 Categorically speaking, the observation that for a given effect-indexed type $P$
 we can transform a value of type $P\ \ab{Δ₁}$ to a value of type $P\ \ab{Δ₂}$ if
 we know that $\ab{Δ₁}~\ad{≲}~\ab{Δ₂}$ is equivalent to saying that $P$ is a
-functor from the category of containers and container morphisms to the categorie
+functor from the category of containers and container morphisms to the category
 of sets. From this perspective, the existence of weakening for free $\ad{Free}$,
 as witnessed by the $\af{♯}$ operation discussed in
 \cref{sec:hefty-trees-and-algebras} implies that it too is a such a functor.
@@ -406,7 +406,7 @@ $\ad{□}$ modality at all) to show that theories are weakenable, rather than us
 $\af{weaken-eq}$ directly? Although the latter approach would indeed allow us to
 define the composition operations for effect theories defined above, the
 possible ways in which we can instantiate term metavariables remains too
-restrictive. That is, we still would not be able to prove the equality in
+restrictive. That is, we would still not be able to prove the equality in
 \cref{eq:get-get-throw}, despite the fact that we can weaken the \emph{get-get}
 law so that it applies to programs that use the
 $\ad{Throw}$ effect as well. Instantiations of the term metavariable
@@ -475,7 +475,7 @@ first three constructors ensure that it is an equivalence relation.
   ≈-trans  : m₁ ≈⟨ T ⟩ m₂ → m₂ ≈⟨ T ⟩ m₃ → m₁ ≈⟨ T ⟩ m₃
 \end{code}
 %
-Then, we add the following congruence rule, that establish that we can prove
+Then, we add the following congruence rule, which establishes that we can prove
 equality of two programs starting with the same operation by proving that the
 continuations yield equal programs for every possible value. 
 %
@@ -1114,7 +1114,7 @@ which we prove about their handlers respectively elaborations.
                                    & \multicolumn{1}{c|}{$\af{‵local}~(\ab{f}~\af{∘}~\ab{g})~\ab{m}\ \equiv\ \af{‵local}~\ab{g}~(\af{‵local}~\ab{f}~\ab{m})$} & \textit{local-local}     \\ \hline\hline
 \multirow{3}{*}{\af{Catch}}        & \multicolumn{1}{c|}{$\af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}$} & \textit{catch-pure}    \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\af{‵catch}~\af{‵throw}~\ab{m}\ \equiv\ \ab{m}$} & \textit{catch-throw$_1$} \\ \cline{2-3} 
-                                   & \multicolumn{1}{c|}{$\af{`catch}~\ab{m}~\af{‵throw}\ \equiv\ \ab{m}$} & \textit{catch-throw$_2$} \\ \hline\hline
+                                   & \multicolumn{1}{c|}{$\af{‵catch}~\ab{m}~\af{‵throw}\ \equiv\ \ab{m}$} & \textit{catch-throw$_2$} \\ \hline\hline
 \multirow{2}{*}{\af{Lambda}}       &
                                      \multicolumn{1}{c|}{$\af{‵abs}~\ab{f}~\af{𝓑}~λ~\ab{f′}~→~\af{‵app}~\ab{f′}~\ab{m}\ \equiv\ \ab{m}~\af{𝓑}~\ab{f}$} & \textit{beta}            \\ \cline{2-3} 
                                    & \multicolumn{1}{c|}{$\ac{pure}~\ab{f}\ \equiv\ \af{‵abs}~(λ~\ab{x}~→~\af{‵app}~\ab{f}~(\af{‵var}~\ab{x}))$} & \textit{eta}             \\ 
