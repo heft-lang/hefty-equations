@@ -671,6 +671,15 @@ related work section.
 > over established constructs for ensuring modularity—not just in the context of
 > effects, but standard ones such as higher-order functions or functors.
 
+We have revised the paper to provide the following explanations.
+
+We have added clarifying remarks about the open questions about whether it is
+always possible (and desirable) to encode scoped syntax in terms of algebraic
+effects and handlers to the paper.
+
+We have also expanded the related work section to discuss the possible
+alternative encoding of our approach, using final tagless techniques.
+
 [WIP]
 
 The problem the paper tackles is the lack of modularity in the context of
