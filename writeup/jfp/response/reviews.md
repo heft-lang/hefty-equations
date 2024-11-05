@@ -549,14 +549,14 @@ hold.
 
 > Referee: 3
 > 
-> Comments to the Author In this paper, the authors introduce "hefty algebras,"
-> a generalisation of algebraic effects to higher-order operations that utilise
-> their computational arguments in a non-algebraic way (i.e., not as
-> continuations that commute with the evaluation context). This approach is
-> similar to scoped effects, but hefty algebras interpret operations in two
-> stages: in the first stage, higher-order operations are elaborated (i.e.,
-> term-expanded) into computations using standard algebraic effects, which are
-> then further interpreted through handlers in the second stage.
+> In this paper, the authors introduce "hefty algebras," a generalisation of
+> algebraic effects to higher-order operations that utilise their computational
+> arguments in a non-algebraic way (i.e., not as continuations that commute with
+> the evaluation context). This approach is similar to scoped effects, but hefty
+> algebras interpret operations in two stages: in the first stage, higher-order
+> operations are elaborated (i.e., term-expanded) into computations using
+> standard algebraic effects, which are then further interpreted through
+> handlers in the second stage.
 > 
 > After summarising ordinary algebraic effects and handlers, the paper
 > demonstrates how to generalise this approach to higher-order operations and
@@ -573,40 +573,61 @@ hold.
 > development were done independently of Agda, as even with all the pretty
 > notation that Agda provides, the reader can easily become lost in the
 > encodings.
-> 
+
+We appreciate your reading efforts!
+
+We have tried to communicate the gist of our idea informally, in non-Agda
+syntax, in the introduction, and the categorical gist of our solution in the
+opening paragraphs of Sect. 3.
+
+If you have more ideas for expositional improvements, we would be happy to
+consider them.
+
 > Given that the work on hefty algebras has been accepted at a major conference,
 > I assume the community finds it interesting and meaningful. The additions in
 > this version are significant enough to consider it for journal
 > acceptance. However, I cannot shake the feeling that the approach introduces a
 > roundabout and unnecessary way of achieving modularity through a variant of
-> handlers. The two distinguishing features of handlers are dynamic scoping and
-> their exclusive application to continuations. Without the latter, we unfold
+> handlers.
+>
+> The two distinguishing features of handlers are dynamic scoping and their
+> exclusive application to continuations. Without the latter, we unfold
 > operation definitions everywhere, which is exactly what the usual binding
-> constructs already accomplish. With scoped handlers, the programmer at least
-> has control over the level at which interpretations are applied (as described
-> from line 1101 onward). In contrast, with hefty algebras, one must unfold
-> elaborations of all higher-order operations at the same time (line 1113), and
-> I struggle to see the advantages of this approach.
+> constructs already accomplish.
 
-We want to capture the syntax of programs, in a way that we can
-_compositionally_ provide an interpretation of that syntax.
+Indeed!
 
-As discussed in Sect. 2.6.4, effectful functions, and other thunking constructs,
-are not scoped effects.
+Except, unlike many usual binding constructs, we want the unfolding to be
+given compositionally.
 
-As we demonstrate in Sect. 4.1, higher-order effects provides a syntax of these constructs.
+> With scoped handlers, the programmer at least has control over the level at
+> which interpretations are applied (as described from line 1101 onward). In
+> contrast, with hefty algebras, one must unfold elaborations of all
+> higher-order operations at the same time (line 1113), and I struggle to see
+> the advantages of this approach.
 
-As also demonstrated in Sect. 4.1, we can, compositionally, map this syntax onto a semantics, by elaborating lambdas into Agda functions.
+Advantages:
 
-Other interpretations are possible; e.g., elaborating into some category with cartesian closed structure.
+1. As discussed in Sect. 2.6.4, effectful functions and other thunking
+   constructs are not scoped effects.  As we demonstrate in Sect. 4.1, our
+   approach provides a relatively simple syntax and semantics of them.
 
-Latent effects is an alternative generelization of scoped effects.
+2. Algebraic effects provides at least some of the same control we get from
+   scoped effects already, as our example in Sect. 4.2 demonstrates, and as we
+   also discuss in our response Reviewer 1.
 
-They can be applied at different levels, to obtain different semantics, assuming we define similar glue code for weaving as with scoped effects, and assuming we are able to define handlers that manually pass around and compose computations manually.
-
-However, as we demonstrate in Sect. 4.2, and as we posit in our response to Reviewer 1, elaborating into algebraic effects gives us similar control.
-
-The advantage of our approach is that it is simple: it is given by a fold over a "standard" free monad over a higher-order signature functor into another "standard" structure, namely the "traditional" free monad over a first-order signature functor.
+3. When we do not need this control, then algebraic effects is enough.  Indeed,
+   it is not clear to us that it is necessarily a good thing that we have to
+   think deep and hard about the order we apply handlers in.  If, for example,
+   we wanted our approach to be used by domain-specific language engineers, it
+   seems helpful if they can apply handlers in any order and get the intended
+   semantics; i.e., if the composed (higher-order) effect theories happen to
+   have a commutative tensor product (Hyland et al., 2006).
+   
+4. Surprisingly (at least to us), these advantages fall out of applying fairly
+   standard techniques: folding a free monad over a higher-order signature
+   functor into the "traditional" free monad over a first-order signature
+   functor, and then applying standard effect handlers.
 
 > For example, in line 175 (and later in line 578), you state that you can
 > refactor the semantics of a program only by modifying or copying
@@ -615,9 +636,7 @@ The advantage of our approach is that it is simple: it is given by a fold over a
 > 
 >    censorHello = λ(censor : (String → String) → (A!Δ,Out → A!Δ)).
 >      censor (λs. …) hello
-
-What are the types in this example?
-
+>
 > Then, instead of the two elaborations, define the functions:
 > 
 >    eCensor f = do (x, s) ← (with hOut handle m); out (f s)
@@ -633,13 +652,16 @@ What are the types in this example?
 > of higher-order functions, one could impose even more structure by using
 > modules and functors.
 
-Finally Tagless, Bruno's blog, Wand final algebras
+This sounds like a so-called _tagless final_ solution.  (Akin to MTL style type
+classes known from Haskell.)
 
-What is our focus: compositional denotational semantics for h.o. effects by
-unfolding definitions. 
+Yes, tagless final offers an alternative encoding to initial algebra semantics.
 
-Could have been done a different way. Probably equivalent, at least in terms of
-complexity, but doesn't exist to our knowledge so we can't compare. 
+Mitch Wand argues that final algebras is an "extension" of initial algebra
+semantics that offers benefits for specification and implementation.
+
+We have added a discussion of the relation to final tagless techniques to the
+related work section.
 
 > CONCLUSION
 > 
@@ -647,6 +669,8 @@ complexity, but doesn't exist to our knowledge so we can't compare.
 > the very least, I would like the authors to explain what their approach offers
 > over established constructs for ensuring modularity—not just in the context of
 > effects, but standard ones such as higher-order functions or functors.
+
+[WIP]
 
 The problem the paper tackles is the lack of modularity in the context of
 defining and composing effects.
