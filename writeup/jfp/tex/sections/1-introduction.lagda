@@ -70,7 +70,7 @@ We can think of $\Effect{Output}$ as an interface that specifies the parameter a
 The implementation of such an interface is given by an \emph{effect handler}.
 An effect handler defines how to interpret operations in the execution context they occur in.
 The type of an effect handler is $\Typing{A}{Δ}~\Rightarrow~\Typing{B}{Δ′}$, where $Δ$ is the row of effects before applying the handler and $Δ′$ is the row after.
-For example, here is the type of an effect handler for $\Effect{Output}$:
+For example, here is a specific type of an effect handler for $\Effect{Output}$:
 %
 \begin{equation*}
     \Id{hOut} : \Typing{A}{\Effect{Output},Δ}
@@ -104,7 +104,7 @@ Since $k$ represents an execution context that includes the current handler, cal
 The result of handling $\Op{out}~s$ is then $y$ and the current output ($s$) plus the output of the rest of the program ($s′$).
 
 In general, a computation $m : \Typing{A}{Δ}$ can only be run in a context that provides handlers for each effect in $Δ$.
-To this end, if $Δ = Δ₁,Δ₂$ and $h : \Typing{A}{Δ₁}~\Rightarrow~\Typing{B}{Δ₁′}$, then the expression $(\With{h}{m}) : \Typing{B}{Δ₁′,Δ₂}$ runs $m$ in the context of the handler $h$.
+To this end, the expression $\With{h}{m}$ represents applying the handler $h$ to handle a subset of effects of $m$.
 For example, consider:
 \begin{align*}
   \Id{hello} &: \Typing{()}{\Effect{Output}}

@@ -668,8 +668,21 @@ A summary of these remarks can be found in our detailed response to Reviewer 1.
 > MINOR NOTES
 > 
 > - line 61: A reader would benefit from an example of an effect with multiple operations (e.g., state).
+
+We say a few lines down that effects can have multiple operations associated with it.
+
+We do not see the essential benefit of using state instead of output at this point in the paper, but would be happy to hear your reasons for thinking so.
+
 > - line 68: Point out that this is a type of a specific effect handler for Output.
+
+Fixed.
+
 > - line 93: Note that the ability to extend a handler type on both sides with Δ₂ does not hold in general. For example, in call-by-value (CbV), a handler returning a thunk of the continuation has the type `A!Δ,Eff ⇒ (⊤ → A!Δ)!Δ`, and extending Δ does not merely extend it on the RHS but also modifies the return type `⊤ → A!Δ`.
+
+The example here is meant to illustrate how some specific handler could be applied.
+
+We've adjusted the phrasing to make explicit that it is supposed to be an example, and hope this clarifies matters.
+
 > - line 120: It is not true that only `k` has a type compatible with the RHS; you could also return a value of type `C`.
 > - line 129: This reasoning is difficult to follow. Can you provide a concrete example? You could explicitly handle the value `v` by inserting an additional handler, which would clarify the order of handler application.
 > - line 143: Operations without computation parameters are known in the algebraic effect literature as "generic effects."
