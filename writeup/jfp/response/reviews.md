@@ -657,8 +657,9 @@ classes known from Haskell.)
 
 Yes, tagless final offers an alternative encoding to initial algebra semantics.
 
-Mitch Wand argues that final algebras is an "extension" of initial algebra
-semantics that offers benefits for specification and implementation.
+Mitch Wand argues in "Final Algebra Semantics and Data Type Extensions"
+(Sect. 7) that final algebras is an extension of initial algebra semantics that
+offers benefits for specification and implementation.
 
 We have added a discussion of the relation to final tagless techniques to the
 related work section.
