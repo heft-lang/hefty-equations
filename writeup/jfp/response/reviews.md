@@ -616,7 +616,7 @@ Advantages:
    scoped effects already, as our example in Sect. 4.2 demonstrates, and as we
    also discuss in our response Reviewer 1.
 
-3. When we do not need this control, then algebraic effects is enough.  Indeed,
+3. When we do not need this control, algebraic effects are sufficient.  Indeed,
    it is not clear to us that it is necessarily a good thing that we have to
    think deep and hard about the order we apply handlers in.  If, for example,
    we wanted our approach to be used by domain-specific language engineers, it
