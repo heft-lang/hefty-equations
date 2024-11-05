@@ -17,8 +17,9 @@ submitted manuscript.
 
 - Revise introduction
 
-  + [FIXME] Clarifying remark in Sect. 1.3 summarizng that `H` can (and will in general)
-    contain operations other than the `Censor`.
+  + We have clarified the explanation of why encoding computational arguments of
+    higher-order effects as value arguments of algebraic operations is
+    non-modular, to address questions and concerns raised by Reviewer 2.
     
   + [FIXME] Mention shallow handlers in the introduction, and acknowledge that
     they may have benefits for defining higher-order effects
@@ -454,28 +455,36 @@ We have added a clarifying sentence after the sentence on line 127--129.
 > presented in the paper assume to provide some implementations with all the
 > effects that handled computations may perform, the closest effect handler
 > should be able to handle all the operations including higher-order ones.)
-
-Effect handlers are not applied dynamically, like in the operational semantics
-found, e.g., in Koka papers.
-
-They are catamorphisms over a tree.
-
-[EXAMPLE]
-
-We will elaborate the paper with this example.
-
+>
 > In summary, the latter half of the first paragraph of Section 1.2 confuses
-> me. The confusion also causes me to be unconvinced about the second
+> me.
+
+The point of the paragraph your questions are about is that encoding
+higher-order effects in terms of computations in values higher-order effects are
+sensitive to the order in which they are applied.
+
+We have revised the paragraph to clarify this.
+
+> The confusion also causes me to be unconvinced about the second
 > paragraph. Specifically, I am not sure what "this restriction" (line 134) is
 > and why the computation parameters of higher-order operations must be
 > continuation-like (lines 134--135).
-> 
+
+This is a consequence of how handlers are typed.
+
+The restriction is fundamental, and stems from the seminal work on Algebraic
+Operations and Generic Effects by Plotkin and Power (2003).
+
 > For the equational reasoning, the paper shows what equational laws can be
 > proven, but does not discuss what cannot be. I think demonstrating the ability
 > to reject invalid laws is also important to make it convincing that the
 > equational reasoning system is well defined because only "proving" laws is
 > possible even in the reasoning system that admits any law.
-> 
+
+This is certainly possible.  Though we are not sure what kind of laws you want
+to disprove.  It is customary for equational theories to comprise laws that do
+hold.
+
 > Also, while the paper explains most of Agda's notations, more notes would be necessary for readers not very familiar with Agda. Specifically, explaining the following notations would be helpful and make the paper more self-contained.
 > 
 > - L330: Σ (Op Δ) λ op -> ...: Is this a dependent sum type like Σ op : (Op Δ) . ...?
@@ -490,7 +499,9 @@ We will elaborate the paper with this example.
 > - L1785--1786: What do { A = A }, { Δ' = Δ }, and { γ = k } mean?
 > - L1809--1812: What do Level.Lift and Level.Lift sl 0l mean?
 > - L1838: What does lift mean?
-> 
+
+[FIXME] Thanks for pointing these out!  We have added explanations.
+
 > Finally, I think the presentation of the paper needs to be improved. The issues I found are the following.
 > 
 > - L53: "as argument" --> "as an argument"?
@@ -533,8 +544,9 @@ We will elaborate the paper with this example.
 >  - L1275
 >  - L1367
 >  - Section 6
-> 
-> 
+
+[FIXME]
+
 > Referee: 3
 > 
 > Comments to the Author In this paper, the authors introduce "hefty algebras,"
@@ -575,7 +587,27 @@ We will elaborate the paper with this example.
 > from line 1101 onward). In contrast, with hefty algebras, one must unfold
 > elaborations of all higher-order operations at the same time (line 1113), and
 > I struggle to see the advantages of this approach.
-> 
+
+We want to capture the syntax of programs, in a way that we can
+_compositionally_ provide an interpretation of that syntax.
+
+As discussed in Sect. 2.6.4, effectful functions, and other thunking constructs,
+are not scoped effects.
+
+As we demonstrate in Sect. 4.1, higher-order effects provides a syntax of these constructs.
+
+As also demonstrated in Sect. 4.1, we can, compositionally, map this syntax onto a semantics, by elaborating lambdas into Agda functions.
+
+Other interpretations are possible; e.g., elaborating into some category with cartesian closed structure.
+
+Latent effects is an alternative generelization of scoped effects.
+
+They can be applied at different levels, to obtain different semantics, assuming we define similar glue code for weaving as with scoped effects, and assuming we are able to define handlers that manually pass around and compose computations manually.
+
+However, as we demonstrate in Sect. 4.2, and as we posit in our response to Reviewer 1, elaborating into algebraic effects gives us similar control.
+
+The advantage of our approach is that it is simple: it is given by a fold over a "standard" free monad over a higher-order signature functor into another "standard" structure, namely the "traditional" free monad over a first-order signature functor.
+
 > For example, in line 175 (and later in line 578), you state that you can
 > refactor the semantics of a program only by modifying or copying
 > code. However, instead of using higher-order operations, you could employ
@@ -583,7 +615,9 @@ We will elaborate the paper with this example.
 > 
 >    censorHello = λ(censor : (String → String) → (A!Δ,Out → A!Δ)).
 >      censor (λs. …) hello
-> 
+
+What are the types in this example?
+
 > Then, instead of the two elaborations, define the functions:
 > 
 >    eCensor f = do (x, s) ← (with hOut handle m); out (f s)
@@ -607,14 +641,30 @@ unfolding definitions.
 Could have been done a different way. Probably equivalent, at least in terms of
 complexity, but doesn't exist to our knowledge so we can't compare. 
 
-> 
 > CONCLUSION
 > 
 > Perhaps I am missing something, but I remain reluctant to accept the paper. At
 > the very least, I would like the authors to explain what their approach offers
 > over established constructs for ensuring modularity—not just in the context of
 > effects, but standard ones such as higher-order functions or functors.
-> 
+
+The problem the paper tackles is the lack of modularity in the context of
+defining and composing effects.
+
+There is a wide range of different solutions to this problem in the literature.
+
+All of them require more or less complicated machinery.
+
+We propose a framework that offers a promising, rather simple, alternative.
+
+This alternative is, indeed, based on (standard) higher-order functors.
+
+The fact that it is based on standard, well-understood machinery, speaks to our claim of simplicity.
+
+The manuscript was lacking some positioning remarks w.r.t. scoped effects and shallow handlers, which we have now added.
+
+A summary of these remarks can be found in our detailed response to Reviewer 1.
+
 > MINOR NOTES
 > 
 > - line 61: A reader would benefit from an example of an effect with multiple operations (e.g., state).

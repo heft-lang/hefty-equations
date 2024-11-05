@@ -159,7 +159,7 @@ That is, following~\citet{Plotkin2009handlers,Pretnar15}, if $h$ handles operati
 \end{equation}
 %
 Consequently, if $v$ contains effects of the type that $h$ handles, then the handler of the operation $\Op{op}~v$ must eventually explicitly re-apply $h$ or a different handler to handle those effects that $h$ was supposed to handle.
-If we apply more handlers of effects contained in the value $v$, then the handler of $\Op{op}~v$ must eventually explicitly apply those handlers too.
+If we apply more handlers of effects contained in the value $v$, then the handler of $\Op{op}~v$ must eventually explicitly apply handlers for those too.
 This sensitivity to the order of applying handlers makes handling higher-order operations encoded in this way non-modular.
 
 %% This implies that the only way to ensure that $v$ has a computation type $A = () \to \Typing{C}{Δ′}$ whose effects match the context of the operation (e.g., $k : B \to \Typing{C}{Δ′}$), is to apply handlers of higher-order effect encodings (such as $\Op{op}$) before applying other handlers (such as $h$).

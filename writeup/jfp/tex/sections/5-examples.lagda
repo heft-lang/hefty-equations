@@ -97,7 +97,7 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
 %
 \begin{code}
       ‵lam  :  {t₁ t₂ : Type}  → (⟦ c t₁ ⟧ᵀ → Hefty H ⟦ t₂ ⟧ᵀ)       → Hefty H ⟦ (c t₁) ↣ t₂ ⟧ᵀ
-      ‵var  :  {t : Type}      → ⟦ c t ⟧ᵀ                           → Hefty H ⟦ t ⟧ᵀ
+      ‵var  :  {t : Type}      → ⟦ c t ⟧ᵀ                            → Hefty H ⟦ t ⟧ᵀ
       ‵app  :  {t₁ t₂ : Type}  → ⟦ (c t₁) ↣ t₂ ⟧ᵀ → Hefty H ⟦ t₁ ⟧ᵀ  → Hefty H ⟦ t₂ ⟧ᵀ
 \end{code}
 \begin{code}[hide]
