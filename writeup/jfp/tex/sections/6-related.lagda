@@ -14,11 +14,11 @@ monads as a means of modeling side effects and structuring programs with side
 effects; an idea which \citet{Wadler92} helped popularize.  A problem with
 monads is that they do not naturally compose.  A range of different solutions
 have been developed to address this
-issue~\cite{Steele94,jones93,DBLP:conf/popl/Filinski99,cenciarelli1993syntactic}.
+issue~\citep{Steele94,jones93,DBLP:conf/popl/Filinski99,cenciarelli1993syntactic}.
 Of these solutions, monad
-transformers~\cite{cenciarelli1993syntactic,Liang1995monad,DBLP:conf/ifl/Jaskelioff08}
+transformers~\citep{cenciarelli1993syntactic,Liang1995monad,DBLP:conf/ifl/Jaskelioff08}
 is the more widely adopted solution.  However, more recently, algebraic
-effects~\cite{Plotkin2002notions} was proposed as an alternative solution which
+effects~\citep{Plotkin2002notions} was proposed as an alternative solution which
 offers some modularity benefits over monads and monad transformers.  In
 particular, whereas monads and monad transformers may ``leak'' information about
 the implementation of operations, algebraic effects enforce a strict separation
@@ -30,14 +30,14 @@ composition semantics that does not require intricate liftings.
 
 However, some effects, such as exception catching, did not fit into the
 framework of algebraic effects.  \emph{Effect
-handlers}~\cite{Plotkin2009handlers} were introduced to address this problem.
+handlers}~\citep{Plotkin2009handlers} were introduced to address this problem.
 Algebraic effects and handlers has since been gaining traction as a framework
 for modeling and structuring programs with side effects in a modular way.
 Several libraries have been developed based on the idea such as \emph{Handlers
-in Action}~\cite{KammarLO13}, the freer monad~\cite{KiselyovI15}, or Idris'
-\texttt{Effects} DSL~\cite{DBLP:conf/icfp/Brady13}; but also standalone
-languages such as Eff~\cite{BauerP15}, Koka~\cite{Leijen17},
-Frank~\cite{LindleyMM17}, and Effekt~\cite{BrachthauserSO20}.\footnote{A more
+in Action}~\citep{KammarLO13}, the freer monad~\citep{KiselyovI15}, or Idris'
+\texttt{Effects} DSL~\citep{DBLP:conf/icfp/Brady13}; but also standalone
+languages such as Eff~\citep{BauerP15}, Koka~\citep{Leijen17},
+Frank~\citep{LindleyMM17}, and Effekt~\citep{BrachthauserSO20}.\footnote{A more
 extensive list of applications and frameworks can be found in Jeremy Yallop's
 Effects Bibliography: \url{https://github.com/yallop/effects-bibliography}}
 
@@ -45,7 +45,7 @@ As discussed
 in~\cref{sec:modularity-problem}~and~\cref{sec:higher-order-effects}, some
 modularity benefits of algebraic effects and handlers do not carry over to
 higher-order effects.  Scoped effects and
-handlers~\cite{WuSH14,PirogSWJ18,YangPWBS22} address this shortcoming for
+handlers~\citep{WuSH14,PirogSWJ18,YangPWBS22} address this shortcoming for
 \emph{scoped operations}, as we summarized in \cref{sec:scoped-effects}.  This
 paper provides a different solution to the modularity problem with higher-order
 effects.  Our solution is to provide modular elaborations of higher-order
@@ -60,7 +60,7 @@ effects and handlers, which might provide benefits for verification.  We leave
 this as a question to explore in future work.
 
 Although not explicitly advertised, some standalone languages, such as
-Frank~\cite{LindleyMM17} and Koka~\cite{Leijen17} do have some support for
+Frank~\citep{LindleyMM17} and Koka~\citep{Leijen17} do have some support for
 higher-order effects.  The denotational semantics of these features of these
 languages is unclear.  A question for future work is whether the modular
 elaborations we introduce could provide a denotational model.
@@ -75,11 +75,11 @@ algebraic effects and handlers.
 
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
-semantics~\cite{Plotkin04a}.  Mosses' Modular Structural Operational
-Semantics~\cite{mosses2004modular} (MSOS) defines small-step rules that
+semantics~\citep{Plotkin04a}.  Mosses' Modular Structural Operational
+Semantics~\citep{mosses2004modular} (MSOS) defines small-step rules that
 implicitly propagate an open-ended set of \emph{auxiliary entities} which encode
 common classes of effects, such as reading or emitting data, stateful mutation,
-and even control effects~\cite{SculthorpeTM16}.  The K Framework~\cite{RosuS10}
+and even control effects~\citep{SculthorpeTM16}.  The K Framework~\citep{RosuS10}
 takes a different approach but provides many of the same benefits.  These
 frameworks do not encapsulate operational details but instead make it
 notationally convenient to program (or specify semantics) with side-effects.

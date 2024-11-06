@@ -1058,7 +1058,7 @@ effects.
 Now, to prove that $\af{eCatch}$ is correct with respect to a higher-order
 theory for the $\af{Catch}$ effect containing the \emph{catch-return} law, we
 must produce a proof that the programs
-$\af{ℰ}~\af{‵catch}~(\aF{return}~\ab{x})~\ab{m}~\af{⟧}$ and
+$\af{ℰ⟦}~\af{‵catch}~(\aF{return}~\ab{x})~\ab{m}~\af{⟧}$ and
 $\af{ℰ⟦}~\aF{return}~\af{⟧}$ are equal (in the sense of the inductive
 equivalence relation defined in \cref{sec:fo-equivalence}) with respect to some
 first-order theory for the $\af{Throw}$ effect. In this instance, we do not need

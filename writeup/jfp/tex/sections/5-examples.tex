@@ -185,7 +185,7 @@ The interface we will consider is parametric in a universe of types given by the
 \end{code}
 %
 The \aF{\_↣\_} field represents a function type, whereas \aF{c} is the type of \emph{thunk values}.
-Distinguishing thunks in this way allows us to assign either a call-by-value or call-by-name semantics to the interface for $\lambda$ abstraction summarized by the following smart constructors:
+Distinguishing thunks in this way allows us to assign either a call-by-value or call-by-name semantics to the interface for $\lambda$ abstraction, given by the higher-order effect signature in \cref{fig:ho-lam-sig}, and summarized by the following smart constructors:
 %
 \begin{code}[hide]%
 %
@@ -578,7 +578,184 @@ Here \af{‵lam} is a higher-order operation with a function typed computation p
 The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
 The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
 
-The interface above defines a kind of \emph{higher-order abstract syntax}~\cite{PfenningE88} which piggy-backs on Agda functions for name binding.
+\begin{figure}[t]
+\begin{code}%
+%
+\>[4]\AgdaKeyword{data}\AgdaSpace{}%
+\AgdaDatatype{LamOp⅋}\AgdaSpace{}%
+\AgdaSymbol{⦃}\AgdaSpace{}%
+\AgdaBound{l}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaRecord{LamUniv}\AgdaSpace{}%
+\AgdaSymbol{⦄}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaPrimitive{Set}\AgdaSpace{}%
+\AgdaKeyword{where}\<%
+\\
+\>[4][@{}l@{\AgdaIndent{0}}]%
+\>[6]\AgdaInductiveConstructor{lam}%
+\>[11]\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSymbol{\}}%
+\>[48]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaDatatype{LamOp⅋}\<%
+\\
+%
+\>[6]\AgdaInductiveConstructor{var}%
+\>[11]\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSymbol{\}}%
+\>[29]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaField{c}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}%
+\>[49]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaDatatype{LamOp⅋}\<%
+\\
+%
+\>[6]\AgdaInductiveConstructor{app}%
+\>[11]\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSymbol{\}}%
+\>[29]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaField{c}\AgdaSpace{}%
+\AgdaBound{t₁}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{↣}}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}%
+\>[49]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaDatatype{LamOp⅋}\<%
+\\
+%
+\\[\AgdaEmptyExtraSkip]%
+%
+\>[4]\AgdaFunction{Lam⅋}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{⦃}\AgdaSpace{}%
+\AgdaBound{l}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaRecord{LamUniv}\AgdaSpace{}%
+\AgdaSymbol{⦄}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaRecord{Effectᴴ}\<%
+\\
+%
+\>[4]\AgdaField{Opᴴ}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaDatatype{LamOp⅋}\<%
+\\
+%
+\>[4]\AgdaField{Retᴴ}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{lam}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaField{c}\AgdaSpace{}%
+\AgdaBound{t₁}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{↣}}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Retᴴ}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{var}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Retᴴ}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{app}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Fork}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{lam}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaField{c}\AgdaSpace{}%
+\AgdaBound{t₁}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Fork}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{var}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaFunction{⊥}\<%
+\\
+%
+\>[4]\AgdaField{Fork}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{app}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{})}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaRecord{⊤}\<%
+\\
+%
+\>[4]\AgdaField{Ty}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{\{}\AgdaInductiveConstructor{lam}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\}\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{}}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t₂}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Ty}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{\{}\AgdaInductiveConstructor{var}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{}\}}\AgdaSpace{}%
+\AgdaSymbol{()}\<%
+\\
+%
+\>[4]\AgdaField{Ty}%
+\>[11]\AgdaFunction{Lam⅋}%
+\>[17]\AgdaSymbol{\{}\AgdaInductiveConstructor{app}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t₂}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{}\}}\AgdaSpace{}%
+\AgdaSymbol{\AgdaUnderscore{}}%
+\>[38]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t₁}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\end{code}
+\caption{Higher-order effect signature of $\lambda$ abstraction and application}
+\label{fig:ho-lam-sig}
+\end{figure}
+
+The interface above defines a kind of \emph{higher-order abstract syntax}~\citep{PfenningE88} which piggy-backs on Agda functions for name binding.
 However, unlike most Agda functions, the constructors above represent functions with side-effects.
 The representation in principle supports functions with arbitrary side-effects since it is parametric in what  the higher-order effect signature \ab{H} is.
 Furthermore, we can assign different operational interpretations to the operations in the interface without having to change the interface or programs written against the interface.
@@ -593,22 +770,22 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
 %
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{\AgdaUnderscore{}}%
-\>[307I]\AgdaSymbol{⦃}\AgdaSpace{}%
+\>[395I]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{l}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaRecord{LamUniv}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[.][@{}l@{}]\<[307I]%
+\>[.][@{}l@{}]\<[395I]%
 \>[13]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{iso₁}%
-\>[313I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[401I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
 \AgdaBound{t₂}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[313I]%
+\>[.][@{}l@{}]\<[401I]%
 \>[20]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaBound{t₁}\AgdaSpace{}%
@@ -630,12 +807,12 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
 %
 \>[13]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{iso₂}%
-\>[335I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[423I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[335I]%
+\>[.][@{}l@{}]\<[423I]%
 \>[20]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaField{c}\AgdaSpace{}%
@@ -815,7 +992,7 @@ Using the elaboration above, we can evaluate programs such as the following whic
 %
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{\AgdaUnderscore{}}%
-\>[430I]\AgdaSymbol{⦃}\AgdaSpace{}%
+\>[518I]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{u}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaRecord{LamUniv}\AgdaSpace{}%
@@ -824,7 +1001,7 @@ Using the elaboration above, we can evaluate programs such as the following whic
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[430I]%
+\>[.][@{}l@{}]\<[518I]%
 \>[13]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{iso₁}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -924,13 +1101,13 @@ Using the elaboration above, we can evaluate programs such as the following whic
 %
 \>[8]\AgdaBound{f}\AgdaSpace{}%
 \AgdaOperator{\AgdaFunction{←}}%
-\>[498I]\AgdaFunction{‵lam}\AgdaSpace{}%
+\>[586I]\AgdaFunction{‵lam}\AgdaSpace{}%
 \AgdaSymbol{(λ}\AgdaSpace{}%
 \AgdaBound{x}\AgdaSpace{}%
 \AgdaSymbol{→}\AgdaSpace{}%
 \AgdaKeyword{do}\<%
 \\
-\>[498I][@{}l@{\AgdaIndent{0}}]%
+\>[586I][@{}l@{\AgdaIndent{0}}]%
 \>[14]\AgdaBound{n₁}\AgdaSpace{}%
 \AgdaOperator{\AgdaFunction{←}}\AgdaSpace{}%
 \AgdaFunction{‵var}\AgdaSpace{}%
@@ -1124,13 +1301,13 @@ Running the program produces \an{4} since the state increment expression is eage
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[8]\AgdaFunction{iso-fun}%
-\>[607I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[695I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
 \AgdaBound{t₂}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaDatatype{LamType}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[607I]%
+\>[.][@{}l@{}]\<[695I]%
 \>[16]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaSymbol{(}\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaBound{t₁}\AgdaSpace{}%
@@ -1335,22 +1512,22 @@ That is, we assume that the following isomorphisms hold for value types:
 %
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{\AgdaUnderscore{}}%
-\>[735I]\AgdaSymbol{⦃}\AgdaSpace{}%
+\>[823I]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{u}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaRecord{LamUniv}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[.][@{}l@{}]\<[735I]%
+\>[.][@{}l@{}]\<[823I]%
 \>[13]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{iso₁}%
-\>[741I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[829I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
 \AgdaBound{t₂}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[741I]%
+\>[.][@{}l@{}]\<[829I]%
 \>[20]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaBound{t₁}\AgdaSpace{}%
@@ -1372,12 +1549,12 @@ That is, we assume that the following isomorphisms hold for value types:
 %
 \>[13]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{iso₂}%
-\>[762I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[850I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[762I]%
+\>[.][@{}l@{}]\<[850I]%
 \>[20]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaField{c}\AgdaSpace{}%
@@ -1691,13 +1868,13 @@ The case for \ac{app} passes the argument sub-tree (\ab{ψ}) as an argument to t
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[8]\AgdaFunction{iso-fun}%
-\>[936I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[1024I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t₁}\AgdaSpace{}%
 \AgdaBound{t₂}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaDatatype{LamType}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[936I]%
+\>[.][@{}l@{}]\<[1024I]%
 \>[16]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaSymbol{(}\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaBound{t₁}\AgdaSpace{}%
@@ -1727,12 +1904,12 @@ The case for \ac{app} passes the argument sub-tree (\ab{ψ}) as an argument to t
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[8]\AgdaFunction{iso-susp}%
-\>[961I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[1049I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[961I]%
+\>[.][@{}l@{}]\<[1049I]%
 \>[17]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Free}\AgdaSpace{}%
 \AgdaSymbol{(}\AgdaFunction{State}\AgdaSpace{}%
@@ -1908,7 +2085,7 @@ A classical example of effect interaction is the interaction between state and e
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[4]\AgdaFunction{‵throwᴴ}%
-\>[1059I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[1147I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{w}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -1918,7 +2095,7 @@ A classical example of effect interaction is the interaction between state and e
 \AgdaGeneralizable{H}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[1059I][@{}l@{\AgdaIndent{0}}]%
+\>[1147I][@{}l@{\AgdaIndent{0}}]%
 \>[13]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Hefty}\AgdaSpace{}%
 \AgdaGeneralizable{H}\AgdaSpace{}%
@@ -1976,7 +2153,7 @@ A classical example of effect interaction is the interaction between state and e
 \begin{code}%
 %
 \>[6]\AgdaFunction{transact⅋}%
-\>[1106I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[1194I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{wₛ}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -2001,7 +2178,7 @@ A classical example of effect interaction is the interaction between state and e
 \AgdaGeneralizable{H}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[.][@{}l@{}]\<[1106I]%
+\>[.][@{}l@{}]\<[1194I]%
 \>[16]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Hefty}\AgdaSpace{}%
 \AgdaGeneralizable{H}\AgdaSpace{}%
@@ -2062,7 +2239,7 @@ The different elaboration is modular in the sense that we do not have to change 
 \subsubsection{Sub/Jump}
 We recall how to define two operations, sub and jump, due to~\cite{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 We define these operations as algebraic effects following~\citet{SchrijversPWJ19}.
-The algebraic effects are summarized by the following smart constructors where \ad{CC}~\ab{Ref} is associated with the sub/jump operations:
+The algebraic effect signature of \ad{CC}~\ab{Ref} is given in \cref{fig:alg-eff-ccop}, and is summarized by the following smart constructors:
 %
 \begin{code}[hide]%
 %
@@ -2289,6 +2466,110 @@ The algebraic effects are summarized by the following smart constructors where \
 %
 An operation \af{‵sub}~\ab{f}~\ab{g} gives a computation \ab{f} access to the continuation \ab{g} via a reference value \ab{Ref}~\ab{t} which represents a continuation expecting a value of type \aF{⟦}~\ab{t}~\aF{⟧ᵀ}.
 The \af{‵jump} operation invokes such continuations.
+
+\begin{figure}[t]
+\begin{code}%
+%
+\>[4]\AgdaKeyword{data}\AgdaSpace{}%
+\AgdaDatatype{CCOp⅋}\AgdaSpace{}%
+\AgdaSymbol{⦃}\AgdaSpace{}%
+\AgdaBound{u}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaRecord{Univ}\AgdaSpace{}%
+\AgdaSymbol{⦄}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{Ref}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaPrimitive{Set}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaPrimitive{Set}\AgdaSpace{}%
+\AgdaKeyword{where}\<%
+\\
+\>[4][@{}l@{\AgdaIndent{0}}]%
+\>[6]\AgdaInductiveConstructor{sub}%
+\>[12]\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSymbol{\}}%
+\>[51]\AgdaSymbol{→}%
+\>[54]\AgdaDatatype{CCOp⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\<%
+\\
+%
+\>[6]\AgdaInductiveConstructor{jump}%
+\>[12]\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{ref}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaBound{Ref}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{x}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{→}%
+\>[55]\AgdaDatatype{CCOp⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\<%
+\\
+%
+\\[\AgdaEmptyExtraSkip]%
+%
+\>[4]\AgdaFunction{CC⅋}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{⦃}\AgdaSpace{}%
+\AgdaBound{u}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaRecord{Univ}\AgdaSpace{}%
+\AgdaSymbol{⦄}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{Ref}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaField{Type}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaPrimitive{Set}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaRecord{Effect}\<%
+\\
+%
+\>[4]\AgdaField{Op}%
+\>[8]\AgdaSymbol{(}\AgdaFunction{CC⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaDatatype{CCOp⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\<%
+\\
+%
+\>[4]\AgdaField{Ret}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaFunction{CC⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaInductiveConstructor{sub}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{t}\AgdaSymbol{\})}%
+\>[32]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaBound{Ref}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSpace{}%
+\AgdaOperator{\AgdaDatatype{⊎}}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
+\AgdaBound{t}\AgdaSpace{}%
+\AgdaOperator{\AgdaField{⟧ᵀ}}\<%
+\\
+%
+\>[4]\AgdaField{Ret}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaFunction{CC⅋}\AgdaSpace{}%
+\AgdaBound{Ref}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaInductiveConstructor{jump}\AgdaSpace{}%
+\AgdaBound{ref}\AgdaSpace{}%
+\AgdaBound{x}\AgdaSymbol{)}%
+\>[32]\AgdaSymbol{=}\AgdaSpace{}%
+\AgdaFunction{⊥}\<%
+\end{code}
+\caption{Effect signature of the sub/jump effect}
+\label{fig:alg-eff-ccop}
+\end{figure}
+
+
 The operations and their handler (abbreviated to \af{h}) satisfy the following laws:
 \begin{align*}
   \af{h}~\as{(}\af{‵sub}~\as{(λ~\_~→}~\ab{p}\as{)}~\ab{k}\as{)}
@@ -2637,13 +2918,13 @@ By using the \af{‵sub} and \af{‵jump} operations in our elaboration of \ad{c
 %
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{\AgdaUnderscore{}}%
-\>[1504I]\AgdaSymbol{⦃}\AgdaSpace{}%
+\>[1657I]\AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{u}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaRecord{Univ}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[.][@{}l@{}]\<[1504I]%
+\>[.][@{}l@{}]\<[1657I]%
 \>[13]\AgdaSymbol{\{}\AgdaBound{Ref}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSpace{}%
@@ -2914,14 +3195,14 @@ Otherwise, if we run the sub/jump handler before the state handler, we get the g
 \\
 %
 \>[6]\AgdaFunction{transact}%
-\>[1679I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[1832I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{u}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaRecord{Univ}\AgdaSpace{}%
 \AgdaSymbol{⦄}\<%
 \\
-\>[.][@{}l@{}]\<[1679I]%
+\>[.][@{}l@{}]\<[1832I]%
 \>[15]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{wₛ}%
@@ -3236,9 +3517,9 @@ Otherwise, if we run the sub/jump handler before the state handler, we get the g
 %
 \>[8]\AgdaFunction{transact-elab₂}\AgdaSpace{}%
 \AgdaSymbol{:}%
-\>[1876I]\AgdaFunction{Elaboration}\<%
+\>[2029I]\AgdaFunction{Elaboration}\<%
 \\
-\>[1876I][@{}l@{\AgdaIndent{0}}]%
+\>[2029I][@{}l@{\AgdaIndent{0}}]%
 \>[27]\AgdaSymbol{(}\AgdaFunction{Lift}\AgdaSpace{}%
 \AgdaFunction{State}\AgdaSpace{}%
 \AgdaOperator{\AgdaFunction{∔}}\AgdaSpace{}%
@@ -3411,9 +3692,9 @@ Otherwise, if we run the sub/jump handler before the state handler, we get the g
 %
 \>[8]\AgdaFunction{transact-elab₃}\AgdaSpace{}%
 \AgdaSymbol{:}%
-\>[2007I]\AgdaFunction{Elaboration}\<%
+\>[2160I]\AgdaFunction{Elaboration}\<%
 \\
-\>[2007I][@{}l@{\AgdaIndent{0}}]%
+\>[2160I][@{}l@{\AgdaIndent{0}}]%
 \>[27]\AgdaSymbol{(}\AgdaFunction{Lift}\AgdaSpace{}%
 \AgdaFunction{State}\AgdaSpace{}%
 \AgdaOperator{\AgdaFunction{∔}}\AgdaSpace{}%
@@ -3665,7 +3946,8 @@ However, the complicated encoding does not pollute the higher-order effect inter
 
 Following \cite{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
 We can also define a \af{‵fail} operation which indicates that the search in the current branch was unsuccessful.
-The smart constructors below are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
+The effect signature for \ad{Choice} is given in \cref{fig:choice-sig}.
+The following smart constructors are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
 \begin{code}[hide]%
 \>[0][@{}l@{\AgdaIndent{1}}]%
 \>[2]\AgdaKeyword{module}\AgdaSpace{}%
@@ -3686,7 +3968,9 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \\
 \>[0]\AgdaComment{--\ \ \ \ open\ Elab}\<%
 \end{code}
-\begin{code}[hide]%
+\begin{figure}
+\begin{minipage}{0.495\linewidth}
+\begin{code}%
 \>[0][@{}l@{\AgdaIndent{1}}]%
 \>[4]\AgdaKeyword{data}\AgdaSpace{}%
 \AgdaDatatype{ChoiceOp}\AgdaSpace{}%
@@ -3703,9 +3987,11 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \>[6]\AgdaInductiveConstructor{fail}%
 \>[12]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaDatatype{ChoiceOp}\<%
-\\
-%
-\\[\AgdaEmptyExtraSkip]%
+\end{code}
+  \end{minipage}
+  \hfill\vline\hfill
+  \begin{minipage}{0.495\linewidth}
+\begin{code}%
 %
 \>[4]\AgdaFunction{Choice}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -3731,6 +4017,10 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \AgdaSymbol{=}\AgdaSpace{}%
 \AgdaFunction{⊥}\<%
 \end{code}
+\end{minipage}
+\caption{Effect signature of the choice effect}
+\label{fig:choice-sig}
+\end{figure}
 \begin{code}[hide]%
 %
 \>[4]\AgdaFunction{‵fail}\AgdaSpace{}%
@@ -3865,7 +4155,9 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \AgdaInductiveConstructor{pure}\AgdaSpace{}%
 \AgdaInductiveConstructor{[]}\<%
 \end{code}
-\begin{code}[hide]%
+\begin{figure}
+  \begin{minipage}{0.495\linewidth}
+\begin{code}%
 %
 \>[6]\AgdaKeyword{data}\AgdaSpace{}%
 \AgdaDatatype{OnceOp}\AgdaSpace{}%
@@ -3876,17 +4168,21 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \AgdaSymbol{⦄}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaPrimitive{Set}\AgdaSpace{}%
-\AgdaKeyword{where}\AgdaSpace{}%
-\AgdaInductiveConstructor{once}\AgdaSpace{}%
+\AgdaKeyword{where}\<%
+\\
+\>[6][@{}l@{\AgdaIndent{0}}]%
+\>[8]\AgdaInductiveConstructor{once}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{t}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\AgdaSpace{}%
 \AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{OnceOp}\<%
-\\
-%
-\\[\AgdaEmptyExtraSkip]%
+\end{code}
+\end{minipage}
+\hfill\vline\hfill
+\begin{minipage}{0.495\linewidth}
+\begin{code}%
 %
 \>[6]\AgdaFunction{Once}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -3933,6 +4229,10 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \AgdaBound{t}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟧ᵀ}}\<%
 \end{code}
+\end{minipage}
+\caption{Higher-order effect signature of the once effect}
+\label{fig:once-ho-sig}
+\end{figure}
 \begin{code}%
 %
 \>[6]\AgdaOperator{\AgdaFunction{\AgdaUnderscore{}‵orᴴ\AgdaUnderscore{}}}%
@@ -4031,7 +4331,7 @@ The smart constructors below are the lifted higher-order counterparts to the \af
 \AgdaKeyword{where}\<%
 \end{code}
 A useful operator for cutting non-deterministic search short when a solution is found is the \af{‵once} operator.
-The \af{‵once} operator is not an algebraic effect, but a scoped (and thus higher-order) effect.
+The \af{‵once} operator, whose higher-order effect signature is given in \cref{fig:once-ho-sig}, is not an algebraic effect, but a scoped (and thus higher-order) effect.
 \begin{code}%
 \>[6][@{}l@{\AgdaIndent{1}}]%
 \>[7]\AgdaFunction{‵once}\AgdaSpace{}%
@@ -4240,7 +4540,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 \subsection{Concurrency}
 
 Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} definition using scoped effects.
-We summarize our encoding and compare it with the resumption monad. The goal is to define the following operations:
+We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:
 %
@@ -4397,7 +4697,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[6]\AgdaFunction{interleaveₗ}%
-\>[2418I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[2570I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{u}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -4410,7 +4710,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \AgdaPrimitive{Set}\AgdaSymbol{\}}\AgdaSpace{}%
 \AgdaComment{\{-⦃\ w\ :\ Δ\ ∼\ Choice\ ▸\ Δ′\ ⦄-\}}\<%
 \\
-\>[.][@{}l@{}]\<[2418I]%
+\>[.][@{}l@{}]\<[2570I]%
 \>[18]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Free}\AgdaSpace{}%
 \AgdaSymbol{(}\AgdaFunction{CC}\AgdaSpace{}%
@@ -4551,11 +4851,11 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\
 \>[10][@{}l@{\AgdaIndent{0}}]%
 \>[12]\AgdaSymbol{;}%
-\>[2527I]\AgdaSymbol{(}\AgdaInductiveConstructor{inj₂}\AgdaSpace{}%
+\>[2679I]\AgdaSymbol{(}\AgdaInductiveConstructor{inj₂}\AgdaSpace{}%
 \AgdaBound{y}\AgdaSymbol{)}\AgdaSpace{}%
 \AgdaSymbol{→}\<%
 \\
-\>[.][@{}l@{}]\<[2527I]%
+\>[.][@{}l@{}]\<[2679I]%
 \>[14]\AgdaInductiveConstructor{impure}\<%
 \\
 \>[14][@{}l@{\AgdaIndent{0}}]%
@@ -4628,11 +4928,11 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\
 \>[10][@{}l@{\AgdaIndent{0}}]%
 \>[12]\AgdaSymbol{;}%
-\>[2577I]\AgdaSymbol{(}\AgdaInductiveConstructor{inj₂}\AgdaSpace{}%
+\>[2729I]\AgdaSymbol{(}\AgdaInductiveConstructor{inj₂}\AgdaSpace{}%
 \AgdaBound{y}\AgdaSymbol{)}\AgdaSpace{}%
 \AgdaSymbol{→}\<%
 \\
-\>[.][@{}l@{}]\<[2577I]%
+\>[.][@{}l@{}]\<[2729I]%
 \>[14]\AgdaInductiveConstructor{impure}\<%
 \\
 \>[14][@{}l@{\AgdaIndent{0}}]%
@@ -4756,9 +5056,10 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[6]\AgdaComment{--\ higher-order\ operation\ for\ concurrency\ that\ desugars\ into\ interleaving\ and\ atomic}\<%
-\\
-%
-\\[\AgdaEmptyExtraSkip]%
+\end{code}
+\begin{figure}[t]
+\begin{minipage}{0.545\linewidth}
+\begin{code}%
 %
 \>[6]\AgdaKeyword{data}\AgdaSpace{}%
 \AgdaDatatype{ConcurOp}\AgdaSpace{}%
@@ -4788,9 +5089,11 @@ To this end, we use a dedicated function which interleaves the operations in two
 \AgdaField{Type}\AgdaSymbol{)}\AgdaSpace{}%
 \AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{ConcurOp}\<%
-\\
-%
-\\[\AgdaEmptyExtraSkip]%
+\end{code}
+\end{minipage}
+\hfill\vline\hfill
+\begin{minipage}{0.445\linewidth}
+\begin{code}%
 %
 \>[6]\AgdaFunction{Concur}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -4867,11 +5170,12 @@ To this end, we use a dedicated function which interleaves the operations in two
 \AgdaOperator{\AgdaField{⟦}}\AgdaSpace{}%
 \AgdaBound{t}\AgdaSpace{}%
 \AgdaOperator{\AgdaField{⟧ᵀ}}\<%
-\\
-%
-\\[\AgdaEmptyExtraSkip]%
-%
-\\[\AgdaEmptyExtraSkip]%
+\end{code}
+\end{minipage}
+\caption{Higher-order effect signature of the concur effect}
+\label{fig:concur-ho-sig}
+\end{figure}
+\begin{code}[hide]%
 %
 \>[6]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{\AgdaUnderscore{}}\AgdaSpace{}%
@@ -4884,7 +5188,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\
 \>[6][@{}l@{\AgdaIndent{0}}]%
 \>[8]\AgdaFunction{‵spawn}%
-\>[2731I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[2883I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{w}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -4896,7 +5200,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[.][@{}l@{}]\<[2731I]%
+\>[.][@{}l@{}]\<[2883I]%
 \>[15]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Hefty}\AgdaSpace{}%
 \AgdaGeneralizable{H}\AgdaSpace{}%
@@ -4949,7 +5253,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \\[\AgdaEmptyExtraSkip]%
 %
 \>[8]\AgdaFunction{‵atomic}%
-\>[2782I]\AgdaSymbol{:}\AgdaSpace{}%
+\>[2934I]\AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{⦃}\AgdaSpace{}%
 \AgdaBound{w}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -4961,7 +5265,7 @@ To this end, we use a dedicated function which interleaves the operations in two
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaField{Type}\AgdaSymbol{\}}\<%
 \\
-\>[2782I][@{}l@{\AgdaIndent{0}}]%
+\>[2934I][@{}l@{\AgdaIndent{0}}]%
 \>[17]\AgdaSymbol{→}\AgdaSpace{}%
 \AgdaDatatype{Hefty}\AgdaSpace{}%
 \AgdaGeneralizable{H}\AgdaSpace{}%
@@ -5174,7 +5478,7 @@ By using \af{‵sub} to explicitly delimit blocks that should not be interleaved
   The first thread prints \an{0}, \an{1}, and \an{2}; the second prints \an{3} and \an{4}.
 %
 \begin{code}[hide]%
-\>[0][@{}l@{\AgdaIndent{2}}]%
+\>[0][@{}l@{\AgdaIndent{5}}]%
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
 \AgdaModule{ConcurExample}\AgdaSpace{}%
 \AgdaKeyword{where}\<%
@@ -5469,9 +5773,9 @@ Since the \ad{Concur} effect is elaborated to interleave the effects of the two 
 %
 \>[8]\AgdaFunction{concur-elab}\AgdaSpace{}%
 \AgdaSymbol{:}%
-\>[3110I]\AgdaFunction{Elaboration}\<%
+\>[3262I]\AgdaFunction{Elaboration}\<%
 \\
-\>[3110I][@{}l@{\AgdaIndent{0}}]%
+\>[3262I][@{}l@{\AgdaIndent{0}}]%
 \>[27]\AgdaSymbol{(}\AgdaFunction{Lift}\AgdaSpace{}%
 \AgdaFunction{Output}\AgdaSpace{}%
 \AgdaOperator{\AgdaFunction{∔}}\AgdaSpace{}%

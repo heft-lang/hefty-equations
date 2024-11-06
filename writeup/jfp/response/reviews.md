@@ -15,21 +15,20 @@ reviewers.
 [FIXME] Update line numbers throughout response to reflect line numbers in
 submitted manuscript.
 
-- Revise introduction
-
-  + We have clarified the explanation of why encoding computational arguments of
-    higher-order effects as value arguments of algebraic operations is
-    non-modular, to address questions and concerns raised by Reviewer 2.
-    
-  + [FIXME] Mention shallow handlers in the introduction, and acknowledge that
-    they may have benefits for defining higher-order effects
+- Expositional improvements to the introduction, based on the helpful
+  suggestions by the reviewers.
 
 - [FIXME] Revise 3.5 to clarify that modularity characteristics of scoped
   effects may differ from the modularity benefits you get from "classical" hefty
   algebras+alg. effects.  But that we can get similar interaction in at least
   some cases, as we illustrate in Sect. 4.2.2.
 
+- [FIXME] Mention shallow handlers in the introduction, and acknowledge that
+  they may have benefits for defining higher-order effects
+
 - [FIXME] Relate to shallow handlers in related work section.
+
+- [FIXME] Relate to 
 
 # Detailed response
 
@@ -751,4 +750,7 @@ We've added the explicit effect signatures to each subsection in Sect. 4.
 > - line 1979: Typo: "defintion" should be "definition."
 > - line 2054: Missing opening bracket in �� catch.
 > - line 2101: The majority of citations in this section are in the incorrect form, i.e., using "Name (YEAR)" instead of "(Name YEAR)" when not referring to authors.
-> 
+
+Thanks, fixed!
+
+
