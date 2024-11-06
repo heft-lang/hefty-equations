@@ -145,8 +145,8 @@ Following \citet{Plotkin2009handlers,Pretnar15}, the left and right hand sides o
   \Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
 \end{equation*}
 %
-Here it is only $k$ whose type is compatible with the right hand side.
-In theory, the parameter type $v$ would also be compatible; e.g., if $A = () \to \Typing{C}{Δ′}$.
+Consequently, $c$ must either by a trivial $\Return{w}$ expression for some $w : C$; or it must invoke $k$.
+In theory, the value parameter $v$ of $\Op{op}~v$ could also be compatible; e.g., if $A = () \to \Typing{C}{Δ′}$.
 However, encoding computations as value arguments of operations in this way is non-modular, because effect handlers are not applied recursively to parameters of operations.
 That is, following~\citet{Plotkin2009handlers,Pretnar15}, if $h$ handles operations other than $\Op{op}$, then
 %
@@ -179,7 +179,7 @@ In particular, for any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typin
 \end{equation*}
 %
 This property, known as the \emph{algebraicity property}~\citep{PlotkinP03}, says that the computation parameter values $m_1,\ldots,m_n$ are only ever run in a way that \emph{directly} passes control to $k$.
-Such operations can without loss of generality or modularity be encoded as operations \emph{without computation parameters}; e.g., $\Op{op}~m_1\ldots{}m_n = \Do~x \leftarrow \Op{op′}~(); \Id{select}~x$ where $\Op{op′} : () \to \Typing{D^n}{Δ}$ and $\Id{select} : D^n \to \Typing{A}{Δ}$ is a function that chooses between $n$ different computations using a data type $D^n$ whose constructors are $d_1,\ldots,d_n$ such that $\Id{select}~d_i = m_i$ for $i=1..n$.
+Such operations can without loss of generality or modularity be encoded as operations \emph{without computation parameters} (also known as \emph{generic effects}~\cite{PlotkinP03}); e.g., $\Op{op}~m_1\ldots{}m_n = \Do~x \leftarrow \Op{op′}~(); \Id{select}~x$ where $\Op{op′} : () \to \Typing{D^n}{Δ}$ and $\Id{select} : D^n \to \Typing{A}{Δ}$ is a function that chooses between $n$ different computations using a data type $D^n$ whose constructors are $d_1,\ldots,d_n$ such that $\Id{select}~d_i = m_i$ for $i=1..n$.
 Some higher-order operations obey the algebraicity property; many do not.
 Examples of operations that do not include:
 %
@@ -315,7 +315,7 @@ Using this handler, we can give an alternative elaboration of $\Op{censor_{op}}$
   \begin{array}{ll}
     \Id{eCensor′} &: \HTyping{A}{\Effect{Censor}} \Elabarr{} \Typing{A}{\Effect{Output},Δ}
     \\
-    \Id{eCensor′} &(\Op{censor_{op}}~f~m;~k) = \Do~x \leftarrow (\With{\Id{hOut′}~f}{m});~\Op{out}~s;~k~x
+    \Id{eCensor′} &(\Op{censor_{op}}~f~m;~k) = \Do~(x,s) \leftarrow (\With{\Id{hOut′}~f}{m});~\Op{out}~s;~k~x
   \end{array}
 \end{equation*}
 %

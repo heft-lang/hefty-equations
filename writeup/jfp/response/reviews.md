@@ -671,41 +671,24 @@ related work section.
 > over established constructs for ensuring modularity—not just in the context of
 > effects, but standard ones such as higher-order functions or functors.
 
-We have revised the paper to provide the following explanations.
+We have revised the paper to provide the following explanations:
 
-We have added clarifying remarks about the open questions about whether it is
-always possible (and desirable) to encode scoped syntax in terms of algebraic
-effects and handlers to the paper.
+- Clarifying remarks that it is an a question for future work whether it is
+  always possible to encode scoped syntax in terms of algebraic effects and
+  handlers.
 
-We have also expanded the related work section to discuss the possible
-alternative encoding of our approach, using final tagless techniques.
-
-[WIP]
-
-The problem the paper tackles is the lack of modularity in the context of
-defining and composing effects.
-
-There is a wide range of different solutions to this problem in the literature.
-
-All of them require more or less complicated machinery.
-
-We propose a framework that offers a promising, rather simple, alternative.
-
-This alternative is, indeed, based on (standard) higher-order functors.
-
-The fact that it is based on standard, well-understood machinery, speaks to our claim of simplicity.
-
-The manuscript was lacking some positioning remarks w.r.t. scoped effects and shallow handlers, which we have now added.
-
-A summary of these remarks can be found in our detailed response to Reviewer 1.
+- Expanded the related work section to discuss the possible alternative encoding
+  of our approach, using final tagless techniques.
 
 > MINOR NOTES
 > 
 > - line 61: A reader would benefit from an example of an effect with multiple operations (e.g., state).
 
-We say a few lines down that effects can have multiple operations associated with it.
+We do not see the essential benefit of using state instead of output at this
+point in the paper, but would be happy to hear your reasons for thinking so.
 
-We do not see the essential benefit of using state instead of output at this point in the paper, but would be happy to hear your reasons for thinking so.
+We do say a few lines down that effects can have multiple operations associated
+with it.
 
 > - line 68: Point out that this is a type of a specific effect handler for Output.
 
@@ -713,20 +696,50 @@ Fixed.
 
 > - line 93: Note that the ability to extend a handler type on both sides with Δ₂ does not hold in general. For example, in call-by-value (CbV), a handler returning a thunk of the continuation has the type `A!Δ,Eff ⇒ (⊤ → A!Δ)!Δ`, and extending Δ does not merely extend it on the RHS but also modifies the return type `⊤ → A!Δ`.
 
-The example here is meant to illustrate how some specific handler could be applied.
+The sentence was meant to illustrate how some specific handler could be applied.
 
-We've adjusted the phrasing to make explicit that it is supposed to be an example, and hope this clarifies matters.
+We've adjusted the phrasing.
 
 > - line 120: It is not true that only `k` has a type compatible with the RHS; you could also return a value of type `C`.
+
+Thanks, we've adjusted the phrasing.
+
 > - line 129: This reasoning is difficult to follow. Can you provide a concrete example? You could explicitly handle the value `v` by inserting an additional handler, which would clarify the order of handler application.
+
+Reviewer 2 had similar concerns, and we've adjusted the phrasing.
+
 > - line 143: Operations without computation parameters are known in the algebraic effect literature as "generic effects."
+
+Citation added.  Thanks!
+
 > - line 150: All the examples of "operations" you give are actually handlers. What is the rationale for including them under operations if they are of a different nature?
+
+In, e.g., the cited monad transformer library, they are monadic operations, so
+we model them as such.
+
 > - line 236: Doesn't `hOut'` already output the modified strings, making `out s` unnecessary (and also ill-typed)?
+
+There was a typo and type error here, thanks.  Fixed!
+
 > - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
+
+[FIXME] Cas.
+
 > - line 330: Σ is never explained.
 > - line 344: Typo: "We co-products…" should be "We use co-products…"
 > - line 422: ∃ is never explained.
+
+Thanks, fixed!
+
 > - line 492: Why do you restrict handlers only to those targeting the free monad? If you allowed arbitrary codomains given suitable algebras, you could avoid passing around an explicit set of parameters `P`.
+
+We probably could.
+
+We follow the handler setup in, e.g., Wu, Schrijvers, and Hinze's "Effect
+Handlers in Scope" (Sect. 4).
+
+We've added a footnote.
+
 > - line 1154: Some redundant dashes appear at the start of this and the following few paragraphs.
 > - line 1185: How is "lam" related to "`lam"? And similarly for other constructs?
 > - line 1979: Typo: "defintion" should be "definition."

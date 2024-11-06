@@ -91,7 +91,7 @@ type:\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/record-type
 Here, \aF{Op} is the set of operations, and \aF{Ret} defines the \emph{return
   type} for each operation in the set \aF{Op}.  The extension of an effect
 signature, $⟦\_⟧$, reflects its input of type $\ad{Effect}$ as a value of type
-$\ad{Set}~→~\ad{Set}$:
+$\ad{Set}~→~\ad{Set}$:\footnote{Here, \ad{Σ}~\as{:}~\as{(}\ab{A}~\as{:}~\ad{Set}~\as{)}~\as{→}~\as{(}\ab{A}~\as{→}~\ad{Set}\as{)}~\as{→}~\ad{Set} is a \emph{dependen sum}.}
 %
 \begin{code}
   ⟦_⟧ : Effect → Set → Set
@@ -130,7 +130,7 @@ effects. Effect signatures are closed under co-products:\footnote{The \ad{\_⊕\
 %
 We compute the co-product of two effect signatures by taking the disjoint sum of
 their operations and combining the return type mappings pointwise.
-We co-products to encode effect rows. For example, The effect
+We use co-products to encode effect rows. For example, The effect
 \ab{Δ₁}~\ad{⊕}~\ab{Δ₂} corresponds to the row union denoted as $Δ₁,Δ₂$ in the
 introduction.
 
@@ -261,7 +261,7 @@ Using this, the \ad{≲} order is defined as follows:
 %
 \begin{code}
   _≲_ : (Δ₁ Δ₂ : Effect) → Set₁
-  Δ₁ ≲ Δ₂ = ∃ λ Δ′ → Δ₁ ∙ Δ′ ≈ Δ₂
+  Δ₁ ≲ Δ₂ = Σ Effect (λ Δ′ → Δ₁ ∙ Δ′ ≈ Δ₂)
 \end{code}
 %
 It is straightforward to show that \ad{≲} is a \emph{preorder}; i.e., that it is a \emph{reflexive} and \emph{transitive} relation.
@@ -413,8 +413,8 @@ an interface given by an effect signature.  Next, we define \emph{effect
 An effect handler implements the interface given by an effect signature,
 interpreting the syntactic operations associated with an effect.  Like monadic
 bind, effect handlers can be defined as a fold over the free monad.  The
-following type of \emph{parameterized handlers} defines how to fold respectively
-\ac{pure} and \ac{impure} computations:
+following type of \emph{parameterized handlers}~\cite[\S 2.2]{Leijen17} defines how to fold respectively
+\ac{pure} and \ac{impure} computations:\footnote{A simpler type of handler could omit the parameter; i.e., \af{⟨}~\ab{A}~\af{!}~\ab{Δ}~\af{⇒}~\ab{B}~\af{!}~\ab{Δ′}~\af{⟩}, for some \ab{A},\ab{B}~\as{:}~\ad{Set} and \ab{Δ},\ab{Δ′}~\as{:}~\ad{Effect}.  As demonstrated in, e.g., the work of \citet[\S 2.4]{Pretnar15}, this type of handler can leverage host language binding to handle, e.g., the \emph{state effect} which we discuss later.  The style of parameterized handler we use here follows the exposition of, e.g., \citet{WuSH14,WuS15}.}
 %
 \begin{code}
   record ⟨_!_⇒_⇒_!_⟩ (A : Set) (Δ : Effect) (P : Set) (B : Set) (Δ′ : Effect) : Set₁ where
@@ -693,6 +693,12 @@ An example of parameterized (as opposed to unparameterized) handlers, is the sta
 
   incr-test : un ((given hSt handle ‵incr) 0) ≡ (tt , 1)
   incr-test = refl
+\end{code}
+\begin{code}[hide]
+  hSt′ : ⟨ A ! State ⇒ ⊤ ⇒ (ℕ → (Free Δ′ (A × ℕ))) ! Δ′ ⟩
+  ret hSt′ x _ = pure (λ s → pure (x , s))
+  hdl hSt′ (get , k) _ = pure (λ s → k s tt >>= λ f → f s)
+  hdl hSt′ (put s′ , k) _ = pure (λ _ → k tt tt >>= λ f → f s′)
 \end{code}
 \caption{A state effect (upper), its handler (\af{hSt} below), and a simple test (\af{incr-test}, also below) which uses (the elided) smart constructors for \ac{get} and \ac{put}}
 \label{fig:state-effect-handler}
