@@ -54,7 +54,7 @@ The interface we will consider is parametric in a universe of types given by the
 \end{code}
 %
 The \aF{\_↣\_} field represents a function type, whereas \aF{c} is the type of \emph{thunk values}.
-Distinguishing thunks in this way allows us to assign either a call-by-value or call-by-name semantics to the interface for $\lambda$ abstraction summarized by the following smart constructors:
+Distinguishing thunks in this way allows us to assign either a call-by-value or call-by-name semantics to the interface for $\lambda$ abstraction, given by the higher-order effect signature in \cref{fig:ho-lam-sig}, and summarized by the following smart constructors:
 %
 \begin{code}[hide]
   open LamUniv ⦃ ... ⦄
@@ -110,7 +110,30 @@ Here \af{‵lam} is a higher-order operation with a function typed computation p
 The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
 The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
 
-The interface above defines a kind of \emph{higher-order abstract syntax}~\cite{PfenningE88} which piggy-backs on Agda functions for name binding.
+\begin{figure}[t]
+\begin{code}
+    data LamOp⅋ ⦃ l : LamUniv ⦄ : Set where
+      lam  : {t₁ t₂ : Type}                     → LamOp⅋
+      var  : {t : Type}      → ⟦ c t ⟧ᵀ          → LamOp⅋
+      app  : {t₁ t₂ : Type}  → ⟦ (c t₁) ↣ t₂ ⟧ᵀ  → LamOp⅋
+
+    Lam⅋ : ⦃ l : LamUniv ⦄ → Effectᴴ
+    Opᴴ    Lam⅋                       = LamOp⅋
+    Retᴴ   Lam⅋  (lam {t₁} {t₂})      = ⟦ (c t₁) ↣ t₂ ⟧ᵀ
+    Retᴴ   Lam⅋  (var {t} _)          = ⟦ t ⟧ᵀ
+    Retᴴ   Lam⅋  (app {t₁} {t₂} _)    = ⟦ t₂ ⟧ᵀ
+    Fork   Lam⅋  (lam {t₁} {t₂})      = ⟦ c t₁ ⟧ᵀ
+    Fork   Lam⅋  (var _)              = ⊥
+    Fork   Lam⅋  (app {t₁} {t₂} _)    = ⊤
+    Ty     Lam⅋  {lam {t₁} {t₂}} _    = ⟦ t₂ ⟧ᵀ
+    Ty     Lam⅋  {var _} ()
+    Ty     Lam⅋  {app {t₁} {t₂} _} _  = ⟦ t₁ ⟧ᵀ
+\end{code}
+\caption{Higher-order effect signature of $\lambda$ abstraction and application}
+\label{fig:ho-lam-sig}
+\end{figure}
+
+The interface above defines a kind of \emph{higher-order abstract syntax}~\citep{PfenningE88} which piggy-backs on Agda functions for name binding.
 However, unlike most Agda functions, the constructors above represent functions with side-effects.
 The representation in principle supports functions with arbitrary side-effects since it is parametric in what  the higher-order effect signature \ab{H} is.
 Furthermore, we can assign different operational interpretations to the operations in the interface without having to change the interface or programs written against the interface.
@@ -394,7 +417,7 @@ The different elaboration is modular in the sense that we do not have to change 
 \subsubsection{Sub/Jump}
 We recall how to define two operations, sub and jump, due to~\cite{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 We define these operations as algebraic effects following~\citet{SchrijversPWJ19}.
-The algebraic effects are summarized by the following smart constructors where \ad{CC}~\ab{Ref} is associated with the sub/jump operations:
+The algebraic effect signature of \ad{CC}~\ab{Ref} is given in \cref{fig:alg-eff-ccop}, and is summarized by the following smart constructors:
 %
 \begin{code}[hide]
     data CCOp ⦃ u : Univ ⦄ (Ref : Type → Set) : Set where
@@ -421,6 +444,23 @@ The algebraic effects are summarized by the following smart constructors where \
 %
 An operation \af{‵sub}~\ab{f}~\ab{g} gives a computation \ab{f} access to the continuation \ab{g} via a reference value \ab{Ref}~\ab{t} which represents a continuation expecting a value of type \aF{⟦}~\ab{t}~\aF{⟧ᵀ}.
 The \af{‵jump} operation invokes such continuations.
+
+\begin{figure}[t]
+\begin{code}
+    data CCOp⅋ ⦃ u : Univ ⦄ (Ref : Type → Set) : Set where
+      sub   : {t : Type}                           →  CCOp⅋ Ref
+      jump  : {t : Type} (ref : Ref t) (x : ⟦ t ⟧ᵀ) →  CCOp⅋ Ref
+
+    CC⅋ : ⦃ u : Univ ⦄ (Ref : Type → Set) → Effect
+    Op  (CC⅋ Ref) = CCOp⅋ Ref
+    Ret (CC⅋ Ref) (sub {t})     = Ref t ⊎ ⟦ t ⟧ᵀ
+    Ret (CC⅋ Ref) (jump ref x)  = ⊥
+\end{code}
+\caption{Effect signature of the sub/jump effect}
+\label{fig:alg-eff-ccop}
+\end{figure}
+
+
 The operations and their handler (abbreviated to \af{h}) satisfy the following laws:
 \begin{align*}
   \af{h}~\as{(}\af{‵sub}~\as{(λ~\_~→}~\ab{p}\as{)}~\ab{k}\as{)}
@@ -703,7 +743,8 @@ However, the complicated encoding does not pollute the higher-order effect inter
 
 Following \cite{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
 We can also define a \af{‵fail} operation which indicates that the search in the current branch was unsuccessful.
-The smart constructors below are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
+The effect signature for \ad{Choice} is given in \cref{fig:choice-sig}.
+The following smart constructors are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
 \begin{code}[hide]
   module ChoiceModule where
     open Abbreviation
@@ -711,16 +752,26 @@ The smart constructors below are the lifted higher-order counterparts to the \af
     open ElabModule
 --    open Elab
 \end{code}
-\begin{code}[hide]
+\begin{figure}
+\begin{minipage}{0.495\linewidth}
+\begin{code}
     data ChoiceOp : Set where
       or    : ChoiceOp
       fail  : ChoiceOp
-
+\end{code}
+  \end{minipage}
+  \hfill\vline\hfill
+  \begin{minipage}{0.495\linewidth}
+\begin{code}
     Choice : Effect
     Op  Choice = ChoiceOp
     Ret Choice or = Bool
     Ret Choice fail = ⊥
 \end{code}
+\end{minipage}
+\caption{Effect signature of the choice effect}
+\label{fig:choice-sig}
+\end{figure}
 \begin{code}[hide]
     ‵fail : ⦃ Choice ≲ Δ ⦄ → Free Δ A
     -- _‵or_ : ⦃ Δ ∼ Choice ▸ Δ′ ⦄ → Free Δ A → Free Δ A → Free Δ A
@@ -746,15 +797,26 @@ The smart constructors below are the lifted higher-order counterparts to the \af
         pure (l₁ ++ l₂)
       hdl hChoice (fail , k) _ = pure []
 \end{code}
-\begin{code}[hide]
-      data OnceOp ⦃ u : Univ ⦄ : Set where once : {t : Type} → OnceOp
-
+\begin{figure}
+  \begin{minipage}{0.495\linewidth}
+\begin{code}
+      data OnceOp ⦃ u : Univ ⦄ : Set where
+        once : {t : Type} → OnceOp
+\end{code}
+\end{minipage}
+\hfill\vline\hfill
+\begin{minipage}{0.495\linewidth}
+\begin{code}
       Once : ⦃ u : Univ ⦄ → Effectᴴ
       Opᴴ    Once          = OnceOp
       Retᴴ   Once (once {t}) = ⟦ t ⟧ᵀ
       Fork   Once (once {t}) = ⊤
       Ty     Once {once {t}} _ = ⟦ t ⟧ᵀ
 \end{code}
+\end{minipage}
+\caption{Higher-order effect signature of the once effect}
+\label{fig:once-ho-sig}
+\end{figure}
 \begin{code}
       _‵orᴴ_  : ⦃ Lift Choice ≲ᴴ H ⦄ → Hefty H A → Hefty H A  → Hefty H A
       ‵failᴴ  : ⦃ Lift Choice ≲ᴴ H ⦄                          → Hefty H A
@@ -769,7 +831,7 @@ The smart constructors below are the lifted higher-order counterparts to the \af
       module _ ⦃ u : Univ ⦄ where
 \end{code}
 A useful operator for cutting non-deterministic search short when a solution is found is the \af{‵once} operator.
-The \af{‵once} operator is not an algebraic effect, but a scoped (and thus higher-order) effect.
+The \af{‵once} operator, whose higher-order effect signature is given in \cref{fig:once-ho-sig}, is not an algebraic effect, but a scoped (and thus higher-order) effect.
 \begin{code}
        ‵once : ⦃ w : Once ≲ᴴ H ⦄ {t : Type} → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ
 \end{code}
@@ -837,7 +899,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 \subsection{Concurrency}
 
 Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} definition using scoped effects.
-We summarize our encoding and compare it with the resumption monad. The goal is to define the following operations:
+We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:
 %
@@ -919,11 +981,18 @@ To this end, we use a dedicated function which interleaves the operations in two
 
 
       -- higher-order operation for concurrency that desugars into interleaving and atomic
-
+\end{code}
+\begin{figure}[t]
+\begin{minipage}{0.545\linewidth}
+\begin{code}
       data ConcurOp ⦃ u : Univ ⦄ : Set where
         spawn   : (t : Type) → ConcurOp
         atomic  : (t : Type) → ConcurOp
-
+\end{code}
+\end{minipage}
+\hfill\vline\hfill
+\begin{minipage}{0.445\linewidth}
+\begin{code}
       Concur : ⦃ u : Univ ⦄ → Effectᴴ
       Opᴴ Concur    = ConcurOp
       Retᴴ Concur (spawn t) = ⟦ t ⟧ᵀ
@@ -933,8 +1002,12 @@ To this end, we use a dedicated function which interleaves the operations in two
       Fork Concur (atomic t)   = ⊤
       Ty   Concur {spawn t} _ = ⟦ t ⟧ᵀ
       Ty   Concur {atomic t} _ = ⟦ t ⟧ᵀ
-
-
+\end{code}
+\end{minipage}
+\caption{Higher-order effect signature of the concur effect}
+\label{fig:concur-ho-sig}
+\end{figure}
+\begin{code}[hide]
       module _ ⦃ u : Univ ⦄ where
         ‵spawn : ⦃ w : Concur ≲ᴴ H ⦄ {t : Type}
                → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ → Hefty H ⟦ t ⟧ᵀ

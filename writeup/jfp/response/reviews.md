@@ -741,7 +741,13 @@ Handlers in Scope" (Sect. 4).
 We've added a footnote.
 
 > - line 1154: Some redundant dashes appear at the start of this and the following few paragraphs.
+
+Thanks, fixed!
+
 > - line 1185: How is "lam" related to "`lam"? And similarly for other constructs?
+
+We've added the explicit effect signatures to each subsection in Sect. 4.
+
 > - line 1979: Typo: "defintion" should be "definition."
 > - line 2054: Missing opening bracket in �� catch.
 > - line 2101: The majority of citations in this section are in the incorrect form, i.e., using "Name (YEAR)" instead of "(Name YEAR)" when not referring to authors.

@@ -179,7 +179,7 @@ In particular, for any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typin
 \end{equation*}
 %
 This property, known as the \emph{algebraicity property}~\citep{PlotkinP03}, says that the computation parameter values $m_1,\ldots,m_n$ are only ever run in a way that \emph{directly} passes control to $k$.
-Such operations can without loss of generality or modularity be encoded as operations \emph{without computation parameters} (also known as \emph{generic effects}~\cite{PlotkinP03}); e.g., $\Op{op}~m_1\ldots{}m_n = \Do~x \leftarrow \Op{op′}~(); \Id{select}~x$ where $\Op{op′} : () \to \Typing{D^n}{Δ}$ and $\Id{select} : D^n \to \Typing{A}{Δ}$ is a function that chooses between $n$ different computations using a data type $D^n$ whose constructors are $d_1,\ldots,d_n$ such that $\Id{select}~d_i = m_i$ for $i=1..n$.
+Such operations can without loss of generality or modularity be encoded as operations \emph{without computation parameters} (also known as \emph{generic effects}~\citep{PlotkinP03}); e.g., $\Op{op}~m_1\ldots{}m_n = \Do~x \leftarrow \Op{op′}~(); \Id{select}~x$ where $\Op{op′} : () \to \Typing{D^n}{Δ}$ and $\Id{select} : D^n \to \Typing{A}{Δ}$ is a function that chooses between $n$ different computations using a data type $D^n$ whose constructors are $d_1,\ldots,d_n$ such that $\Id{select}~d_i = m_i$ for $i=1..n$.
 Some higher-order operations obey the algebraicity property; many do not.
 Examples of operations that do not include:
 %
