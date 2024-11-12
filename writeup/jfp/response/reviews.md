@@ -2,7 +2,7 @@
 
 We would like to thank the reviewers for their time and helpful comments!
 
-The main concern raised by reviewers relates to the motivation behind our work.
+<!-- The main concern raised by reviewers relates to the motivation behind our work. -->
 
 [FIXME] We have revised the introduction to clarify the questions raised by the
 reviewers.
@@ -28,7 +28,10 @@ submitted manuscript.
 
 - [FIXME] Relate to shallow handlers in related work section.
 
-- [FIXME] Relate to 
+- [FIXME] Relate to Tom and Birthe's paper in more detail
+
+- [FIXME] Expand related work section with the scoped->alg.eff. conversion, and
+  include a forward pointer to it where relevant (see query by Reviewer 1).
 
 # Detailed response
 
@@ -80,19 +83,41 @@ submitted manuscript.
 > elaboration that elaborates all higher-order effects would harm
 > modularity in practice.
 
+[Cas: we should elaborate on how we interpret the question.
+
+- Yes, you can elaborate in sequence.
+
+- But that doesn't buy you anything.
+
+- Handling algebraic effects is where you get interaction.
+
+- So the question is: do we get the same modularity from algebraic effects and
+  handlers as we do from scoped effects and handlers.
+
+]
+
 Good question.
 
 Our intuition is that it is possible to encode scoped effects and handlers in
 general as algebraic effects with explicit operations for entering and leaving a
 scope.  We discuss this intuition below.
 
-However, this intuition remains to be tried and tested in future work.  We will
-clarify in 3.5 that it is an open question of whether forwarding gives
-modularity benefits that we cannot recover using modular elaborations.
+However, this intuition remains to be tried [FIXME: What do we mean by "tried
+and tested"] and tested in future work.  We will clarify in 3.5 that it is an
+open question of whether scoped effects + forwarding gives modularity benefits
+that we cannot recover using modular elaborations + algebraic effects and
+handlers.
 
-We will also clarify in the discussion in Sect. 3.5 that scoped effects with
-forwarding can, in principle, be applied to scoped operations inside hefty
-trees, since scoped operations are a special case of higher-order operations.
+[FIXME:
+
+Tom and Birthe uses a special (adjoint?) fold and show how to use it to define
+scoped effects and handlers for the higher-order free monad (hefty).
+
+We will relate to this line of work in more detail.
+
+Cas does this.
+
+]
 
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
@@ -173,13 +198,13 @@ continuations:
 The following `convert` function uses the `conv-Effect` function and intuition
 above to convert scoped effect trees into algebraic effect trees with a scoped syntax:
 
-    convert : (Ref : Set → Set)
+    convert : {A : Set} {γ : Effect} (Ref : Set → Set)
             → Prog Δ γ A
             → Free (conv-Effect γ Ref ⊕ Δ) A
     convert Ref (return x) = pure x
-    convert Ref (call (o , k)) = impure (inj₂ o , convert Ref ∘ k)
-    convert Ref (enter {B = B} (o , k₁) k₂) = impure (inj₁ (inj₁ (B , o)) , λ where
-      (inj₁ (c , r)) → convert Ref (k₁ r) >>= λ b → impure (inj₁ (inj₂ (B , c , b)) , ⊥-elim)
+    convert Ref (call (o , k)) = impure (inj₂ o , λ x → convert Ref (k x))
+    convert Ref (enter {B = B} (o , k₁) k₂) = impure (inj₁ (sub-scope B o) , λ where
+      (inj₁ (c , r)) → convert Ref (k₁ r) FreeModule.𝓑 λ b → impure (inj₁ (sub-end B c b) , ⊥-elim)
       (inj₂ y) → convert Ref (k₂ y))
 
 As the example in 4.2.2 illustrates, this style of scoped syntax lets us
@@ -190,6 +215,7 @@ effect syntax.
 
 Verifying this, and comparing other modularity characteristics, is a topic for
 future work.
+
 
 > ## Modular Reasoning of Higher-Order Effects
 > 
@@ -273,9 +299,6 @@ All fixed. Many thanks!
 Good summary.  We would add that another difference from scoped effects is that
 some higher-order operations are not scoped operations, such as operations for
 effectful lambdas (see, e.g., the discussion in 2.6.4).
-
-Latent effects and handlers address this problem with scoped effects, but they
-also require glue code.
 
 > Based on the development of hefty trees and algebras, the paper also provides
 > an infrastructure for equational reasoning about computations with
@@ -367,9 +390,13 @@ To summarize, if we do not apply it first, then either:
 (2) `Δ` will initially contain _fewer_ effects than its surrounding context,
     which means we cannot type all programs we want.
 
+[FIXME: this needs kindness pass.]
+
 > Furthermore, as hefty algebras elaborate all higher-order effects in one go,
 > we should be able to assume that m performs no effect operations other than
 > censor. 
+
+[FIXME: this needs kindness pass.]
 
 No.  Higher-order effect trees can contain multiple effects, so the `m` in
 `censor f m` can perform effect operations other than `censor`.  As summarized
@@ -605,6 +632,9 @@ given compositionally.
 > higher-order operations at the same time (line 1113), and I struggle to see
 > the advantages of this approach.
 
+[FIXME: Elaborations can be applied sequentially (but doing so does not buy you
+anything).]
+
 Advantages:
 
 1. As discussed in Sect. 2.6.4, effectful functions and other thunking
@@ -614,6 +644,8 @@ Advantages:
 2. Algebraic effects provides at least some of the same control we get from
    scoped effects already, as our example in Sect. 4.2 demonstrates, and as we
    also discuss in our response Reviewer 1.
+   
+   [FIXME: also point to discussion we will add in rel.work]
 
 3. When we do not need this control, algebraic effects are sufficient.  Indeed,
    it is not clear to us that it is necessarily a good thing that we have to
@@ -723,6 +755,8 @@ There was a typo and type error here, thanks.  Fixed!
 > - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
 
 [FIXME] Cas.
+
+[FIXME: Cas says: original containers paper]
 
 > - line 330: Σ is never explained.
 > - line 344: Typo: "We co-products…" should be "We use co-products…"
