@@ -83,29 +83,35 @@ submitted manuscript.
 > elaboration that elaborates all higher-order effects would harm
 > modularity in practice.
 
-[Cas: we should elaborate on how we interpret the question.
+This is an excellent point. While we indeed tailor the development
+presented in the paper to elaborations that elaborate all higher-order
+effects in one go, we believe that this is not an inherent limitation
+of the appraoch. That is, we think it is possible to define
+elaboration with the following signature. 
 
-- Yes, you can elaborate in sequence.
+`elaborate : ∀[ Hefty (η₁ ⊕ η₂) ⇒ Hefty (↑ ε ⊕ η₂) ]`
 
-- But that doesn't buy you anything.
+This definition of `elaborate` can apply elaborations in sequence, if
+we are careful to unify the first-order operations produced by
+elaborations that target the same first-order effects. Such a change
+would, however, require the carrier of elaboration algebras to be
+changed from `Free ε` to ` Hefty (↑ ε ⊕ η₂)`, further complicating the
+definitions of elaboration algebras, modular handlers, and all
+corresponding proofs.
 
-- Handling algebraic effects is where you get interaction.
+An important question to consider is why we would want to compose
+elaborations. In the case of scoped effects and handlers, the order of
+composition is key for determining the semantics of effects, and
+expressivity of the approach in part relies on various ordering of
+handers to specify the semantics of effect interaction. 
 
-- So the question is: do we get the same modularity from algebraic effects and
-  handlers as we do from scoped effects and handlers.
-
-]
-
-Good question.
-
-Our intuition is that it is possible to encode scoped effects and handlers in
-general as algebraic effects with explicit operations for entering and leaving a
-scope.  We discuss this intuition below.
-
-However, this intuition remains to be tried [FIXME: What do we mean by "tried
-and tested"] and tested in future work.  We will clarify in 3.5 that it is an
-open question of whether scoped effects + forwarding gives modularity benefits
-that we cannot recover using modular elaborations + algebraic effects and
+Our intuition is that it is possible to encode scoped effects and
+handlers in general as algebraic effects with explicit operations for
+entering and leaving a scope. However, this intuition remains to be
+tried [FIXME: What do we mean by "tried and tested"] and tested in
+future work.  We will clarify in 3.5 that it is an open question of
+whether scoped effects + forwarding gives modularity benefits that we
+cannot recover using modular elaborations + algebraic effects and
 handlers.
 
 [FIXME:
