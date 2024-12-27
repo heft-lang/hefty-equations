@@ -73,6 +73,22 @@ glue code as scoped effects.  The solution we present in this paper does not
 require weaving glue code, and is given by a modular but simple mapping onto
 algebraic effects and handlers.
 
+Another recent paper by~\citet{DBLP:journals/corr/abs-2302-01415}
+presents a unified framework for describing higher-order effects,
+which can be specialized to recover several instances such as Scoped
+Effects~\citep{WuSH14} or Latent Effects~\citep{BergSPW21}. They
+present a generic free monad generated from higher-order signatures
+that coincides with the type of \ad{Hefty} trees that we present in
+\cref{sec:hefty-trees-and-algebras}. Their approach relies on a
+\emph{Generalized Fold} \citep{DBLP:journals/fac/BirdP99} for
+describing semantics of handling operations, in contrast to the
+approach in this paper, where we adopt a two-stage process of
+elaboration and handling that can be expressed using the standard
+folds of first-order and higher-order free monads. To explore how the
+use of generalized folds versus standard folds affects the relative
+expressivity of approaches to higher-order effects is a subject of
+further study.
+
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
 semantics~\citep{Plotkin04a}.  Mosses' Modular Structural Operational
