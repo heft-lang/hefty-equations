@@ -91,39 +91,27 @@ elaboration with the following signature.
 
 `elaborate : ∀[ Hefty (η₁ ⊕ η₂) ⇒ Hefty (↑ ε ⊕ η₂) ]`
 
-This definition of `elaborate` can apply elaborations in sequence, if
-we are careful to unify the first-order operations produced by
-elaborations that target the same first-order effects. Such a change
-would, however, require the carrier of elaboration algebras to be
-changed from `Free ε` to ` Hefty (↑ ε ⊕ η₂)`, further complicating the
-definitions of elaboration algebras, modular handlers, and all
-corresponding proofs.
+This definition of `elaborate` can be used to apply elaborations in
+sequence, if we are careful to unify the first-order operations
+produced by elaborations that target the same first-order
+effects. Such a change would, however, require the carrier of
+elaboration algebras to be changed from `Free ε` to ` Hefty (↑ ε ⊕
+η₂)`, further complicating the definitions of elaboration algebras,
+modular handlers, and all corresponding proofs.
 
 An important question to consider is why we would want to compose
 elaborations. In the case of scoped effects and handlers, the order of
 composition is key for determining the semantics of effects, and
 expressivity of the approach in part relies on various ordering of
-handers to specify the semantics of effect interaction. 
+handers to specify the semantics of effect interaction. We suspect is
+that it is possible to encode scoped effects and handlers in general
+as algebraic effects with explicit operations for entering and leaving
+a scope. However, this intuition remains to be tried [FIXME: What do
+we mean by "tried and tested"] and tested in future work.  
 
-Our intuition is that it is possible to encode scoped effects and
-handlers in general as algebraic effects with explicit operations for
-entering and leaving a scope. However, this intuition remains to be
-tried [FIXME: What do we mean by "tried and tested"] and tested in
-future work.  We will clarify in 3.5 that it is an open question of
-whether scoped effects + forwarding gives modularity benefits that we
-cannot recover using modular elaborations + algebraic effects and
-handlers.
-
-[FIXME:
-
-Tom and Birthe uses a special (adjoint?) fold and show how to use it to define
-scoped effects and handlers for the higher-order free monad (hefty).
-
-We will relate to this line of work in more detail.
-
-Cas does this.
-
-]
+We will clarify in 3.5 that it is an open question of whether scoped
+effects + forwarding gives modularity benefits that we cannot recover
+using modular elaborations + algebraic effects and handlers.
 
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
@@ -302,9 +290,10 @@ All fixed. Many thanks!
 > higher-order signature functor, and hefty algebras, which elaborate hefty
 > trees into effect trees built using a first-order signature functor. 
 
-Good summary.  We would add that another difference from scoped effects is that
-some higher-order operations are not scoped operations, such as operations for
-effectful lambdas (see, e.g., the discussion in 2.6.4).
+Good summary.  We would add that another difference from scoped
+effects is that some higher-order operations are not scoped
+operations, such as operations for constructing effectful lambdas
+(see, e.g., the discussion in 2.6.4).
 
 > Based on the development of hefty trees and algebras, the paper also provides
 > an infrastructure for equational reasoning about computations with
@@ -502,10 +491,18 @@ We have revised the paragraph to clarify this.
 > and why the computation parameters of higher-order operations must be
 > continuation-like (lines 134--135).
 
-This is a consequence of how handlers are typed.
+Perhaps "restriction" is somewhat of a misnomer in this context; the
+seminal work on algebraic effects and handlers by Plotkin and Power
+(2003) and Plotking and Pretnar (2009) defines the syntax of effects
+such that operations are first order, i.e., they cannot have any
+parameters that are themselves computations unless the effects of
+these computations are hardcoded in the definition of the operation,
+which violates modularity. Only if computational parameters of an
+operation behave like a continuation can we represent them using
+algebraic effects and handlers, by storing the computational
+parameters as continuations.
 
-The restriction is fundamental, and stems from the seminal work on Algebraic
-Operations and Generic Effects by Plotkin and Power (2003).
+The paragraph has been updated to clarify this. 
 
 > For the equational reasoning, the paper shows what equational laws can be
 > proven, but does not discuss what cannot be. I think demonstrating the ability
@@ -513,9 +510,9 @@ Operations and Generic Effects by Plotkin and Power (2003).
 > equational reasoning system is well defined because only "proving" laws is
 > possible even in the reasoning system that admits any law.
 
-This is certainly possible.  Though we are not sure what kind of laws you want
-to disprove.  It is customary for equational theories to comprise laws that do
-hold.
+In principle possible to do this, though we are not sure what kind of
+laws you want to disprove. It is customary for equational theories to
+comprise laws that do hold. 
 
 > Also, while the paper explains most of Agda's notations, more notes would be necessary for readers not very familiar with Agda. Specifically, explaining the following notations would be helpful and make the paper more self-contained.
 > 
@@ -760,9 +757,10 @@ There was a typo and type error here, thanks.  Fixed!
 
 > - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
 
-[FIXME] Cas.
-
-[FIXME: Cas says: original containers paper]
+The terminology originates from the original paper on containers by
+Abbott, Altenkirch, and Ghani (20050). We are happy to adopt a
+different terminology if the reviewers think that improves clarity of
+the paper.
 
 > - line 330: Σ is never explained.
 > - line 344: Typo: "We co-products…" should be "We use co-products…"
