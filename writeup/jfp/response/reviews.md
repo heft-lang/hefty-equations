@@ -361,8 +361,8 @@ Another option for how to type `censor` is to use some concrete effect row `Δ`:
     censor : ∀ {A} → (String -> String) -> (A ! Censor, Output, Δ) -> (A ! Censor)
     
 This type requires us to apply the handler for `censor` as the first handler,
-which has the problems we explain on line 131 in the introduction of our paper.
-To summarize, if we do not apply it first, then either: 
+which has the problems we explained on line 131 in the introduction of our
+paper.  To summarize, if we do not apply it first, then either:
 
 (1) `Δ` will contain _more_ effects than the rest of the tree, which means we
     must manually apply handlers to make the sub-tree match the effects of the
@@ -371,15 +371,16 @@ To summarize, if we do not apply it first, then either:
 (2) `Δ` will initially contain _fewer_ effects than its surrounding context,
     which means we cannot type all programs we want.
 
-[FIXME: this needs kindness pass.]
+We have adjusted the explanation in the introduction to hopefully reduce
+confusion.
 
 > Furthermore, as hefty algebras elaborate all higher-order effects in one go,
 > we should be able to assume that m performs no effect operations other than
-> censor. 
+> censor.
 
-[FIXME: this needs kindness pass.]
+We hope the adjusted phrasing in the introduction has clarified this confusion too.
 
-No.  Higher-order effect trees can contain multiple effects, so the `m` in
+No, higher-order effect trees can contain multiple effects, so the `m` in
 `censor f m` can perform effect operations other than `censor`.  As summarized
 on line 216 of the paper, the so-called "smart constructor" (Sect. 2.2) for
 `censor` has the following type:
@@ -426,22 +427,20 @@ akin to the following:
     censor : ∀ {A Δ} → (String -> String) -> (A ! Censor, Output, Δ) -> (A ! Censor)
 
 (Ignoring for now the fact that this operation requires quantifying over effect
-trees in operations, which seems to give rise to universe size issues that make
-this style of operation non-trivial to encode in, e.g., Agda.)
+trees in operations, which may give rise to universe size issues that make this
+style of operation non-trivial to encode in, e.g., Agda.)
 
 It seems a shallow handler for a `censor` operation with the type above could
 leave `Δ` completely polymorphic, and simply forward the effects to its
-surrounding context, to obtain a similar effect as elaboration algebras.
+surrounding context, to obtain a similar effect as our elaboration algebras.
 
 On the other hand, it is less clear to us how modular equational theories for
 shallow handlers would look and work.
 
-We will discuss this relationship with shallow handlers in the introduction and
-related work.
-
 If you have pointers, we would also be happy to learn more about what
 higher-order effects Koka supports in practice.  We have found claims to this
-end online, but struggled to find a precise characterization.
+end online, but have struggled to find a precise characterization in the
+literature.
 
 > Another concern is that the explanation of the modularity problem with
 > higher-order operations (Section 1.2) is unclear to me. The paper first
@@ -477,18 +476,16 @@ We have revised the paragraph to clarify this.
 > and why the computation parameters of higher-order operations must be
 > continuation-like (lines 134--135).
 
-Perhaps "restriction" is somewhat of a misnomer in this context; the
-seminal work on algebraic effects and handlers by Plotkin and Power
-(2003) and Plotking and Pretnar (2009) defines the syntax of effects
-such that operations are first order, i.e., they cannot have any
-parameters that are themselves computations unless the effects of
-these computations are hardcoded in the definition of the operation,
-which violates modularity. Only if computational parameters of an
-operation behave like a continuation can we represent them using
-algebraic effects and handlers, by storing the computational
-parameters as continuations.
+Perhaps "restriction" is somewhat of a misnomer in this context.  The seminal
+work on algebraic effects and handlers by Plotkin and Power (2003) and Plotkin
+and Pretnar (2009) defines the syntax of effects such that operations are first
+order, i.e., they cannot have any parameters that are themselves computations
+unless the effects of these computations are hardcoded in the definition of the
+operation, which violates modularity. Only if computational parameters of an
+operation behave like a continuation can we represent them using algebraic
+effects and handlers, by storing the computational parameters as continuations.
 
-The paragraph has been updated to clarify this. 
+The paragraph has been updated to clarify this.
 
 > For the equational reasoning, the paper shows what equational laws can be
 > proven, but does not discuss what cannot be. I think demonstrating the ability
@@ -506,46 +503,138 @@ that do hold.
 > - L421--422: ∃  λ Δ' -> ...: Is this an existential type ∃  Δ'. ...?
 > - L511: λ where ...: Is this a lambda abstraction that does pattern-matching against arguments?
 > - L512: flip: It is explained on page 16, but too late.
+
+Fixed, thanks!
+
 > - L678: (k : ...) (r : G C) -> ...: Does this just mean ... -> G C -> ... except that k and r may be referred to in the return type (i.e., the latter "...")? If so, why are k and c named here even though they are not referenced?
+
+Yes.
+
 > - L1027: {| w = w |}  Here, does it mean the argument for w is explicitly given, but the argument for u is omitted?
+
+As remarked in footnote 26, instance argument resolution in Agda needs a bit of
+help to type check some of the definitions in our paper.  We omit this helper
+code from the paper to aid readability.  The `⦃ w = w ⦄` here was an artifact of
+us helping Agda in a hidden code block that we did not show in the paper.  We
+have removed the argument in the paper now.
+
 > - L1555: What is a "constructor" in record?
+
+We have added a footnote.
+
 > - L1688--1690: T occurs free. Is it implicitly universally quantified in each line?
 > - L1780: A and B occur free. Why is it okay? Isn't it universally quantified?
+
+These are implicitly universally quantified, following the same convention as we
+use throughout the paper.  We mention the convention on line 113 of the paper.
+
 > - L1785--1786: What do { A = A }, { Δ' = Δ }, and { γ = k } mean?
+
+These are implicit parameters that we pass explicitly.  We have added a footnote
+where we first use implicit parameters.
+
 > - L1809--1812: What do Level.Lift and Level.Lift sl 0l mean?
 > - L1838: What does lift mean?
 
-[FIXME] Thanks for pointing these out!  We have added explanations.
+We have added a footnote.
 
 > Finally, I think the presentation of the paper needs to be improved. The issues I found are the following.
 > 
 > - L53: "as argument" --> "as an argument"?
 > - L117--118: I think the types A and B are the argument and return type, respectively, of op, but it is not described, so what A and B are is unclear.
+
+Fixed.
+
 > - L120 "it is only k whose ...": What is "it" here? Perhaps what the sentence wants to say is "only k has a type compatible ..."?
+
+Revised.
+
 > - L231: For the type of hOut', adding parentheses like "(String -> String) -> _(_ A ! Output, Δ => (A * String) ! Δ _)_" would help reading.
+
+It is standard for the arrow to be right-associative.  However, we have simplified this signature away now.
+
 > - L236: "do x <- " -> "do (x,s) <- "
+
+Indeed, thanks!  Fixed.
+
 > - L344 :"We co-products" --> co-product?
+
+Adjusted.
+
 > - L646-651: It is difficult to understand the intuition of the enter constructor in the current form. It would be helpful to give here an instance that illustrates how the enter constructor is used, specifically, how computation arguments and continuations are represented as a term of the type "Prog Δ γ (Prog Δ γ A)"  to express some examples shown in Section 2.6.2. I guess outer computations mean computation arguments and inner ones mean continuations, but they are not explained so clearly.
+
+The `CatchOp` immediately after this is an example.  There's also a forward
+pointer to 2.6.2, and there are pointers to the existing work where this
+definition is from.
+
 > - L706--710: This part is confusing and needs to be clarified, partly because it is unclear which parts in line 704 correspond to sc, B, and (G B), respectively. Exposing the types of subterms of the argument of the enter constructor might be helpful.
+
+We agree that the types here are a little subtle.  We do not see an optimal way
+to expand the types without belaboring the point.  We would like to emphasize
+that this part of the paper is only there to add some background that is not
+strictly needed to understand our paper.
+
 > - L720--725: This is also confusing as m1 and m2 do not appear in the code and the continuation is specified by k in the main text but I think the continuation in the code should correspond to f. I suspect the explanations in lines 706--710 and 720--725 are for the code in the conference version and are not updated for the submitted article.
+
+Thanks, adjusted.
+
 > - L916: The motivation to consider the question of how to address computation parameters with polymorphic return types is unclear at first glance.
+
+We hope they become clear in the relevant section that the sentence here is referencing.
+
 > - L963: It is not clear why "using a type universe" is more natural in modeling types as an interface of programming.
+
+Pattern matching on types in Agda (or most type theories) is disallowed.  For
+some elaborations, this is useful and/or needed.  This is possible, if we use
+type universes.
+
+This is a somewhat technical point that did not come across clearly.
+
+We have adjusted to simply say we use type universes now.
+
 > - Page 22: Please give a concrete instance of Univ.
+
+We have added a forward pointer to S4.1.
+
 > - Page 26: Many inappropriate hyphens are inserted, like "- Here `lam is" (line 1154)
 > - L1172: "interpretation [to] `lam"
 > - L1180: "matches [that of] the function type"
 > - footnote 26: The isomorphism has been explained in footnote 17.
+
+Thanks, fixed.
+
 > - L1294: Why the contents type of Ref is τ, while the argument type of k is [[ τ ]]?
+
+The sentence a few lines later explains: `Ref t` represents a continuation
+expecting a value of type `[[ t ]]^T`.
+
 > - L1325: It is unclear what "invoking a handler before another handler" means.
 > - L1368: "definition" --> defined?
+
+Thanks, fixed.
+
 > - Page 32. It is not clear how interleave is implemented. This makes me feel why the algebra of eConcur for atomic is given by `sub (λ ref -> ψ tt >>= `jump ref) k. It seems the same as ψ tt >>= k due to the second law of sub/jump (line 1302), no?
+
+The artifact provides the source code.
+
 > - L1445: "An effect and its laws is" --> An effect and its laws constitute?
 > - L1457: "get operation[s]"
 > - L1461: "We [c]an define"
 > - L1506: "the fields Γ and R define the term metavariables respectively return type of the equation  I cannot read. Please consider rephrasing.
+
+Thanks, fixed.
+
 > - L1508: Please explain what unapplied substitutions are.
+
+The remarks here did not add much that the previous sentence did not say
+already.  We've removed the sentences, shortening the distance to the example
+which illustrates how `Γ` and `R` are used.
+
 > - L1515--1519: "the return type of the program on ... should be equal to this type metavariable." What do you mean by the return type of the program? The type of the program should be N -> Free State A, not the type metavariable A.
 > - L1676: "As discussed"  Where?
+
+Thanks, adjusted.
+
 > - L1681: "where necessary" --> where it is necessary?
 > - L1852: What is "abeq"?
 > - L1922: "We can define the same reasoning combinators"  As what?
@@ -560,7 +649,9 @@ that do hold.
 >  - L1367
 >  - Section 6
 
-[FIXME]
+Thanks, fixed.
+
+Thanks, these have been fixed.
 
 > Referee: 3
 > 

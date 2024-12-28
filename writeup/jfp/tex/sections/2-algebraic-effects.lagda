@@ -247,7 +247,7 @@ some larger effect row \ab{Δ}.
 We define the \ad{≲} order on effect rows in terms of a different
 \ab{Δ₁}~\ad{∙}~\ab{Δ₂}~\ad{≈}~\ab{Δ} which witnesses that any operation of
 \ab{Δ} is isomorphic to \emph{either} an operation of \ab{Δ₁} \emph{or} an
-operation of \ab{Δ₂}:\footnote{Here \ad{↔} is the type of an \emph{isomorphism} on \ad{Set} from the Agda Standard Library.  It is given by a record with two fields: the \aF{to} field represents the $\rightarrow$ direction of the isomorphism, and \aF{from} field represents the $\leftarrow$ direction of the isomorphism.}
+operation of \ab{Δ₂}:\footnote{Here \as{∀~\{}\ab{X}\as{\}} is implicit universal quantification over an $X~\as{:}~\ad{Set}$: \url{https://agda.readthedocs.io/en/v2.6.2.2/language/implicit-arguments.html}}\footnote{\ad{↔} is the type of an \emph{isomorphism} on \ad{Set} from the Agda Standard Library.  It is given by a record with two fields: the \aF{to} field represents the $\rightarrow$ direction of the isomorphism, and \aF{from} field represents the $\leftarrow$ direction of the isomorphism.}
 %
 \begin{code}
   record _∙_≈_ (Δ₁ Δ₂ Δ : Effect) : Set₁ where
@@ -562,7 +562,8 @@ A handler of type
 parameterized in the sense that it turns a computation of type
 \ad{Free}~\ab{Δ}~\ab{A} into a parameterized computation of type
 \ab{P}~\as{→}~\ad{Free}~\ab{Δ′}~\ab{B}.  The following function does so by
-folding using \aF{ret}, \aF{hdl}, and a \ad{to-front} function:
+folding using \aF{ret}, \aF{hdl}, and a \ad{to-front} function:\footnote{The syntax \as{λ}~\ak{where}~$\ldots$ is a \emph{pattern-matching} lambda in Agda.  The function
+  \af{flip} has the following type: \as{(}\ab{A}~\as{→}~\ab{B}~\as{→}~\ab{C}\as{)~→~(}\ab{B}~\as{→}~\ab{A}~\as{→}~\ab{C}\as{)}.}
 %
 \begin{code}[hide]
   from-front : ⦃ Δ₁ ∙ Δ₂ ≈ Δ ⦄ → Free (Δ₁ ⊕ Δ₂) A → Free Δ A
@@ -1012,16 +1013,17 @@ scoped computation returns (\ab{G}~\ab{B}).  The \aF{glue} function fixes this
 mismatch for the particular return type modification
 \ab{G}~\as{:}~\ad{Set}~\as{→}~\ad{Set} of a parameterized scoped effect handler.
 
-The scoped effect handler for exception catching is thus:\footnote{Here,
-  \af{flip}~\as{:~(}\ab{A}~\as{→}~\ab{B}~\as{→}~\ab{C}\as{)~→~(}\ab{B}~\as{→}~\ab{A}~\as{→}~\ab{C}\as{)}.}
+The scoped effect handler for exception catching is thus:
 %
 \begin{code}
   hCatch  :  ⟨∙! Throw ! Catch ⇒ ⊤ ⇒ Maybe ∙! Δ ! γ ⟩
   ret     hCatch x _ = return (just x)
   hcall   hCatch (throw , k) _ = return nothing
-  henter  hCatch (catch , k) _ = k true tt 𝓑 λ where
-    (just f)  → f tt
-    nothing   → k false tt 𝓑 maybe (_$ tt) (return nothing)
+  henter  hCatch (catch , k) _ = let m₁ = k true
+                                     m₂ = k false in
+      m₁ tt 𝓑 λ where
+        (just f)  → f tt
+        nothing   → m₂ tt 𝓑 maybe (_$ tt) (return nothing)
   glue hCatch k x _ = maybe (flip k tt) (return nothing) x
 \end{code}
 %

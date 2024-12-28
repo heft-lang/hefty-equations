@@ -53,7 +53,7 @@ However, these modularity benefits do not apply to many common operations that t
 To understand the benefits of algebraic effects and handlers and the modularity problem with operations that take computations as parameters, we give a brief introduction to algebraic effects, based on the effect handlers tutorial by \citet{Pretnar15}.
 Readers familiar with algebraic effects and handlers are encouraged to skim the code examples in this subsection and read its final paragraph.
 
-Consider a simple operation $\Op{out}$ for output which takes a string as argument and returns the unit value.
+Consider a simple operation $\Op{out}$ for output which takes a string as an argument and returns the unit value.
 Using algebraic effects and handlers its type is:
 %
 \begin{align*}
@@ -145,7 +145,8 @@ Following \citet{Plotkin2009handlers,Pretnar15}, the left and right hand sides o
   \Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
 \end{equation*}
 %
-Consequently, $c$ must either by a trivial $\Return{w}$ expression for some $w : C$; or it must invoke $k$.
+Here, $A$ is the argument type of an operation, and $B$ is the return type of an operation.
+Consequently, $c$ must either by a trivial $\Return~{w}$ expression for some $w : C$; or it must invoke $k$.
 In theory, the value parameter $v$ of $\Op{op}~v$ could also be compatible; e.g., if $A = () \to \Typing{C}{Δ′}$.
 However, encoding computations as value arguments of operations in this way is non-modular, because effect handlers are not applied recursively to parameters of operations.
 That is, following~\citet{Plotkin2009handlers,Pretnar15}, if $h$ handles operations other than $\Op{op}$, then
@@ -355,6 +356,8 @@ We make the following technical contributions:
 \end{itemize}
 %
 \cref{sec:related} discusses related work and \cref{sec:conclusion} concludes.
+The paper assumes a passing familiarity with dependent types.  We do not assume familiarity with Agda: we explain Agda-specific syntax and features when we use them.
+
 An artifact containing the code of the paper and a Haskell embedding of the same ideas is available online~\citep{artifact}.
 A subset of the contributions of this paper were previously published in a conference paper~\citep{DBLP:journals/pacmpl/PoulsenR23}.
 While that version of the paper too discusses reasoning about higher-order effects, the correctness proofs were non-modular, in that they make assumptions about the order in which the algebraic effects implementing a higher-order effect are handled.

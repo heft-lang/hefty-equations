@@ -66,7 +66,7 @@ swap-⊕-↔ = record
 A key aspect of algebraic effects and handlers is the ability to state and prove
 \emph{equational laws} that characterize correct implementations of effectful
 operations. Usually, an effect comes equipped with multiple laws that govern its
-intended behavior.  An effect and its laws is generally known as as \emph{effect
+intended behavior.  An effect and its laws constitute an \emph{effect
 theory}~\citep{DBLP:journals/tcs/HylandPP06,Plotkin2002notions,PlotkinP03,DBLP:journals/pacmpl/YangW21}. This
 concept of effect theory extends to \emph{higher-order effect theories}, which
 describe the intended behavior of higher-order effects. In this section, we
@@ -80,7 +80,7 @@ Let us consider the state effect as an example, which comprises the $\af{get}$
 and $\af{put}$ operations. With the state effect, we typically associate a set
 of equations (or laws) that specify how its implementations ought to behave. One
 such law is the \emph{get-get} law, which captures the intuition that the state
-returned by two subsequent $\af{get}$ operation does not change if we do not use
+returned by two subsequent $\af{get}$ operations does not change if we do not use
 the $\af{put}$ operation in between:
 %
 \begin{equation*}
@@ -150,19 +150,18 @@ record Equation (Δ : Effect) : Set₁ where
 An equation consists of five components. The field $\aF{V}$ defines the number
 of type metavariables used in the equation. Then, the fields $\aF{Γ}$ and
 $\aF{R}$ respectively define the term metavariables (\ad{Vec}~\ad{Set}~\aF{V}~\as{→}~\ad{Set}) and return type (\ad{Vec}~\ad{Set}~\aF{V}~\as{→}~\ad{Set}) of the
-equation. Both may depend on the type metavariables of the equation, hence they
-depend on a vector of length $\aF{V}$ containing unapplied substitutions for all
-type metavariables. Finally, the left-hand side ($\aF{lhs}$) and right-hand side
-($\aF{rhs}$) of the equation are then defined as functions of type
-$\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which depend on unapplied substitutions for both
-the type and term level metavariables that the equation can refer to.
+equation.
+
+%% Both may depend on the type metavariables of the equation, hence they
+%% depend on a vector of length $\aF{V}$ containing unapplied substitutions for all
+%% type metavariables. Finally, the left-hand side ($\aF{lhs}$) and right-hand side
+%% ($\aF{rhs}$) of the equation are then defined as functions of type
+%% $\ad{Free}~\ab{Δ}~(\aF{R}~vs)$, which depend on unapplied substitutions for both
+%% the type and term level metavariables that the equation can refer to.
 
 \paragraph*{Example}.  To illustrate how the \ad{Equation} record captures
 equational laws of effects, we consider how to define the \emph{get-get} as a
-value of type $\ad{Equation}~\af{State}$. Recall that the equation depends on
-one type metavariable, and one term metavariable. Furthermore, the return type
-of the programs on the left and right hand sides should be equal to this type
-metavariable.
+value of type $\ad{Equation}~\af{State}$.
 %
 \begin{AgdaAlign}
 \begin{code}[hide]
@@ -176,19 +175,15 @@ get-get : Equation State
 V    get-get = 1
 Γ    get-get = λ where (A ∷ []) → ℕ → ℕ → Free State A
 R    get-get = λ where (A ∷ []) → A
-\end{code}
-%
-Since there is exactly one term metavariable, we equate $\aF{Γ}$ to the type of
-this metavariable. For equations with more than one metavariable, we would
-define $\aF{Γ}$ as a product of the types of all term metavariables. The fields
-$\aF{lhs}$ and $\aF{rhs}$ for the \emph{get-get} law are then defined as
-follows:
-%
-\begin{code} 
 lhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → ‵get 𝓑 λ s′ → k s s′ 
 rhs  get-get (A ∷ []) k = ‵get 𝓑 λ s → k s s
 \end{code}
 \end{AgdaAlign}
+The fields \aF{lhs} and \aF{rhs} define the left- and right-hand sides of the equation.
+Both sides only use a single term metavariable, representing a continuation of type \ad{ℕ}~\as{→}~\ad{ℕ}~\as{→}~\ad{Free}~\ad{State}~\ab{A}.
+The field $\aF{Γ}$ declares this term meta-variable. For equations with more than $n>1$ metavariables, we would
+define $\aF{Γ}$ as an $n$-ary product instead.
+%
 
 \subsection{Modal Necessity}
 \label{sec:modal-necessity}
@@ -218,7 +213,7 @@ possible extensions of a type index is
 well-known~\citep{DBLP:journals/jfp/AllaisACMM21,
   DBLP:journals/pacmpl/RestPRVM22}, and corresponds to a shallow embedding of
 the Kripke semantics of the necessity modality from modal logic. We can define
-it in Agda as follows.
+it in Agda as follows.\footnote{The \ak{constructor} keyword declares a function that we can call to construct an instance of a record; and that we can pattern match on to destruct record instances.}
 %
 \begin{code}
 record □ (P : Effect → Set₁) (Δ : Effect) : Set₁ where
@@ -449,7 +444,7 @@ maps to $\ab{eq}$ for that arity.
 \subsection{Syntactic Equivalence of Effectful Programs}
 \label{sec:fo-equivalence} 
 
-As discussed, propositional equality of effectful programs is too strict, as it
+Propositional equality of effectful programs is too strict, as it
 precludes us from proving equalities that rely on a semantic understanding of
 the effects involved, such as the equality in \cref{eq:get-get-throw}. The
 solution is to define an inductive relation that captures syntactic equivalence
@@ -655,7 +650,7 @@ module _ ⦃ _ : Univ ⦄ where
 \end{code}
 %
 A $\af{TypeContext}$ carries unapplied substitutions for a given set of type
-metavariables, and is defined by induction over a list of kinds. 
+metavariables, and is defined by induction over a list of kinds.\footnote{\ad{Level}\as{.}\ad{Lift} lifts a type in $\ad{Set}$ to a type in $\ad{Set₁}$.  The constructor of $\ad{Level}\as{.}\ad{Lift}$ is \ac{lift}.}
 %
 \begin{code}
   TypeContext : List Kind → Set₁

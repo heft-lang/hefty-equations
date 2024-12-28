@@ -447,12 +447,8 @@ a type (\ad{Set}), the \ad{CatchOp̅} type lives in \ad{Set₁}.  Consequently i
 does not fit the definition of \ad{Effectᴴ}, whose operations live in \ad{Set}.
 There are two potential solutions to this problem: (1) increase the universe
 level of \ad{Effectᴴ} to allow \aF{Opᴴ} to live in \ad{Set₁}; or (2) use a
-\emph{universe of types}~\citep{martin-lof1984intuitionistic}.
-%
-Either solution is applicable here.  However, for some operations (e.g.,
-$\lambda$ in \cref{sec:higher-order-lambda}) it is natural to model types as an
-interface that we are programming against.  For this reason, using a type
-universe is a natural fit.
+\emph{universe of types}~\citep{martin-lof1984intuitionistic}.  Either
+solution is applicable here; we choose type universes. 
 
 A universe of types is a (dependent) pair of a syntax of types
 (\aF{Ty}~\as{:}~\ad{Set}) and a semantic function
@@ -468,6 +464,8 @@ by reflecting it into Agda's \ad{Set}:
   open Univ ⦃ ... ⦄
 \end{code}
 %
+\Cref{sec:higher-order-lambda} contains a concrete example usage this notion of type
+universe.
 Using type universes, we can parameterize the \ac{catch} constructor on the left
 below by a \emph{syntactic type} \aF{Ty} of some universe \ab{u}, and use the
 \emph{meaning of this type} (\aF{⟦}~\ab{t}~\aF{⟧ᵀ}) as the return type of the
@@ -736,11 +734,20 @@ module ElabModule where
 \end{code}
 \begin{code}
     eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
-    alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
-      (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
 \end{code}
 \begin{code}[hide]
+    alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
+      (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
       where instance _ = _ , ∙-comm (w .proj₂)
+\end{code}
+\begin{code}
+    module _ ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ where
+      eCatch⅋ : Elaboration Catch Δ
+\end{code}
+\begin{code}
+      alg eCatch⅋ (catch t , k , s) = 
+        (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
+        where instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
 %
 The elaboration is essentially the same as its non-modular counterpart, except
@@ -881,16 +888,21 @@ define, compose, and handle scoped operations, by applying scoped effect
 handlers in sequence; i.e.:
 %
 \begin{equation*}
-\ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1}
-\ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2}
+\ad{Prog}~\ab{Δ₀~γ₀~A₀} \xrightarrow{h_1'}
+\ad{Prog}~\ab{Δ₁~γ₁~A₁} \xrightarrow{h_2'}
 \cdots
-\xrightarrow{h_n}
+\xrightarrow{h_n'}
 \ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
+\tag{$\dagger$}
 \end{equation*}
 %
+
 As discussed in \cref{sec:weaving}, each handler application modularly
-``weaves'' effects through sub computations, using a dedicated \aF{glue}
-function.  Hefty algebras, on the other hand, work by applying an elaboration
+``weaves'' effects through sub-computations, using a dedicated \aF{glue}
+function.%  Such weaving makes it possible to obtain different semantics by
+applying different scoped effect handlers in different orders.
+
+Hefty algebras, on the other hand, work by applying an elaboration
 algebra assembled from modular components in one go.  The program resulting from
 elaboration can then be handled using standard algebraic effect handlers; i.e.:
 %
@@ -900,15 +912,32 @@ elaboration can then be handled using standard algebraic effect handlers; i.e.:
 \ad{Free}~Δ~A \xrightarrow{h_1}
 \cdots \xrightarrow{h_k}
 \ad{Free}~\ad{Nil}~\ab{Aₖ}
+\tag{$\ddagger$}
 \end{equation*}
 %
-Because hefty algebras eagerly elaborate all higher-order effects in one go,
-they do not require similar ``weaving'' as scoped effect handlers.  A
-consequence of this difference is that scoped effect handlers exhibit more
-effect interaction by default; i.e., different permutations of handlers may give
-different semantics.  In contrast, when using hefty algebras we have to be more
-explicit about such effect interactions.  We discuss this difference in more
-detail in \cref{sec:optional-transactional}.
+
+The algebraic effect handlers $h_1,\ldots,h_k$ in ($\dagger$) serve the same purpose
+as the scoped effect handlers $h_1',\ldots,h_n'$ in ($\ddagger$); namely, to
+provide a semantics of operations.  The order of handling is significant for
+both algebraic effect handlers and for scoped effect handlers: applying the same
+handlers in different orders may give a different semantics.
+
+In contrast, the order that elaborations ($E_1,\ldots,E_m$) are composed in
+($\ddagger$) does not matter.  Hefty algebras merely mediate higher-order
+operations into ``first-order'' effect trees that then must be handled, using
+standard effect handlers.  While scoped effects supports ``weaving'', standard
+algebraic effect handlers do not.  This might suggest that scoped effects and
+handlers are generally more expressive.  However, many scoped effects and
+handlers can be emulated using algebraic effects and hanlders, by encoding
+scoped operations as algebraic operations whose continuations encode a kind of
+scoped syntax, inspired by \citet[\S{}7-9]{WuSH14}.\footnote{We suspect that it
+is generally possible to encode scoped syntax and handlers in terms of algebraic
+operations and handlers, but verifying this is future work.}  We illustrate how
+in \cref{sec:optional-transactional}.
+
+
+
+
 
 %%% Local Variables:
 %%% reftex-default-bibliography: ("../references.bib")

@@ -108,7 +108,7 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
 %
 Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}).
 The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
-The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
+The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches that of the function value parameter type.
 
 \begin{figure}[t]
 \begin{code}
@@ -142,8 +142,8 @@ To illustrate we give two different implementations of the interface: one that i
 
 \subsubsection{Call-by-Value}
 
-We give a call-by-value interpretation \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
-Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):\footnote{The two sides of an isomorphism \ab{A}~\ad{↔}~\ab{B} are given by the functions \aF{to}~\as{:}~\ab{A}~\as{→}~\ab{B} and \aF{from}~\as{:}~\ab{B}~\as{→}~\ab{A}.}
+We give a call-by-value interpretation of \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
+Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):
 \begin{code}[hide]
     module _ ⦃ l : LamUniv ⦄
              ⦃ iso₁ : {t₁ t₂ : Type}
@@ -163,7 +163,7 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
         iso₂⅋  : {t : Type}      → ⟦ c t      ⟧ᵀ   ↔   ⟦ t ⟧ᵀ
 \end{code}
 %
-The first isomorphism says that a function value type corresponds to a function which accepts a value of type \ab{t₁} and produces a computation whose return type matches the function type.
+The first isomorphism says that a function value type corresponds to a function which accepts a value of type \ab{t₁} and produces a computation whose return type matches that of the function type.
 The second says that thunk types coincide with value types.
 Using these isomorphisms, the following defines a call-by-value elaboration of functions:
 %
@@ -568,7 +568,7 @@ The elaboration uses \af{‵sub} to capture the continuation of a higher-order \
 If no exception is raised, then control flows to the continuation \ab{k} without invoking the continuation of \af{‵sub}.
 Otherwise, we jump to the continuation of \af{‵sub}, which runs \ab{m₂} before passing control to \ab{k}.
 Capturing the continuation in this way interacts with state because the continuation of \af{‵sub} may have been pre-applied to a state handler that only knows about the ``old'' state.
-This happens when we invoke the state handler before the handler for sub/jump: in this case we get the transactional interpretation of state, so running \af{transact} gives \an{1}.
+This happens when we handle the state effect before the sub/jump effect: in this case we get the transactional interpretation of state, so running \af{transact} gives \an{1}.
 Otherwise, if we run the sub/jump handler before the state handler, we get the global interpretation of state and the result \an{2}.
 %
 \begin{code}[hide]
@@ -899,7 +899,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 
 \subsection{Concurrency}
 
-Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} definition using scoped effects.
+Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} defined using scoped effects.
 We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:
