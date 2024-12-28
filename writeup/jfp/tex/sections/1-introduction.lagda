@@ -142,14 +142,16 @@ The lack of support for higher-order effects stems from how handler cases are ty
 Following \citet{Plotkin2009handlers,Pretnar15}, the left and right hand sides of handler cases are typed as follows:
 %
 \begin{equation*}
-  \Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
+\Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
 \end{equation*}
 %
 Here, $A$ is the argument type of an operation, and $B$ is the return type of an operation.
-Consequently, $c$ must either by a trivial $\Return~{w}$ expression for some $w : C$; or it must invoke $k$.
-In theory, the value parameter $v$ of $\Op{op}~v$ could also be compatible; e.g., if $A = () \to \Typing{C}{Δ′}$.
-However, encoding computations as value arguments of operations in this way is non-modular, because effect handlers are not applied recursively to parameters of operations.
-That is, following~\citet{Plotkin2009handlers,Pretnar15}, if $h$ handles operations other than $\Op{op}$, then
+The term $c$ represents the code of the handler case, which must have type $C ! Δ′$, for some overall handler return type $C$, and some remaining set of effects $Δ′$.
+The only way for $c$ to have this type is if (1) $c = \Return~{w}$, for some $w : C$; (2) if $c$ calls the continuation $k$; or (3) if the operation argument type $v$ has type  $A = () \to \Typing{C}{Δ′}$.
+Here, option (3) seems most promising for encoding higher-order effects.
+
+However, encoding computations as value arguments of operations in this way is non-modular.
+Following~\citet{Plotkin2009handlers,Pretnar15}, if $h$ handles operations other than $\Op{op}$, then
 %
 \begin{equation}
 \With{h}{(\Do~x \leftarrow \Op{op}~v; m)}\
@@ -175,7 +177,7 @@ In particular, for any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typin
   \Do~x \leftarrow (\Op{op}~m_1\ldots m_n); k~x
   \ \equiv\ 
   \Op{op}~(\Do~x_1 \leftarrow m_1; k~x_1)\ldots(\Do~x_n \leftarrow m_n; k~x_n)
-  \tag{\dag}
+  \tag{$\dagger$}
   \label{eqn:algebraicity}
 \end{equation*}
 %
@@ -221,7 +223,7 @@ For example, $\Op{censor}$ can be elaborated into an inline handler application 
   \begin{array}{ll}
     \Op{censor} &: (\Type{String} \to \Type{String}) \to \Typing{A}{\Effect{Output},Δ} \to \Typing{A}{\Effect{Output},Δ}
     \\
-    \Op{censor} &f~m = \Do~(x, s) \leftarrow (\With{\Id{hOut}}{m});~\Op{out}~(f~s);~\Return~x
+    \Op{censor} &f~m = \Do~(x, s) \leftarrow (\With{\Id{hOut}}{m});~\Op{out}~(f~s);~\Return{}~x
   \end{array}
 \end{gather*}
 %

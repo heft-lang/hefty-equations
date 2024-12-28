@@ -2,6 +2,11 @@
 
 module tex.sections.6-related where
 
+open import Function
+open import Data.Nat
+
+variable A B : Set
+
 \end{code}
 
 \section{Related Work}
@@ -121,6 +126,42 @@ Key to our approach is that the correctness of elaborations is with respect to
 an algebraic effect theory.  If this underlying theory encodes a scoped syntax,
 we may need parameterized algebraic effect theories \`{a} la
 \citet{LindleyMMSWY24} to properly characterize it.
+
+The elaboration semantics of hefty algebras that we defined in
+\cref{sec:hefty-trees-and-algebras} is based on \emph{initial algebra
+  semantics}---that is, it is given by a fold over an inductively defined syntax
+tree.  An alternative approach is \citet{Wand79} calls \emph{final algebra
+  semantics}, popularly known as \emph{final
+  encodings}~\citet{DBLP:journals/toplas/Kamin83} or \emph{finally tagless
+  style}~\citep{carette2009finally}.  Here, the idea is that, instead of
+declaring syntax as an inductive datatype, we declare it as a record type.  For
+example, consider the following record type:
+%
+\begin{code}
+record Symantics (Repr : Set → Set) : Set₁ where
+  field  num : ℕ → Repr ℕ
+         lam : (Repr A → Repr B) → Repr (A → B)
+         app : Repr (A → B) → Repr A → Repr B
+\end{code}
+\begin{code}[hide]
+open Symantics
+\end{code}
+%
+Following \citet{carette2009finally}, this record is called \ad{Symantics} because its  interface gives the syntax of the object language and its instances give the semantics.
+For example:
+%
+\begin{code}
+SetSymantics : Symantics id
+num  SetSymantics  = id
+lam  SetSymantics  = id
+app  SetSymantics  = _$_
+\end{code}
+%
+A benefit of this approach is that it yields programs that can be executed more efficiently, because compilers can more readily optimize programs given by a concrete record instance than programs given by an inductive data type and a fold over it.
+These benefits extend to effects.
+\citet{Devriese19} presents a final tagless encoding of monads in Haskell, using dictionary passing.
+We expect that it is possible to encode modular elaborations of higher-order effects in a similar final style; i.e., by programming against records that encode a higher-order interface, and whose implementation is given by a free monad.
+This final encoding should be semantically equivalent to initial encoding presented in this paper.
 
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational

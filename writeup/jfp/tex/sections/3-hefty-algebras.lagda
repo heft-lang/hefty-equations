@@ -893,7 +893,7 @@ handlers in sequence; i.e.:
 \cdots
 \xrightarrow{h_n'}
 \ad{Prog}~\ad{Nil}~\ad{Nil}~\ab{Aₙ}
-\tag{$\dagger$}
+\tag{$\ddagger$}
 \end{equation*}
 %
 
@@ -912,18 +912,18 @@ elaboration can then be handled using standard algebraic effect handlers; i.e.:
 \ad{Free}~Δ~A \xrightarrow{h_1}
 \cdots \xrightarrow{h_k}
 \ad{Free}~\ad{Nil}~\ab{Aₖ}
-\tag{$\ddagger$}
+\tag{\S}
 \end{equation*}
 %
 
-The algebraic effect handlers $h_1,\ldots,h_k$ in ($\dagger$) serve the same purpose
-as the scoped effect handlers $h_1',\ldots,h_n'$ in ($\ddagger$); namely, to
+The algebraic effect handlers $h_1,\ldots,h_k$ in ($\ddagger$) serve the same purpose
+as the scoped effect handlers $h_1',\ldots,h_n'$ in (\S); namely, to
 provide a semantics of operations.  The order of handling is significant for
 both algebraic effect handlers and for scoped effect handlers: applying the same
 handlers in different orders may give a different semantics.
 
 In contrast, the order that elaborations ($E_1,\ldots,E_m$) are composed in
-($\ddagger$) does not matter.  Hefty algebras merely mediate higher-order
+(\S) does not matter.  Hefty algebras merely mediate higher-order
 operations into ``first-order'' effect trees that then must be handled, using
 standard effect handlers.  While scoped effects supports ``weaving'', standard
 algebraic effect handlers do not.  This might suggest that scoped effects and

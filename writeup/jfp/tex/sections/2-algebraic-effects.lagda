@@ -31,7 +31,6 @@ open import Relation.Unary
 private variable a b c : Level
                  A A′ B B′ C P : Set a
                  F G : Set a → Set b
-                 
 \end{code}
 
 \section{Algebraic Effects and Handlers in Agda}
@@ -67,8 +66,7 @@ by giving a \emph{container}~\citep{AbbottAG03,Abbott2005containers}.  Each
 container corresponds to a value of type $\ad{Set}~→~\ad{Set}$ that is both
 \emph{strictly
   positive}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/positivity-checking.html}}
-and \emph{universe
-  consistent}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/universe-levels.html}}~\citep{martin-lof1984intuitionistic},
+and \emph{universe consistent}\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/universe-levels.html}}~\citep{martin-lof1984intuitionistic},
 meaning they are a constructive approximation of endofunctors on \ad{Set}.
 Effect signatures are given by a (dependent) record
 type:\footnote{\url{https://agda.readthedocs.io/en/v2.6.2.2/language/record-types.html}}

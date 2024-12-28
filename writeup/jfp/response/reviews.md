@@ -7,30 +7,20 @@ reviewers.
 
 # Changelist
 
-[FIXME] Update line numbers throughout response to reflect line numbers in
-submitted manuscript.
-
-[FIXME] Spell-check
-
-[FIXME] Check for \cite{, replace by \citep{.
-
 - Expositional improvements to the introduction, based on the helpful
   suggestions by the reviewers.
 
-- [FIXME] Revise 3.5 to clarify that modularity characteristics of scoped
-  effects may differ from the modularity benefits you get from "classical" hefty
-  algebras+alg. effects.  But that we can get similar interaction in at least
-  some cases, as we illustrate in Sect. 4.2.2.
+- Revised 3.5 to clarify relationship with scoped effects.
 
-- [FIXME] Mention shallow handlers in the introduction, and acknowledge that
-  they may have benefits for defining higher-order effects
+- Added missing related work on:
+  * Lindley et al.'s Scoped Effects as Parameterized Algebraic Theories
+  * Schrijvers and Van den Berg's Framework for Higher-Order Effects
+  * Kidney et al.'s Algebraic Effects meet Hoare Logic in Cubical Agda
+  * Final tagless encodings
+  * And more
 
-- [FIXME] Relate to shallow handlers in related work section.
-
-- [FIXME] Relate to Tom and Birthe's paper in more detail
-
-- [FIXME] Expand related work section with the scoped->alg.eff. conversion, and
-  include a forward pointer to it where relevant (see query by Reviewer 1).
+- Numerous expositional improvements based on the reviewers' suggestions
+  (thanks!)
 
 # Detailed response
 
@@ -382,7 +372,7 @@ We hope the adjusted phrasing in the introduction has clarified this confusion t
 
 No, higher-order effect trees can contain multiple effects, so the `m` in
 `censor f m` can perform effect operations other than `censor`.  As summarized
-on line 216 of the paper, the so-called "smart constructor" (Sect. 2.2) for
+on line 223 of the paper, the so-called "smart constructor" (Sect. 2.2) for
 `censor` has the following type:
 
     censor : (String -> String) -> A !! H -> A !! H
@@ -451,7 +441,7 @@ literature.
 The implication is that the only way to handle these effects, is to apply a
 handler in-line, which is non-modular.
 
-We have added a clarifying sentence after the sentence on line 127--129.
+We have adjusted the explanation to explain the problem more directly.
 
 > Why the only way to ensure the argument v has the type whose effects match
 > those of the operation clause is to apply handlers of higher-order effects
@@ -721,9 +711,6 @@ given compositionally.
 > higher-order operations at the same time (line 1113), and I struggle to see
 > the advantages of this approach.
 
-[FIXME: Elaborations can be applied sequentially (but doing so does not buy you
-anything).]
-
 Advantages:
 
 1. As discussed in Sect. 2.6.4, effectful functions and other thunking
@@ -734,8 +721,6 @@ Advantages:
    scoped effects already, as our example in Sect. 4.2 demonstrates, and as we
    also discuss in our response Reviewer 1.
    
-   [FIXME: also point to discussion we will add in rel.work]
-
 3. When we do not need this control, algebraic effects are sufficient.  Indeed,
    it is not clear to us that it is necessarily a good thing that we have to
    think deep and hard about the order we apply handlers in.  If, for example,
@@ -772,17 +757,14 @@ Advantages:
 > of higher-order functions, one could impose even more structure by using
 > modules and functors.
 
-This sounds like a so-called _tagless final_ solution.  (Akin to MTL style type
-classes known from Haskell.)
+This sounds like a so-called _final encoding_.  (Akin to MTL style type classes
+known from Haskell.)
 
-Yes, tagless final offers an alternative encoding to initial algebra semantics.
+Final encodings are indeed an alternative to the initial encoding we use in the
+paper.
 
-Mitch Wand argues in "Final Algebra Semantics and Data Type Extensions"
-(Sect. 7) that final algebras is an extension of initial algebra semantics that
-offers benefits for specification and implementation.
-
-We have added a discussion of the relation to final tagless techniques to the
-related work section.
+We have added a discussion of the relation to final techniques to the related
+work section.
 
 > CONCLUSION
 > 
@@ -812,7 +794,7 @@ with it.
 
 > - line 68: Point out that this is a type of a specific effect handler for Output.
 
-Fixed.
+Thanks, fixed.
 
 > - line 93: Note that the ability to extend a handler type on both sides with Δ₂ does not hold in general. For example, in call-by-value (CbV), a handler returning a thunk of the continuation has the type `A!Δ,Eff ⇒ (⊤ → A!Δ)!Δ`, and extending Δ does not merely extend it on the RHS but also modifies the return type `⊤ → A!Δ`.
 
@@ -843,16 +825,15 @@ There was a typo and type error here, thanks.  Fixed!
 
 > - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
 
-The terminology originates from the original paper on containers by
-Abbott, Altenkirch, and Ghani (2005). We are happy to adopt a
-different terminology if the reviewers think that improves clarity of
-the paper.
+The terminology originates from the original paper on containers by Abbott,
+Altenkirch, and Ghani (2005). We are happy to adopt a different terminology if
+the reviewers think that improves clarity of the paper.
 
 > - line 330: Σ is never explained.
 > - line 344: Typo: "We co-products…" should be "We use co-products…"
 > - line 422: ∃ is never explained.
 
-Thanks, fixed!
+Thanks, fixed.
 
 > - line 492: Why do you restrict handlers only to those targeting the free monad? If you allowed arbitrary codomains given suitable algebras, you could avoid passing around an explicit set of parameters `P`.
 
@@ -865,7 +846,7 @@ We've added a footnote.
 
 > - line 1154: Some redundant dashes appear at the start of this and the following few paragraphs.
 
-Thanks, fixed!
+Thanks, fixed.
 
 > - line 1185: How is "lam" related to "`lam"? And similarly for other constructs?
 
@@ -875,6 +856,6 @@ We've added the explicit effect signatures to each subsection in Sect. 4.
 > - line 2054: Missing opening bracket in �� catch.
 > - line 2101: The majority of citations in this section are in the incorrect form, i.e., using "Name (YEAR)" instead of "(Name YEAR)" when not referring to authors.
 
-Thanks, fixed!
+Thanks, fixed.
 
 
