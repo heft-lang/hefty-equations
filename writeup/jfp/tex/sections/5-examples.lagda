@@ -43,7 +43,7 @@ module AbstractionModule where
 \end{code}
 
 As recently observed by \citet{BergSPW21}, the (higher-order) operations for $\lambda$ abstraction and application are neither algebraic nor scoped effects.
-We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value \citep{Levy06}.
+We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value~\citep{Levy06}.
 The interface we will consider is parametric in a universe of types given by the following record:
 
 \begin{code}
@@ -367,7 +367,7 @@ Running the example program \af{ex} from above now produces \an{5} as result, si
 \subsection{Optionally Transactional Exception Catching}
 \label{sec:optionally-transactional}
 
-A feature of scoped effect handlers~\cite{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
+A feature of scoped effect handlers~\citep{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
 A classical example of effect interaction is the interaction between state and exception catching that we briefly considered at the end of \cref{sec:hefty-algebras} in connection with this \ad{transact} program:
 %
 \begin{code}[hide]
@@ -409,14 +409,14 @@ The state and exception catching effect can interact to give either of these two
 \item \emph{Transactional} interpretation of state, where the \af{transact} program returns \an{1} since the state changes of the \ac{put} operation are \emph{rolled back} when the ``try'' block throws an exception.
 \end{enumerate}
 %
-With monad transformers~\cite{cenciarelli1993syntactic,Liang1995monad} we can recover either of these semantics by permuting the order of monad transformers.
+With monad transformers~\citep{cenciarelli1993syntactic,Liang1995monad} we can recover either of these semantics by permuting the order of monad transformers.
 With scoped effect handlers we can also recover either by permuting the order of handlers.
 However, the \ad{eCatch} elaboration in \cref{sec:hefty-algebras} always gives us a global interpretation of state.
 In this section we demonstrate how we can recover a transactional interpretation of state by using a different elaboration of the \ac{catch} operation into an algebraically effectful program with the \ac{throw} operation and the off-the-shelf \emph{sub/jump} control effects due to \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 The different elaboration is modular in the sense that we do not have to change the interface of the catch operation nor any programs written against the interface.
 
 \subsubsection{Sub/Jump}
-We recall how to define two operations, sub and jump, due to~\cite{thielecke1997phd,DBLP:conf/csl/FioreS14}.
+We recall how to define two operations, sub and jump, due to~\citet{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 We define these operations as algebraic effects following~\citet{SchrijversPWJ19}.
 The algebraic effect signature of \ad{CC}~\ab{Ref} is given in \cref{fig:alg-eff-ccop}, and is summarized by the following smart constructors:
 %
@@ -742,7 +742,7 @@ However, the complicated encoding does not pollute the higher-order effect inter
 
 \subsection{Logic Programming}
 
-Following \cite{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
+Following \citet{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
 We can also define a \af{‵fail} operation which indicates that the search in the current branch was unsuccessful.
 The effect signature for \ad{Choice} is given in \cref{fig:choice-sig}.
 The following smart constructors are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
@@ -899,7 +899,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 
 \subsection{Concurrency}
 
-Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} defined using scoped effects.
+Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\citep{Claessen99,Schmidt1986denotational,PirogG14} defined using scoped effects.
 We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:

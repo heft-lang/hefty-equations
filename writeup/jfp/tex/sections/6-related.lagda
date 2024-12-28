@@ -94,11 +94,11 @@ by the work of \citet{DBLP:journals/pacmpl/YangW21}.  Specifically, the notion
 of higher-order effect theory we formalized in Agda is an extension of the
 notion of (first-order) effect theory they use.  In closely related recent work
 by \citet{KidneyYW24}, they present a formalization of first-order effect
-theories in \emph{Cubical Agda}~\cite{VezzosiMA21}.  Whereas our formalization
+theories in \emph{Cubical Agda}~\citep{VezzosiMA21}.  Whereas our formalization
 requires extrinsic verification of the equalities of an effect theory, they use
 \emph{quotient types} as provided by homotopy type
-theory~\cite{DBLP:books/daglib/0046165} and cubical type
-theory~\cite{DBLP:journals/mscs/AngiuliBCHHL21,DBLP:journals/flap/CohenCHM17} to
+theory~\citep{DBLP:books/daglib/0046165} and cubical type
+theory~\citep{DBLP:journals/mscs/AngiuliBCHHL21,DBLP:journals/flap/CohenCHM17} to
 verify that handlers intrinsically respect their effect theories.  They also
 present a Hoare logic for verifying pre- and post-conditions.  An interesting
 question for future work is whether this logic and the framework of

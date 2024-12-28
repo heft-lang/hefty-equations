@@ -636,12 +636,23 @@ which illustrates how `Γ` and `R` are used.
 Thanks, adjusted.
 
 > - L1681: "where necessary" --> where it is necessary?
+
+Everywhere we use the modal necessity.
+
 > - L1852: What is "abeq"?
 > - L1922: "We can define the same reasoning combinators"  As what?
 > - L1955: "Catch effe[ct]"
+
+Thanks, fixed.
+
 > - Section 5.8: Why isn't the equation for first-order effect trees parameterized over the equality of the remaining effects?
+
+We do not understand the question.  Could you paraphrase?
+
 > - L1994: The meaning of inj^H { X = A} m is not clear.
-> 
+
+Footnote added.
+
 > - Many citations need more appropriate parentheses, such as "Levy's call-by-push-value Levy (2006)" --> "Levy's call-by-push-value (Levy 2006)". Similar issues are found in:
 >  - L1160
 >  - L1257
@@ -650,8 +661,6 @@ Thanks, adjusted.
 >  - Section 6
 
 Thanks, fixed.
-
-Thanks, these have been fixed.
 
 > Referee: 3
 > 

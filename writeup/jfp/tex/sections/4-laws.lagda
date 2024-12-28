@@ -719,7 +719,7 @@ same as for theories of first-order effects.
 %
 The following predicate establishes that an equation is part of a theory. We
 prove this fact by providing an arity whose corresponding equation is equal to
-$ab{eq}$. 
+$\ab{eq}$.
 %
 \begin{code}[hide]
   variable Th Th₁ Th₂ Th₃ Th′ : Theoryᴴ H
@@ -836,7 +836,7 @@ the theory.
 \end{code}
 \end{AgdaAlign}
 %
-We can define the same reasoning combinators to construct proofs of equivalence
+We can define the same reasoning combinators as in \cref{sec:fo-equivalence} to construct proofs of equivalence
 for programs with higher-order effects. 
 
 \begin{code}
@@ -936,14 +936,14 @@ the first-order effect(s) that we elaborate into.
 \end{code}
 
 Since elaborations are composed in parallel, the use of necessity in the
-defintion of equations has additional consequences for the definiton of
+definition of equations has additional consequences for the definiton of
 elaboration correctness. That is, correctness of an elaboration is defined with
 respect to a theory whose equations have left-hand and right-hand sides that may
 contain term metavariables that range over programs with more higher-order
 effects than those the elaboration is defined for. Therefore, to state
 correctness, we must also close over all possible ways these additional effects
 are elaborated. For this, we define the following binary relation on extensible
-elaborations.
+elaborations.\footnote{Here, \af{injᴴ} is the higher-order counterpart to the \af{inj} function discussed in \cref{sec:row-insertion}.}
 %
 \begin{code}[hide]
   open Algᴴ
