@@ -89,6 +89,39 @@ use of generalized folds versus standard folds affects the relative
 expressivity of approaches to higher-order effects is a subject of
 further study.
 
+The equational framework we present in \cref{sec:modular-reasoning} is inspired
+by the work of \citet{DBLP:journals/pacmpl/YangW21}.  Specifically, the notion
+of higher-order effect theory we formalized in Agda is an extension of the
+notion of (first-order) effect theory they use.  In closely related recent work
+by \citet{KidneyYW24}, they present a formalization of first-order effect
+theories in \emph{Cubical Agda}~\cite{VezzosiMA21}.  Whereas our formalization
+requires extrinsic verification of the equalities of an effect theory, they use
+\emph{quotient types} as provided by homotopy type
+theory~\cite{DBLP:books/daglib/0046165} and cubical type
+theory~\cite{DBLP:journals/mscs/AngiuliBCHHL21,DBLP:journals/flap/CohenCHM17} to
+verify that handlers intrinsically respect their effect theories.  They also
+present a Hoare logic for verifying pre- and post-conditions.  An interesting
+question for future work is whether this logic and the framework of
+\citet{KidneyYW24} could be extended to higher-order effect theories.
+
+In other recent work, \citet{LindleyMMSWY24} developed an equational reasoning
+system for scoped effects.  The system is based on so-called \emph{parameterized
+  algebraic theories}; i.e., effect theories with two kinds of variables: one
+for values, and one for computations representing \emph{scopes}.  They
+demonstrate how their framework supports key examples from the literature:
+nondeterminism with semi-determinism, catching exceptions, and local state.  The
+framework we present in \cref{sec:modular-reasoning} supports variables ranging
+over either values or computations (see, e.g., \af{catch-return} in
+\cref{sec:theories-of-higher-order-effects}).  Our framework does not explicitly
+distinguish these two kinds of variables.  We demonstrate that our approach lets
+us verify the laws of the higher-order exception catching effect
+(\cref{sec:proving-correctness-of-elaborations}), and characterize the semantics
+of composing higher-order effect theories (\cref{sec:elaboration-correctness}).
+Key to our approach is that the correctness of elaborations is with respect to
+an algebraic effect theory.  If this underlying theory encodes a scoped syntax,
+we may need parameterized algebraic effect theories \`{a} la
+\citet{LindleyMMSWY24} to properly characterize it.
+
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
 semantics~\citep{Plotkin04a}.  Mosses' Modular Structural Operational

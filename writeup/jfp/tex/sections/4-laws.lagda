@@ -632,6 +632,7 @@ hStCorrect (tt , refl) {_ ∷ []} {γ = k} = refl
 \end{code}
 
 \subsection{Theories of Higher-Order Effects}
+\label{sec:theories-of-higher-order-effects}
 
 For the most part, equations and theories for higher-order effects are defined
 in the same way as for first-order effects and support many of the same
@@ -1031,6 +1032,7 @@ composed first-order effect theory is a separate concern; a solution based on
 \end{figure}
 
 \subsection{Proving Correctness of Elaborations}
+\label{sec:proving-correctness-of-elaborations}
 
 To illustrate how the reasoning infrastructure build up in this section can be
 applied to verify correctness of elaborations, we show how to verify the

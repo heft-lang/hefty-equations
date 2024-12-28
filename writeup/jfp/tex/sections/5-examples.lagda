@@ -24,7 +24,7 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 
 As discussed in \cref{sec:higher-order-effects}, there is a wide range of examples of higher-order effects that cannot be defined as algebraic operations directly, and are typically defined as non-modular elaborations instead.
 In this section we give examples of such effects and show to define them modularly using hefty algebras.
-The artifact~\cite{artifact} contains the full examples.
+The artifact~\citep{artifact} contains the full examples.
 
 
 \subsection{$\lambda$ as a Higher-Order Operation}
@@ -365,6 +365,7 @@ Running the example program \af{ex} from above now produces \an{5} as result, si
 
 
 \subsection{Optionally Transactional Exception Catching}
+\label{sec:optionally-transactional}
 
 A feature of scoped effect handlers~\cite{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
 A classical example of effect interaction is the interaction between state and exception catching that we briefly considered at the end of \cref{sec:hefty-algebras} in connection with this \ad{transact} program:

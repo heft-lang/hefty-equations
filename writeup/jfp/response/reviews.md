@@ -2,11 +2,6 @@
 
 We would like to thank the reviewers for their time and helpful comments!
 
-<!-- The main concern raised by reviewers relates to the motivation behind our work. -->
-
-[FIXME] We have revised the introduction to clarify the questions raised by the
-reviewers.
-
 Below we include inline responses to the comments and questions raised by the
 reviewers.
 
@@ -14,6 +9,10 @@ reviewers.
 
 [FIXME] Update line numbers throughout response to reflect line numbers in
 submitted manuscript.
+
+[FIXME] Spell-check
+
+[FIXME] Check for \cite{, replace by \citep{.
 
 - Expositional improvements to the introduction, based on the helpful
   suggestions by the reviewers.
@@ -38,32 +37,28 @@ submitted manuscript.
 > Comments to the Author
 > # Summary
 > 
-> It is well-known in the literature that higher-order effects can be
-> simulated with algebraic effects and handlers at the cost of broken
-> modularity. Existing approaches either lose the separation between
-> syntax and semantics (implementing higher-order effects as handling),
-> lose the modularity of handler composition (implementing higher-order
-> effects as algebraic effects), or require extra mechanisms for
-> composing handlers of higher-order effects (the line of work on scoped
-> effects and handlers).
+> It is well-known in the literature that higher-order effects can be simulated
+> with algebraic effects and handlers at the cost of broken modularity. Existing
+> approaches either lose the separation between syntax and semantics
+> (implementing higher-order effects as handling), lose the modularity of
+> handler composition (implementing higher-order effects as algebraic effects),
+> or require extra mechanisms for composing handlers of higher-order effects
+> (the line of work on scoped effects and handlers).
 > 
-> This paper proposes a simple approach to solving the modularity
-> problem of higher-order effects via a modular elaboration of
-> higher-order effects to algebraic effects and handlers. The
-> elaboration is achieved by hefty trees and hefty algebras, a
-> generalisation of free monads to higher-order functors. The
-> elaboration is modular in the sense that the hefty algebras of
-> different higher-order effects can be combined together in the same
-> way as combining algebras of algebraic effects. Hefty algebras also
-> support modular reasoning of correctness with respect to equational
-> theories of higher-order effects.
+> This paper proposes a simple approach to solving the modularity problem of
+> higher-order effects via a modular elaboration of higher-order effects to
+> algebraic effects and handlers. The elaboration is achieved by hefty trees and
+> hefty algebras, a generalisation of free monads to higher-order functors. The
+> elaboration is modular in the sense that the hefty algebras of different
+> higher-order effects can be combined together in the same way as combining
+> algebras of algebraic effects. Hefty algebras also support modular reasoning
+> of correctness with respect to equational theories of higher-order effects.
 > 
 > This paper is well-written and clearly explains the problems and
 > solutions. The idea of elaboration is succinct and works well.
 > 
-> Compared with the previous conference version, I think the new
-> material on the modular equational reasoning approach covers 25% of
-> the paper.
+> Compared with the previous conference version, I think the new material on the
+> modular equational reasoning approach covers 25% of the paper.
 > 
 > # Comments
 > 
@@ -71,47 +66,41 @@ submitted manuscript.
 > 
 > ## Comparing Hefty Algebras with Scoped Effects
 > 
-> The line of work on scoped effects and handlers require extra
-> forwarding (or weaving) mechanisms for scoped effects. van den Berg &
-> Schrijvers (2023) genelise this to higher-order effects. In Section
-> 3.5, the paper discusses that hefty algebras are modular in a
-> different way to higher-order effects with forwarding. It appears to
-> me that forwarding seems to give a stronger notion of modularity than
-> hefty algebras, since it allows us to compose handlers together,
-> instead of composing algebras together and putting them into one
-> elaboration process. I wonder if the restriction of having one
-> elaboration that elaborates all higher-order effects would harm
-> modularity in practice.
+> The line of work on scoped effects and handlers require extra forwarding (or
+> weaving) mechanisms for scoped effects. van den Berg & Schrijvers (2023)
+> genelise this to higher-order effects. In Section 3.5, the paper discusses
+> that hefty algebras are modular in a different way to higher-order effects
+> with forwarding. It appears to me that forwarding seems to give a stronger
+> notion of modularity than hefty algebras, since it allows us to compose
+> handlers together, instead of composing algebras together and putting them
+> into one elaboration process. I wonder if the restriction of having one
+> elaboration that elaborates all higher-order effects would harm modularity in
+> practice.
 
-This is an excellent point. While we indeed tailor the development
-presented in the paper to elaborations that elaborate all higher-order
-effects in one go, we believe that this is not an inherent limitation
-of the appraoch. That is, we think it is possible to define
-elaboration with the following signature. 
+This is an excellent point. While we indeed tailor the development presented in
+the paper to elaborations that elaborate all higher-order effects in one go, we
+believe that this is not an inherent limitation of the approach. That is, we
+think it is possible to define elaboration with the following signature.
 
-`elaborate : ∀[ Hefty (η₁ ⊕ η₂) ⇒ Hefty (↑ ε ⊕ η₂) ]`
+    elaborate : ∀[ Hefty (η₁ ⊕ η₂) ⇒ Hefty (↑ ε ⊕ η₂) ]
 
-This definition of `elaborate` can be used to apply elaborations in
-sequence, if we are careful to unify the first-order operations
-produced by elaborations that target the same first-order
-effects. Such a change would, however, require the carrier of
-elaboration algebras to be changed from `Free ε` to ` Hefty (↑ ε ⊕
-η₂)`, further complicating the definitions of elaboration algebras,
-modular handlers, and all corresponding proofs.
+This definition of `elaborate` can be used to apply elaborations in sequence, if
+we are careful to unify the first-order operations produced by elaborations that
+target the same first-order effects. Such a change would, however, require the
+carrier of elaboration algebras to be changed from `Free ε` to 
+`Hefty (↑ ε ⊕ η₂)`, further complicating the definitions of elaboration
+algebras, handlers, and all corresponding proofs.
 
-An important question to consider is why we would want to compose
-elaborations. In the case of scoped effects and handlers, the order of
-composition is key for determining the semantics of effects, and
-expressivity of the approach in part relies on various ordering of
-handers to specify the semantics of effect interaction. We suspect is
-that it is possible to encode scoped effects and handlers in general
-as algebraic effects with explicit operations for entering and leaving
-a scope. However, this intuition remains to be tried [FIXME: What do
-we mean by "tried and tested"] and tested in future work.  
+We agree that forwarding gives a stronger notion of composition.  However, as we
+discuss in more detail below, we suspect that it is generally possible to encode
+scoped operations as (first-order) algebraic operations.  Furthermore, we
+suspect that we can define modular handlers with modular carriers and
+appropriate notions of forwarding, to obtain similar modularity benefits as
+scoped effect handlers.  Higher-order effect trees provide a syntax of
+higher-order operations that we must elaborate into algebraic effects and
+handlers that provide appropriate notions of modularity; e.g., using \emph{modular handlers}~\cite{SchrijversPWJ19,DBLP:journals/pacmpl/YangW21}.
 
-We will clarify in 3.5 that it is an open question of whether scoped
-effects + forwarding gives modularity benefits that we cannot recover
-using modular elaborations + algebraic effects and handlers.
+We have adjusted the discussion in 3.5 to clarify the points above.
 
 > In Section 4.2, the paper uses sub and jump to simulate the
 > transactional semantics derived by swapping the order of handlers with
@@ -213,23 +202,20 @@ future work.
 
 > ## Modular Reasoning of Higher-Order Effects
 > 
-> Zhixuan and Wu (2023) proposes a general categorical framework for
-> algebraic and higher-order effects with support for equational
-> theories. Lindley et al. (2024) proposes a new perspective on scoped
-> effects which enables us to reason about scoped effects using
-> parameterised algebraic theories. I wonder how the modular reasoning
-> approach in Section 5 is related to these two papers. Especially, what
-> are the advantages and disadvantages of reasoning with hefty algebras
-> compared to other approaches?
+> Zhixuan and Wu (2023) proposes a general categorical framework for algebraic
+> and higher-order effects with support for equational theories. Lindley et
+> al. (2024) proposes a new perspective on scoped effects which enables us to
+> reason about scoped effects using parameterised algebraic theories. I wonder
+> how the modular reasoning approach in Section 5 is related to these two
+> papers. Especially, what are the advantages and disadvantages of reasoning
+> with hefty algebras compared to other approaches?
 
-Thanks for the reminders.
-
-[FIXME] We have expanded Sect. 5 to compare with these works.
+Thanks for the reminders!  We have expanded Sect. 5 to compare with these works.
 
 > # Minor Comments and Typos
 > 
-> - 121: I would expect `A = () -> C!Δ'` since `A` should be a value
->  type while `C!Δ'` is a computation type
+> - 121: I would expect `A = () -> C!Δ'` since `A` should be a value type while
+>  `C!Δ'` is a computation type
 
 Indeed, thanks! Fixed.
 
@@ -239,11 +225,11 @@ Indeed, thanks! Fixed.
 
 Both fixed.
 
-> - 1299: Using sub and jump really feels like cheating to me. I wonder
->  if they are avoidable.
+> - 1299: Using sub and jump really feels like cheating to me. I wonder if they
+>  are avoidable.
 
-I think you're right that they're avoidable.  We believe the general-purpose
-`convert` discussed earlier could be used instead.
+We think you're right that they're avoidable.  We believe the general-purpose
+`convert` discussed earlier in this response could be used instead.
 
 > - 1461: "an define"
 >
@@ -510,9 +496,9 @@ The paragraph has been updated to clarify this.
 > equational reasoning system is well defined because only "proving" laws is
 > possible even in the reasoning system that admits any law.
 
-In principle possible to do this, though we are not sure what kind of
-laws you want to disprove. It is customary for equational theories to
-comprise laws that do hold. 
+It is in principle possible to do this, though we are not sure what kind of laws
+you want to disprove. It is customary for equational theories to comprise laws
+that do hold.
 
 > Also, while the paper explains most of Agda's notations, more notes would be necessary for readers not very familiar with Agda. Specifically, explaining the following notations would be helpful and make the paper more self-contained.
 > 
@@ -758,7 +744,7 @@ There was a typo and type error here, thanks.  Fixed!
 > - line 327: Why is this called an extension? It does not extend anything but rather represents a syntactic signature as a set construct. Perhaps call it reflection, interpretation, or denotation.
 
 The terminology originates from the original paper on containers by
-Abbott, Altenkirch, and Ghani (20050). We are happy to adopt a
+Abbott, Altenkirch, and Ghani (2005). We are happy to adopt a
 different terminology if the reviewers think that improves clarity of
 the paper.
 
