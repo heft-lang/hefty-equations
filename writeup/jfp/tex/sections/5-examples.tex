@@ -94,7 +94,7 @@
 
 As discussed in \cref{sec:higher-order-effects}, there is a wide range of examples of higher-order effects that cannot be defined as algebraic operations directly, and are typically defined as non-modular elaborations instead.
 In this section we give examples of such effects and show to define them modularly using hefty algebras.
-The artifact~\cite{artifact} contains the full examples.
+The artifact~\citep{artifact} contains the full examples.
 
 
 \subsection{$\lambda$ as a Higher-Order Operation}
@@ -148,7 +148,7 @@ The artifact~\cite{artifact} contains the full examples.
 \end{code}
 
 As recently observed by \citet{BergSPW21}, the (higher-order) operations for $\lambda$ abstraction and application are neither algebraic nor scoped effects.
-We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value \citep{Levy06}.
+We demonstrate how hefty algebras allow us to modularly define and elaborate an interface of higher-order operations for $\lambda$ abstraction and application, inspired by Levy's call-by-push-value~\citep{Levy06}.
 The interface we will consider is parametric in a universe of types given by the following record:
 
 \begin{code}%
@@ -576,7 +576,7 @@ Distinguishing thunks in this way allows us to assign either a call-by-value or 
 %
 Here \af{‵lam} is a higher-order operation with a function typed computation parameter and whose return type is a function value (\aF{⟦~c}~\ab{t₁}~\aF{↣}~\ab{t₂}~\aF{⟧ᵀ}).
 The \af{‵var} operation accepts a thunk value as argument and yields a value of a matching type.
-The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches the function value parameter type.
+The \af{‵app} operation is also a higher-order operation: its first parameter is a function value type, whereas its second parameter is a computation parameter whose return type matches that of the function value parameter type.
 
 \begin{figure}[t]
 \begin{code}%
@@ -764,8 +764,8 @@ To illustrate we give two different implementations of the interface: one that i
 
 \subsubsection{Call-by-Value}
 
-We give a call-by-value interpretation \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
-Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):\footnote{The two sides of an isomorphism \ab{A}~\ad{↔}~\ab{B} are given by the functions \aF{to}~\as{:}~\ab{A}~\as{→}~\ab{B} and \aF{from}~\as{:}~\ab{B}~\as{→}~\ab{A}.}
+We give a call-by-value interpretation of \af{‵lam} by generically elaborating to algebraic effect trees with any set of effects \ab{Δ}.
+Our interpretation is parametric in proof witnesses that the following isomorphisms hold for value types (\ad{↔} is the type of isomorphisms from the Agda standard library):
 \begin{code}[hide]%
 %
 \>[4]\AgdaKeyword{module}\AgdaSpace{}%
@@ -894,7 +894,7 @@ Our interpretation is parametric in proof witnesses that the following isomorphi
 \AgdaOperator{\AgdaField{⟧ᵀ}}\<%
 \end{code}
 %
-The first isomorphism says that a function value type corresponds to a function which accepts a value of type \ab{t₁} and produces a computation whose return type matches the function type.
+The first isomorphism says that a function value type corresponds to a function which accepts a value of type \ab{t₁} and produces a computation whose return type matches that of the function type.
 The second says that thunk types coincide with value types.
 Using these isomorphisms, the following defines a call-by-value elaboration of functions:
 %
@@ -2038,8 +2038,9 @@ Running the example program \af{ex} from above now produces \an{5} as result, si
 
 
 \subsection{Optionally Transactional Exception Catching}
+\label{sec:optionally-transactional}
 
-A feature of scoped effect handlers~\cite{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
+A feature of scoped effect handlers~\citep{WuSH14,PirogSWJ18,YangPWBS22} is that changing the order of handlers makes it possible to obtain different semantics of \emph{effect interaction}.
 A classical example of effect interaction is the interaction between state and exception catching that we briefly considered at the end of \cref{sec:hefty-algebras} in connection with this \ad{transact} program:
 %
 \begin{code}[hide]%
@@ -2230,14 +2231,14 @@ The state and exception catching effect can interact to give either of these two
 \item \emph{Transactional} interpretation of state, where the \af{transact} program returns \an{1} since the state changes of the \ac{put} operation are \emph{rolled back} when the ``try'' block throws an exception.
 \end{enumerate}
 %
-With monad transformers~\cite{cenciarelli1993syntactic,Liang1995monad} we can recover either of these semantics by permuting the order of monad transformers.
+With monad transformers~\citep{cenciarelli1993syntactic,Liang1995monad} we can recover either of these semantics by permuting the order of monad transformers.
 With scoped effect handlers we can also recover either by permuting the order of handlers.
 However, the \ad{eCatch} elaboration in \cref{sec:hefty-algebras} always gives us a global interpretation of state.
 In this section we demonstrate how we can recover a transactional interpretation of state by using a different elaboration of the \ac{catch} operation into an algebraically effectful program with the \ac{throw} operation and the off-the-shelf \emph{sub/jump} control effects due to \citet{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 The different elaboration is modular in the sense that we do not have to change the interface of the catch operation nor any programs written against the interface.
 
 \subsubsection{Sub/Jump}
-We recall how to define two operations, sub and jump, due to~\cite{thielecke1997phd,DBLP:conf/csl/FioreS14}.
+We recall how to define two operations, sub and jump, due to~\citet{thielecke1997phd,DBLP:conf/csl/FioreS14}.
 We define these operations as algebraic effects following~\citet{SchrijversPWJ19}.
 The algebraic effect signature of \ad{CC}~\ab{Ref} is given in \cref{fig:alg-eff-ccop}, and is summarized by the following smart constructors:
 %
@@ -3149,7 +3150,7 @@ The elaboration uses \af{‵sub} to capture the continuation of a higher-order \
 If no exception is raised, then control flows to the continuation \ab{k} without invoking the continuation of \af{‵sub}.
 Otherwise, we jump to the continuation of \af{‵sub}, which runs \ab{m₂} before passing control to \ab{k}.
 Capturing the continuation in this way interacts with state because the continuation of \af{‵sub} may have been pre-applied to a state handler that only knows about the ``old'' state.
-This happens when we invoke the state handler before the handler for sub/jump: in this case we get the transactional interpretation of state, so running \af{transact} gives \an{1}.
+This happens when we handle the state effect before the sub/jump effect: in this case we get the transactional interpretation of state, so running \af{transact} gives \an{1}.
 Otherwise, if we run the sub/jump handler before the state handler, we get the global interpretation of state and the result \an{2}.
 %
 \begin{code}[hide]%
@@ -3944,7 +3945,7 @@ However, the complicated encoding does not pollute the higher-order effect inter
 
 \subsection{Logic Programming}
 
-Following \cite{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
+Following \citet{DBLP:conf/ppdp/SchrijversWDD14,WuSH14,YangPWBS22} we can define a non-deterministic choice operation (\af{\_‵or\_}) as an algebraic effect, to provide support for expressing the kind of non-deterministic search for solutions that is common in logic programming.
 We can also define a \af{‵fail} operation which indicates that the search in the current branch was unsuccessful.
 The effect signature for \ad{Choice} is given in \cref{fig:choice-sig}.
 The following smart constructors are the lifted higher-order counterparts to the \af{‵or} and \af{‵fail} operations:
@@ -4539,7 +4540,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 
 \subsection{Concurrency}
 
-Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\cite{Claessen99,Schmidt1986denotational,PirogG14} definition using scoped effects.
+Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\citep{Claessen99,Schmidt1986denotational,PirogG14} defined using scoped effects.
 We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:

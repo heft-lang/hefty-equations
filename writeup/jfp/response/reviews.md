@@ -5,6 +5,8 @@ We would like to thank the reviewers for their time and helpful comments!
 Below we include inline responses to the comments and questions raised by the
 reviewers.
 
+We also provide a changelist that summarizes how we revised the paper.
+
 # Changelist
 
 - Expositional improvements to the introduction, based on the helpful
