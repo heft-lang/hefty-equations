@@ -45,11 +45,11 @@ framework. Specifically, \emph{higher-order operations} that take
 computational arguments, such as exception catching or modifying
 environments in the reader monad. While it is possible to express
 higher-order operations by inlining handler applications within the
-definition of the operation itself, this effectively relinquishes all
+definition of the operation itself, this effectively relinquishes key
 modularity benefits. The syntax, equational theories, and proofs of
-such inlined operations cannot be composed. In practice, syntactic
-modularity for higher-order operations is recovered by appealing to
-standard \emph{overloading} mechanisms, such as typeclasses. While
+such inlined operations cannot be composed. Syntactic
+modularity for higher-order operations can be recovered by appealing to
+\emph{overloading} mechanisms, such as typeclasses. While
 this approach allows us to compose syntax (e.g., by accumulating
 typeclass constraints) as well as changing the implementation of
 higher-order operations, it remains unclear whether an
@@ -60,11 +60,11 @@ In this paper, we address this gap by providing a formal semantics for
 overloading-based definitions of higher-order effects. We formalize
 the semantics of overloading by defining \emph{elaborations} from a
 syntactic class of monads that supports higher-order operations (which
-we dub \emph{Hefty trees}) into standard algebraic effects, and show
+we dub \emph{hefty trees}) into standard algebraic effects, and show
 that a wide variety of higher-order operations can be defined and
 assigned a semantics this way. Crucially, program definitions using
 Hefty trees enjoy the same modularity properties as programs defined
-with algebraic effects and handlers, in that they support the
+with algebraic effects and handlers.  Specifically, they support the
 composition of syntax, semantics, equational theories and proofs. This
 demonstrates that overloading is not only syntactically viable, but
 also supports the same modular reasoning as algebraic effects for
@@ -136,7 +136,7 @@ Below is the handler of this type:
         (\Return~x)~\mapsto~\Return~(x, \EmptyString)
           \\
         (\Op{out}~s;k)~\mapsto
-          ~\Do~(y, s') ← k~();
+          ~\Do~(y, s')~←~k~();
           ~\Return~(y, s~\Append~s') ~\}
       \end{array}
 \end{equation*}
