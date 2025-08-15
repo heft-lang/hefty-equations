@@ -109,14 +109,19 @@ present a Hoare logic for verifying pre- and post-conditions.  An interesting
 question for future work is whether this logic and the framework of
 \citet{KidneyYW24} could be extended to higher-order effect theories.
 
-In other recent work, \citet{LindleyMMSWY24} developed an equational reasoning
-system for scoped effects.  The system is based on so-called \emph{parameterized
-  algebraic theories}; i.e., effect theories with two kinds of variables: one
-for values, and one for computations representing \emph{scopes}.  They
-demonstrate how their framework supports key examples from the literature:
-nondeterminism with semi-determinism, catching exceptions, and local state.  The
-framework we present in \cref{sec:modular-reasoning} supports variables ranging
-over either values or computations (see, e.g., \af{catch-return} in
+In other recent work, \citet{MatacheLMSWY25} developed an equational reasoning
+system for scoped effects.
+The work builds on previous work by \citeauthor{Staton13} on \emph{parameterized
+algebraic theories}~\cite{Staton13,Staton13instances} which provide a syntactic framework for modeling computational effects with notions of locality (or, in scoped effects terminology, \emph{scope}).
+\citet{MatacheLMSWY25} show that scoped effects translate into a variant of parameterized algebraic theories, and demonstrate that such theories provide algebraic characterizations of key examples from the literature on scoped effects: nondeterminism with semi-determinism, catching
+exceptions, and local state.  
+
+Whereas \citeauthor{MatacheLMSWY25} use parameterized algebraic theories as their underlying abstraction, \cref{sec:modular-reasoning} of this paper develops a notion of algebraic theory (\ad{Theoryᴴ} in \cref{sec:theories-of-higher-order-effects}) over the \emph{higher-order free monad} (i.e., a free monad construction that uses \emph{higher-order functors}, given by a suitably generalized notion of container, instead of usual plain functors and containers~\cite{Abbott2005containers}) in Agda's \ad{Set}.
+The equations of our higher-order effect theories are validated by elaborations into free ordinary effect theories.
+An interesting question for future work is to study the relationship between and compare the expressiveness of our proposed notion of higher-order effect theory and parameterized algebraic theories+scoped effects.
+
+The framework we present in \cref{sec:modular-reasoning} supports variables
+ranging over either values or computations (see, e.g., \af{catch-return} in
 \cref{sec:theories-of-higher-order-effects}).  Our framework does not explicitly
 distinguish these two kinds of variables.  We demonstrate that our approach lets
 us verify the laws of the higher-order exception catching effect
@@ -125,7 +130,7 @@ of composing higher-order effect theories (\cref{sec:elaboration-correctness}).
 Key to our approach is that the correctness of elaborations is with respect to
 an algebraic effect theory.  If this underlying theory encodes a scoped syntax,
 we may need parameterized algebraic effect theories \`{a} la
-\citet{LindleyMMSWY24} to properly characterize it.
+\citet{MatacheLMSWY25} to properly characterize it.
 
 The elaboration semantics of hefty algebras that we defined in
 \cref{sec:hefty-trees-and-algebras} is based on \emph{initial algebra
@@ -163,6 +168,8 @@ These benefits extend to effects.
 We expect that it is possible to encode modular elaborations of higher-order effects in a similar final style; i.e., by programming against records that encode a higher-order interface, and whose implementation is given by a free monad.
 This final encoding should be semantically equivalent to initial encoding presented in this paper.
 
+%% Except: how do we compose theories that overlap?  We provide a notion of sum that supports this. [Right?]
+
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
 semantics~\citep{Plotkin04a}.  Mosses' Modular Structural Operational
@@ -174,6 +181,12 @@ takes a different approach but provides many of the same benefits.  These
 frameworks do not encapsulate operational details but instead make it
 notationally convenient to program (or specify semantics) with side-effects.
 
+
+% \subsection{[TODO]}
+% \label{sec:existing-effect-restrictions}
+% 
+% [TODO]
+% 
 %%% Local Variables:
 %%% reftex-default-bibliography: ("../references.bib")
 %%% End:

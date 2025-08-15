@@ -123,6 +123,7 @@ preserves their correctness, with respect to the sum of their respective
 theories.
 
 \subsection{Theories of Algebraic Effects}
+\label{sec:theories-of-alg-eff}
 
 Theories of effects are collections of equations, so we start defining the type
 of equations in Agda. At its core, an equation for an effect $Δ$ is given by a
@@ -274,6 +275,7 @@ effect signature that subsumes both the $\af{State}$ and the $\af{Throw}$, which
 in turn allows us to instantiate $k$ with $\af{throw}$.
 
 \subsection{Effect Theories}
+\label{sec:effect-theories}
 
 Equations for an effect $Δ$ can be combined into a \emph{theory} for $Δ$. A
 theory for the effect $Δ$ is simply a collection of equations, transformed using
