@@ -4,6 +4,8 @@ module tex.sections.6-related where
 
 open import Function
 open import Data.Nat
+open import Data.Product
+open import Relation.Unary
 
 variable A B : Set
 
@@ -116,59 +118,109 @@ algebraic theories}~\citep{Staton13,Staton13instances} which provide a syntactic
 \citet{MatacheLMSWY25} show that scoped effects translate into a variant of parameterized algebraic theories, and demonstrate that such theories provide algebraic characterizations of key examples from the literature on scoped effects: nondeterminism with semi-determinism, catching
 exceptions, and local state.  
 
-Whereas \citeauthor{MatacheLMSWY25} use parameterized algebraic theories as their underlying abstraction, \cref{sec:modular-reasoning} of this paper develops a notion of algebraic theory (\ad{Theoryᴴ} in \cref{sec:theories-of-higher-order-effects}) over the \emph{higher-order free monad} (i.e., a free monad construction that uses \emph{higher-order functors}, given by a suitably generalized notion of container, instead of usual plain functors and containers~\citep{Abbott2005containers}) in Agda's \ad{Set}.
+Whereas \citeauthor{MatacheLMSWY25} use parameterized algebraic theories as their underlying abstraction, \cref{sec:modular-reasoning} of this paper develops a notion of algebraic theory (\ad{Theoryᴴ} in \cref{sec:theories-of-higher-order-effects}) over the \emph{higher-order free monad}---i.e., a free monad construction that uses \emph{higher-order functors}, given by a suitably generalized notion of container, instead of usual plain functors and containers~\citep{Abbott2005containers}---in Agda's \ad{Set}.
 The equations of our higher-order effect theories are validated by elaborations into free ordinary effect theories.
 An interesting question for future work is to study the relationship between and compare the expressiveness of our proposed notion of higher-order effect theory and parameterized algebraic theories+scoped effects.
 
-The framework we present in \cref{sec:modular-reasoning} supports variables
-ranging over either values or computations (see, e.g., \af{catch-return} in
-\cref{sec:theories-of-higher-order-effects}).  Our framework does not explicitly
-distinguish these two kinds of variables.  We demonstrate that our approach lets
-us verify the laws of the higher-order exception catching effect
-(\cref{sec:proving-correctness-of-elaborations}), and characterize the semantics
-of composing higher-order effect theories (\cref{sec:elaboration-correctness}).
-Key to our approach is that the correctness of elaborations is with respect to
-an algebraic effect theory.  If this underlying theory encodes a scoped syntax,
-we may need parameterized algebraic effect theories \`{a} la
-\citet{MatacheLMSWY25} to properly characterize it.
+% The framework we present in \cref{sec:modular-reasoning} supports variables
+% ranging over either values or computations (see, e.g., \af{catch-return} in
+% \cref{sec:theories-of-higher-order-effects}).  Our framework does not explicitly
+% distinguish these two kinds of variables.  We demonstrate that our approach lets
+% us verify the laws of the higher-order exception catching effect
+% (\cref{sec:proving-correctness-of-elaborations}), and characterize the semantics
+% of composing higher-order effect theories (\cref{sec:elaboration-correctness}).
+% Key to our approach is that the correctness of elaborations is with respect to
+% an algebraic effect theory.  If this underlying theory encodes a scoped syntax,
+% we may need parameterized algebraic effect theories \`{a} la
+% \citet{MatacheLMSWY25} to properly characterize it.
 
-The elaboration semantics of hefty algebras that we defined in
-\cref{sec:hefty-trees-and-algebras} is based on \emph{initial algebra
-  semantics}---that is, it is given by a fold over an inductively defined syntax
-tree.  An alternative approach is \citet{Wand79} calls \emph{final algebra
-  semantics}, popularly known as \emph{final
-  encodings}~\citet{DBLP:journals/toplas/Kamin83} or \emph{finally tagless
-  style}~\citep{carette2009finally}.  Here, the idea is that, instead of
-declaring syntax as an inductive datatype, we declare it as a record type.  For
-example, consider the following record type:
+As discussed in the introduction, this paper explores a formal semantics for
+overloading-based definitions of higher-order effects.  We formalized this
+semantics using an initial algebra semantics.  An alternative approach would
+have been to use a so-called \emph{final tagless}~\citet{carette2009finally}
+encoding.  That is, instead of declaring syntax as an inductive datatype, we
+declare it as a record type, and program against that record.  A benefit of the
+final tagless approach is that we do not have to explicitly fold over
+syntax.  The idea is to program against interfaces given by record types; e.g.:
 %
 \begin{code}
-record Symantics (Repr : Set → Set) : Set₁ where
+record NumSymantics (Repr : Set → Set) : Set₁ where
   field  num : ℕ → Repr ℕ
-         lam : (Repr A → Repr B) → Repr (A → B)
-         app : Repr (A → B) → Repr A → Repr B
-\end{code}
-\begin{code}[hide]
-open Symantics
-\end{code}
-%
-Following \citet{carette2009finally}, this record is called \ad{Symantics} because its  interface gives the syntax of the object language and its instances give the semantics.
-For example:
-%
-\begin{code}
-SetSymantics : Symantics id
-num  SetSymantics  = id
-lam  SetSymantics  = id
-app  SetSymantics  = _$_
-\end{code}
-%
-A benefit of this approach is that it yields programs that can be executed more efficiently, because compilers can more readily optimize programs given by a concrete record instance than programs given by an inductive data type and a fold over it.
-These benefits extend to effects.
-\citet{Devriese19} presents a final tagless encoding of monads in Haskell, using dictionary passing.
-We expect that it is possible to encode modular elaborations of higher-order effects in a similar final style; i.e., by programming against records that encode a higher-order interface, and whose implementation is given by a free monad.
-This final encoding should be semantically equivalent to initial encoding presented in this paper.
 
-%% Except: how do we compose theories that overlap?  We provide a notion of sum that supports this. [Right?]
+record LamSymantics (Repr : Set → Set) : Set₁ where
+  field  lam : (Repr A → Repr B) → Repr (A → B)
+         app : Repr (A → B) → Repr A → Repr B
+
+symantics-ex : ∀ {R} → NumSymantics R → LamSymantics R → R ℕ
+symantics-ex n l = app (lam (λ x → x)) (num 42)
+  where open NumSymantics n; open LamSymantics l
+\end{code}
+%
+Using this final tagless encoding, the semantics of \af{symantics-ex} will be given by passing two concrete implementations of \ad{NumSymantics} and \ad{LamSymantics}.
+In contrast, with the initial algebra semantics approach we use in \cref{sec:modular-reasoning}, we would define \af{symantics-ex} in terms of an inductive data type for \aF{app}, \aF{lam}, and \aF{num}; and then give its semantics by folding algebras over the abstract syntax tree.
+A benefit of final tagless is that it tends to have a have a lower interpretive overhead~\cite{carette2009finally}, since it avoids the need to iterate over syntax trees.
+These benefits extend to effects~\cite{Devriese19}.
+On the other hand, the inductive data types of initial encodings support induction, whereas final tagless encodings generally do not.
+We do not make extensive use of inductive reasoning in this paper, and we expect that it should be possible to port most of the definitions in our paper to use final tagless encodings.
+Our main reason for using an initial encoding for our hefty trees and algebras is that it follows the tradition of modeling algebraic effects and handlers using initial encodings, and that we expect induction to be useful for some applications.
+
+
+%% As discussed in the introduction, this paper explores a formal semantics for
+%% overloading-based definitions of higher-order effects.  We formalized this
+%% semantics using an initial algebra semantics.  An alternative approach would
+%% have been to use a so-called \emph{final tagless}~\citet{carette2009finally}
+%% encoding.  That is, instead of declaring syntax as an inductive datatype, we
+%% declare it as a record type, and program against that record.  A benefit of the
+%% final tagless approach is that we do not have to explicitly fold over
+%% syntax---we simply have to provide implementations of the record type(s) instance
+%% %
+%% \begin{code}
+%% record NumSymantics (Repr : Set → Set) : Set₁ where
+%%   field  num : ℕ → Repr ℕ
+%% 
+%% record LamSymantics (Repr : Set → Set) : Set₁ where
+%%   field  lam : (Repr A → Repr B) → Repr (A → B)
+%%          app : Repr (A → B) → Repr A → Repr B
+%% \end{code}
+%% %
+%% Following \citet{carette2009finally}, these records are called \ad{Symantics} because they declare the semantics of DSLs (e.g., numbers and lambdas above).
+%% Programming against the record type essentially corresponds to writing in the syntax of the declared DSL.
+%% For example, we can program against the interface as follows.
+%% %
+%% \begin{code}
+%% symantics-ex : ∀[ (NumSymantics ∩ LamSymantics) ⇒ (_$ ℕ) ]
+%% symantics-ex (n , l) = app (lam (λ x → x)) (num 42)
+%%   where open NumSymantics n; open LamSymantics l
+%% \end{code}
+%% %
+%% And we can implement the interfaces as follows:
+%% %
+%% \begin{code}[hide]
+%% open LamSymantics
+%% open NumSymantics
+%% \end{code}
+%% \begin{code}
+%% SetNumSymantics : NumSymantics id
+%% num  SetNumSymantics = id
+%% 
+%% SetLamSymantics : LamSymantics id
+%% lam  SetLamSymantics  = id
+%% app  SetLamSymantics  = _$_
+%% \end{code}
+%% %
+%% Passing these instances as arguments to the \af{symantics-ex} program lets us run the programs; akin to folding over the syntax of a program.
+%% 
+%% The final tagless approach often yields efficient programs, because compilers can often optimize programs given by a concrete record instance.
+%% These benefits extend to effects.
+%% \citet{Devriese19} presents a final tagless encoding of monads in Haskell, using dictionary passing.
+%% We expect that it is possible to encode modular elaborations of higher-order effects in a similar final style; i.e., by programming against records that encode a higher-order interface, and whose implementation is given by a free monad.
+%% An important difference between the two approaches has to do with \emph{coherence}.
+%% Final tagless encodings typically rely on the host language to check and guarantee that interface uses are \emph{coherent}---basically, that the semantics of programs is independent from type-checker internals~\citep{WinantD18}.
+%% In contrast, the initial encodings we use here require users to explicitly union both syntaxes and semantics.
+%% Such explicit unions essentially shift the responsibility of guaranteeing coherence from the host language to the programmer.
+%% While this incurs overhead on behalf of the programmer, it also enables programmers to explicitly specify how to resolve coherence conflicts.
+%% 
+%% Ultimately, the goal of \cref{sec:modular-reasoning} was to explore a semantics of higher-order effects given by an overloading semantics.
 
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
