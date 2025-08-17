@@ -112,11 +112,11 @@ question for future work is whether this logic and the framework of
 In other recent work, \citet{MatacheLMSWY25} developed an equational reasoning
 system for scoped effects.
 The work builds on previous work by \citeauthor{Staton13} on \emph{parameterized
-algebraic theories}~\cite{Staton13,Staton13instances} which provide a syntactic framework for modeling computational effects with notions of locality (or, in scoped effects terminology, \emph{scope}).
+algebraic theories}~\citep{Staton13,Staton13instances} which provide a syntactic framework for modeling computational effects with notions of locality (or, in scoped effects terminology, \emph{scope}).
 \citet{MatacheLMSWY25} show that scoped effects translate into a variant of parameterized algebraic theories, and demonstrate that such theories provide algebraic characterizations of key examples from the literature on scoped effects: nondeterminism with semi-determinism, catching
 exceptions, and local state.  
 
-Whereas \citeauthor{MatacheLMSWY25} use parameterized algebraic theories as their underlying abstraction, \cref{sec:modular-reasoning} of this paper develops a notion of algebraic theory (\ad{Theoryᴴ} in \cref{sec:theories-of-higher-order-effects}) over the \emph{higher-order free monad} (i.e., a free monad construction that uses \emph{higher-order functors}, given by a suitably generalized notion of container, instead of usual plain functors and containers~\cite{Abbott2005containers}) in Agda's \ad{Set}.
+Whereas \citeauthor{MatacheLMSWY25} use parameterized algebraic theories as their underlying abstraction, \cref{sec:modular-reasoning} of this paper develops a notion of algebraic theory (\ad{Theoryᴴ} in \cref{sec:theories-of-higher-order-effects}) over the \emph{higher-order free monad} (i.e., a free monad construction that uses \emph{higher-order functors}, given by a suitably generalized notion of container, instead of usual plain functors and containers~\citep{Abbott2005containers}) in Agda's \ad{Set}.
 The equations of our higher-order effect theories are validated by elaborations into free ordinary effect theories.
 An interesting question for future work is to study the relationship between and compare the expressiveness of our proposed notion of higher-order effect theory and parameterized algebraic theories+scoped effects.
 
