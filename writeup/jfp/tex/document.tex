@@ -148,27 +148,52 @@
 \end{authgrp}
 
 \begin{abstract}
-  Algebraic effects and handlers is an increasingly popular approach to
-  programming with effects.  An attraction of the approach is its modularity:
-  effectful programs are written against an interface of declared operations,
-  which allows the implementation of these operations to be defined and refined
-  without changing or recompiling programs written against the interface.
-  However, higher-order operations (i.e., operations that take computations as
-  arguments) break this modularity.  While it is possible to encode higher-order
-  operations by elaborating them into more primitive algebraic effects and
-  handlers, such elaborations are typically not modular.  In particular,
-  operations defined by elaboration are typically not a part of any effect
-  interface, so we cannot define and refine their implementation without
-  changing or recompiling programs.  To resolve this problem, a recent line of
-  research focuses on developing new and improved effect handlers.  In this
-  paper we present a (surprisingly) simple alternative solution to the
-  modularity problem with higher-order operations: we modularize the previously
-  non-modular elaborations commonly used to encode higher-order operations.  We
+  Algebraic effects and handlers is an increasingly popular paradigm
+  for programming with effects. A key benefit is modularity: programs
+  with effects are defined against an interface operations, allowing
+  the implementation of effects to be defined and refined without
+  changing or recompiling programs. Behavior of effects is specified
+  using equational theories, with equational proofs inheriting the
+  same modularity. However, higher-order operations (that take
+  computations as arguments), break this modularity: while they can
+  often be encoded in terms of algebraic effects, this typically
+  breaks modularity as operations defined this way are not
+  encapsulated in an interface, inducing changes to programs and
+  proofs upon refinement of the implementation. In this paper, we show
+  that \emph{syntactic overloading} is a viable solution to this
+  modularity problem by defining \emph{hefty algebras}: a formal
+  framework that captures an overloading-based semantics of
+  higher-order effects by defining modular elaborations from
+  higher-order effect trees into primitive algebraic effects.  We
   demonstrate how our solution scales to define a wide range of known
-  higher-order effects from the literature, and develop modular higher-order
-  effect theories and modular reasoning principles that build on and extend the
-  state of the art in modular algebraic effect theories.  All results are
-  formalized in Agda.
+  higher-order effects from the literature, and develop modular
+  higher-order effect theories and modular reasoning principles that
+  build on and extend the state of the art in modular algebraic effect
+  theories. We formalize our contributions in Agda.
+%  
+%  Algebraic effects and handlers is an increasingly popular approach
+%  to programming with effects.  An attraction of the approach is its
+%  modularity: effectful programs are written against an interface of
+%  declared operations, which allows the implementation of these
+%  operations to be defined and refined without changing or recompiling
+%  programs written against the interface.  However, higher-order
+%  operations (i.e., operations that take computations as arguments)
+%  break this modularity.  While it is possible to encode higher-order
+%  operations by elaborating them into more primitive algebraic effects
+%  and handlers, such elaborations are typically not modular.  In
+%  particular, operations defined by elaboration are typically not a
+%  part of any effect interface, so we cannot define and refine their
+%  implementation without changing or recompiling programs.  To resolve
+%  this problem, a recent line of research focuses on developing new
+%  and improved effect handlers.  In this paper we present a
+%  (surprisingly) simple alternative solution to the modularity problem
+%  with higher-order operations: we modularize the previously
+%  non-modular elaborations commonly used to encode higher-order
+%  operations.  We demonstrate how our solution scales to define a wide
+%  range of known higher-order effects from the literature, and develop
+%  modular higher-order effect theories and modular reasoning
+%  principles that build on and extend the state of the art in modular
+%  algebraic effect theories.  All results are formalized in Agda.
 \end{abstract}
 
 % 
