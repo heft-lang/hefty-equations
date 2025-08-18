@@ -4,7 +4,7 @@
 
 \begin{code}[hide]
 
-module sections.1-introduction where
+module tex.sections.1-introduction where
 
 open import Data.Unit
 open import Data.String
@@ -298,26 +298,120 @@ Observe:
 
 
 
-\subsubsection{Potential Workaround: Computations as Operation Arguments}
+\subsubsection{Potential Workaround: Computations as Arguments of Operations}
 \label{sec:wa1}
 
 A tempting possible workaround to the issues summarized in \cref{sec:the-problem} is to declare an effect signature with a parameter type $A_i$ that carries effectful computations.
-However, this workaround can cause operations to escape their handlers, for the following reason.
+However, this workaround can cause operations to escape their handlers.
 Following~\citet{Pretnar15}, the semantics of effect handling obeys the following law.\footnote{This law concerns so-called \emph{deep handlers}.  However, the semantics of so-called \emph{shallow handlers}~\cite{LindleyMM17,HillerstromL18} exhibit similar behavior.}
 If $h$ handles operations other than $\Op{op}$, then:
 %
 \begin{equation}
-\With{h}{(\Do~x \leftarrow \Op{op}~v; m)}\
+\With{h}{(\Do~x \leftarrow \Op{op}~v; k~x)}\
 \equiv\
-\Do~x \leftarrow \Op{op}~v; (\With{h}{m})
-\tag{$\ast$}
-\label{eq:hdl-pretnar}
+\Do~x \leftarrow \Op{op}~v; (\With{h}{k~x})
+\tag{$\dagger$}
+\label{eq:hdl-eq-pretnar}
 \end{equation}
 %
-This law says that effects in $v$ will not be handled by $h$.
-This is problematic when $h$ is the intended handler for one or more effects in $v$.
-For applications where it is known that we will not apply any handler $h$ intended for effects in $v$, this encoding is acceptable.
-However, such assumptions are application specific, making this encoding unsuitable as a general approach for defining and reasoning about higher-order effects. 
+This law tells us that effects in $v$ will not be handled by $h$.
+This is problematic if $h$ is the intended handler for one or more effects in $v$.
+The solution we describe in \cref{sec:solving-the-modularity-problem} does not suffer from this problem.
+
+Nevertheless, for applications where it is known exactly which effects $v$ contains, we can work around the issue by encoding computations as argument values of operations.
+We consider how, and discuss the modularity problems this workaround suffers from.
+The following $\Effect{Censor}$ effect declares the type of an operation $\Op{censorOp}~(f,m)$ where $f$ is a censoring function and $m$ is a computation encoded as a value argument:
+%
+\begin{equation*}
+\EDec{Censor} = \Op{censorOp} : (\Type{String} \to \Type{String}) \times (\Typing{A}{\Effect{Censor},\Effect{Output}}) \to A
+\end{equation*}
+%
+This effect can be handled as follows:
+%
+\begin{align*}
+\arraycolsep=1pt
+\Id{hCensor} &: \Typing{A}{\Effect{Censor},\Effect{Output}} \Rightarrow \Typing{A}{\Effect{Output}}
+\\
+\Id{hCensor} &= \Handler~\{{\begin{array}[t]{l}
+  (\Op{censorOp}~(f,m); k)~\mapsto~\Do
+  \\
+  \quad (x, s) \leftarrow \With{\Id{hOut}}{(\With{\Id{hCensor}}{m})}
+  \\
+  \quad\Op{out}~(f~s)
+  \\
+  \quad~k~x
+  \\
+  (\Return{}~x)~\mapsto~\Return{}~x~\}
+\end{array}}
+\end{align*}
+%
+The handler case for $\Op{censorOp}$ runs $m$ with handlers for both the $\Effect{Output}$ and $\Effect{Censor}$ effects, which yields a pair $(x,s)$ where $x$ represents the value returned by $m$, and $s$ represents the (possibly sub-censored) output of $m$.
+We then output the result of applying the censoring function $f$ to $s$, before passing $x$ to the continuation $k$.
+
+This handler lets us run programs, such as the following:
+%
+\begin{equation*}
+  \arraycolsep=1.4pt
+  \begin{array}{ll}
+    \Id{censorHello} &: \Typing{()}{\Effect{Censor},\Effect{Output}}
+    \\
+    \Id{censorHello} &= \Op{censorOp}~(\lambda s.~ \If~(s \equiv \String{Hello})~\Then~\String{Goodbye}~\Else~s)~\Id{hello}
+  \end{array}
+\end{equation*}
+%
+Applying $\Id{hCensor}$ and $\Id{hOut}$ yields the printed output $\String{Hello world!}$, because $\String{Hello world!} \not\equiv \String{Hello}$:
+%
+\begin{equation*}
+  \With{\Id{hOut}}{(\With{\Id{hCensor}}{\Id{censorHello}})} \equiv ((), \String{Hello world!})
+\end{equation*}
+%
+
+This example illustrates that, for some applications, it is possible to encode higher-order effects as algebraic operations.
+
+However, encoding higher-order operations in this way suffers from a modularity problem.
+Say we want to extend our program with a new effect for throwing exceptions---i.e., an effect with a single operation $\Op{throw}$---and a new effect for catching exceptions---i.e., an effect with a single operation $\Op{catch}~m_1~m_2$ where exceptions thrown by $m_1$ are handled by running $m_2$.
+The $\Effect{Throw}$ effect is a plain algebraic effect, defined as follows.\footnote{Here we use $\bot$ to denote the empty type.}
+%
+\begin{align*}
+\EDec{Throw} &= \Op{throw} : () \to \bot
+\end{align*}
+%
+The $\Effect{Catch}$ effect is higher-order.
+We can again encode it as an operation with computations as values.
+%
+\begin{align*}
+\arraycolsep=0.7pt
+\EDec{Catch} &= \Op{catchOp} {\begin{array}[t]{l}
+  : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}}
+  \\
+  \times~\Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}}
+  \\
+  \to A
+  \end{array}}
+\end{align*}
+%
+To support subcomputations with exception catching, we need to refine the computation type we use for $\Effect{Censor}$, which in itself could have been done modularly if we had used a more polymorphic type.
+%
+\begin{align*}
+\EDec{Censor} = \Op{censorOp} : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}} \to A
+\end{align*}
+%
+The modularity problem arises when we consider whether to handle $\Effect{Catch}$ and $\Effect{Throw}$ first, or handle $\Effect{Censor}$ and $\Effect{Output}$ first.
+If we handle $\Effect{Censor}$ and $\Effect{Output}$ first, then we get exactly the problem described earlier in connection with the law~(\ref{eq:hdl-eq-pretnar}): the handler $\Id{hCensor}$ is not automatically applied to sub-computations of $\Op{catchOp}$ operations!
+Consequently, a handler for $\Op{catchOp}$ of the following type \emph{must} invoke a handler for the $\Op{Censor}$ effect:
+%
+\begin{equation*}
+\Id{hCatch} : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Output}} \Rightarrow \Typing{A}{\Effect{Throw},\Effect{Output}}
+\end{equation*}
+%
+Conversely, if $\Op{catchOp}$ does not invoke a handler for the $\Op{censorOp}$ operation, then the $\Effect{Censor}$ effect would escape its handler, which would be ill-typed.
+
+While for some applications it may be acceptable to write handlers that reinvoke already-applied handlers, such reinvocation is non-modular and should not be---and, indeed, is not---necessary.
+
+As a prelude to our solution, let us first consider an alternative workaround for encoding higher-order operations (\cref{sec:wa2}) and previous work on handling higher-order effects.
+
+
+%% TODO: For example, 
 
 % To see the implications of this law, let us consider the following candidate effect signature for a $\Effect{Censor}$ effect parameterized by an effect type $\Delta′$ representing sub-computation effects:\footnote{The self-reference to $\Effect{Censor}$ in the computation parameter requires type-level recursion that is challenging to express in, e.g., the Agda formalization of algebraic effects we present in \cref{sec:algebraic-effects} of this paper.  However, such type-level recursion would be allowed in, e.g., Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, or in a Haskell embedding of algebraic effects.}
 % %
@@ -328,22 +422,6 @@ However, such assumptions are application specific, making this encoding unsuita
 % We can handle this effect as follows:
 % %
 
-% The following program uses this effect:
-% %
-% \begin{equation*}
-%   \arraycolsep=1.4pt
-%   \begin{array}{ll}
-%     \Id{censorHello} &: \Typing{()}{\Effect{Censor}_{\Effect{Output}},\Effect{Output}}
-%     \\
-%     \Id{censorHello} &= \Op{censor}~(\lambda s.~ \If~(s \equiv \String{Hello})~\Then~\String{Goodbye}~\Else~s)~\Id{hello}
-%   \end{array}
-% \end{equation*}
-% %
-% A problem with encoding computations in argument types is that, if we apply handlers other than a handler for the $\Effect{Censor}$ effect first, we get 
-% %
-% \begin{equation*}
-%   \Id{hOut}~(\Id{hCensor}_1~\Id{censorHello}) \equiv ((), \String{Hello world!})
-% \end{equation*}
 
 % C: changing the wording here to not inadvertently frame our contributions as a "workaround" 
 \subsubsection{Potential Workaround: Define Higher-Order Operations as Handlers}
@@ -367,7 +445,7 @@ In fact, all other higher-order operations above (with the exception of function
 However, if such functions occur inline in programs, we need to modify the programs themselves to modify the semantics of their higher-order operations.
 This is in stark contrast with algebraic effects, whose semantics can be modified by applying a different handler, which does not require modification of the original program. 
 
-A simple solution to this problem is to use \emph{overloading}, effectively parameterize our program by definitions of the higher-order operations it uses.
+A simple solution to this problem is to use \emph{overloading}, effectively parameterizing our program by definitions of the higher-order operations it uses.
 By using an overloading mechanism, we are able to refine refactor, and optimize the semantics of higher-order operations without having to modify the programs that use them, by simply instantiating overloaded parameters differently.
 
 In this paper, we present such an overloading mechanism for higher-order operations in the form of \emph{elaborations}.
@@ -386,12 +464,12 @@ The modularity problem of higher-order effects, summarized in \cref{sec:the-prob
 Scoped effects and handlers work for a wide class of effects, including many higher-order effects, providing similar modularity benefits as algebraic effects and handlers when writing programs.
 Using \emph{parameterized algebraic theories}~\cite{LindleyMMSWY24,MatacheLMSWY25} it is possible reason about programs with scoped effects independently of how their effects are implemented.
 
-\citet{BergSPW21} recently observed, however, that operations that defer computation, such as evaluation strategies for $\lambda$ application or \emph{(multi-)staging} \citep{TahaS00}, are beyond the expressiveness of scoped effects.
+\Citet{BergSPW21} recently observed, however, that operations that defer computation, such as evaluation strategies for $\lambda$ application or \emph{(multi-)staging} \citep{TahaS00}, are beyond the expressiveness of scoped effects.
 Therefore, \citet{BergSPW21} introduced another flavor of effects and handlers that they call \emph{latent effects and handlers}.
 It remains an open question how to reason about latent effects and handlers independently of how effects are implemented.
 
-As summarized in \cref{sec:solving-the-modularity-problem}, we present an alternative solution based on overloading.
-We demonstrate that an overloading-based approach is similarly expressive as existing approaches to higher-order effects, e.g., by defining optionally transactional exception catching akin to scoped effect handlers, and evaluation strategies for effectful $\lambda$ application, akin to latent effects and handlers.
+In \cref{sec:solving-the-modularity-problem}, we summarize our alternative solution, based on overloading.
+We demonstrate that this overloading-based approach supports optionally transactional exception catching akin to scoped effect handlers, and evaluation strategies for effectful $\lambda$ application, akin to latent effects and handlers.
 The question of formally relating the expressiveness of our overloading-based approach with alternative approaches is future work.
 
 % \subsubsection{Possible Solution: Encoding Computations as Operation Arguments}
