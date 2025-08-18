@@ -500,14 +500,6 @@ Since the equations of a theory are wrapped in the $\ad{□}$ modality, we canno
 refer to its components directly, but we must first provide a suitable extension
 witness.
 
-%% Fundamentally, the $\ac{≈-eq}$ constructor equates the left hand side and right
-%% hand side of any given equation. Due to the use of the $\ad{□}$ modality, when
-%% proving equality with respect to a theory $T₂$ we can actually use equations of
-%% any sub-theory $T₁$ to prove equality. The extension witness stored in the
-%% sub-theory proof $\ab{sub}$ is used to close the equation $\ab{eq}$, allowing us
-%% to prove equality of its left and right hand side with respect to any larger
-%% theory that includes that equation.
-%%
 With the $\ac{≈-eq}$ constructor, we can prove equivalence between the left-hand
 and right-hand side of an equation, sequenced with an arbitrary continuation
 $\ab{k}$. For convenience, we define the following lemma that allows us to apply
@@ -1028,6 +1020,7 @@ composed first-order effect theory is a separate concern; a solution based on
 \label{fig:correctness-composition}
 \end{figure}
 
+
 \subsection{Proving Correctness of Elaborations}
 \label{sec:proving-correctness-of-elaborations}
 
@@ -1124,3 +1117,40 @@ which we prove about their handlers respectively elaborations.
   code. }
 \label{tab:laws}
 \end{table}
+
+
+\subsection{Discussion}
+
+In the introduction, we discussed the desired degrees of modularity
+that hefty algebras and their reasoning infrastructure should
+support. That is, they should support the modular composition of
+syntax, semantics, equational theories, and proofs.
+
+Composability of the syntax and semantics of higher order effects
+follows readily from the fact that we define higher-order effect
+signatures and elaborations as higher-order functors and their
+algebras respectively~(\cref{sec:towards-hefty-trees}), which are
+closed under coproducts.
+
+For proofs, we demonstrate in \cref{sec:modal-necessity} that
+equational proofs for programs with higher-order effects are similarly
+modular. For instance, the proof of the $\af{catch-return-censor}$ law
+can be reused to reason about larger programs even if they involve
+additional (higher-order) effects. Crucially, correctness proofs of
+elaborations also compose: combining two correct elaborations
+automatically yields a proof of correctness for the composite
+elaboration~(\cref{sec:elaboration-correctness}). This demonstrates
+that hefty trees enjoy the same, if not more, modularity properties
+than algebraic effects, which require sophisticated reasoning about
+fusion to compose proofs of handler
+correctness~\citep{DBLP:journals/pacmpl/YangW21}.
+
+Finally, we remark that elaborations and their correctness proofs
+support a more fine-grained composition than coproducts. Building on
+techniques developped by \citet{DBLP:journals/pacmpl/RestPRVM22},
+composition operators consume a separation witness, which act as a
+specification of which equations to identify across theories. This
+way, we avoid indiscriminate summation of effect theories.  For more
+details we refer to the artifact accompanying this
+paper~\citep{artifact}.
+
