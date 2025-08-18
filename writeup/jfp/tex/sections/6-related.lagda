@@ -137,7 +137,7 @@ An interesting question for future work is to study the relationship between and
 As discussed in the introduction, this paper explores a formal semantics for
 overloading-based definitions of higher-order effects.  We formalized this
 semantics using an initial algebra semantics.  An alternative approach would
-have been to use a so-called \emph{final tagless}~\citet{carette2009finally}
+have been to use a so-called \emph{final tagless}~\citep{carette2009finally}
 encoding.  That is, instead of declaring syntax as an inductive datatype, we
 declare it as a record type, and program against that record.  A benefit of the
 final tagless approach is that we do not have to explicitly fold over
@@ -158,8 +158,8 @@ symantics-ex n l = app (lam (λ x → x)) (num 42)
 %
 Using this final tagless encoding, the semantics of \af{symantics-ex} will be given by passing two concrete implementations of \ad{NumSymantics} and \ad{LamSymantics}.
 In contrast, with the initial algebra semantics approach we use in \cref{sec:modular-reasoning}, we would define \af{symantics-ex} in terms of an inductive data type for \aF{app}, \aF{lam}, and \aF{num}; and then give its semantics by folding algebras over the abstract syntax tree.
-A benefit of final tagless is that it tends to have a have a lower interpretive overhead~\cite{carette2009finally}, since it avoids the need to iterate over syntax trees.
-These benefits extend to effects~\cite{Devriese19}.
+A benefit of final tagless is that it tends to have a have a lower interpretive overhead~\citep{carette2009finally}, since it avoids the need to iterate over syntax trees.
+These benefits extend to effects~\citep{Devriese19}.
 On the other hand, the inductive data types of initial encodings support induction, whereas final tagless encodings generally do not.
 We do not make extensive use of inductive reasoning in this paper, and we expect that it should be possible to port most of the definitions in our paper to use final tagless encodings.
 Our main reason for using an initial encoding for our hefty trees and algebras is that it follows the tradition of modeling algebraic effects and handlers using initial encodings, and that we expect induction to be useful for some applications.

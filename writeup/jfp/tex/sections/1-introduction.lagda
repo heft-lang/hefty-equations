@@ -99,7 +99,7 @@ programs with side-effects that involve higher-order operations.
 
 To understand the modularity benefits of algebraic effects and handlers, and why this modularity breaks when defining operations that take computations as parameters, we give a brief introduction to algebraic effects.
 %Readers familiar with algebraic effects and handlers are encouraged to skim the code examples in this subsection and read its final paragraph.
-To this end, we will use informal examples using a simple calculus inspired by Plotkin and Pretnar's~\citep{Plotkin2009handlers} calculus for algebraic effects . 
+To this end, we will use informal examples using a simple calculus inspired by Pretnar's~\citep{Pretnar15} calculus for algebraic effects. 
 \Cref{sec:algebraic-effects} provides a semantics for algebraic effects and handlers in Agda which corresponds to this calculus.
 
 Say we want an effectful operation $\Op{out}$ for printing output.
