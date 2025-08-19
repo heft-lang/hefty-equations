@@ -965,7 +965,6 @@ elaboration can then be handled using standard algebraic effect handlers; i.e.:
 \tag{\S}
 \end{equation*}
 %
-\todo{Reviewer 3 wants more explanation.} 
 
 The algebraic effect handlers $h_1,\ldots,h_k$ in (\S) serve the same purpose
 as the scoped effect handlers $h_1',\ldots,h_n'$ in ($\dagger$); namely, to
