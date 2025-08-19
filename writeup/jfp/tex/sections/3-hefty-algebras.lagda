@@ -569,8 +569,7 @@ algebraic effects and handlers:
   elaborate = cataᴴ pure
 \end{code}
 
-\paragraph*{Example.}
-The elaboration below is analogous to the non-modular \af{catch} elaboration discussed in \cref{sec:higher-order-effects} and in the beginning of this subsection:
+
 \begin{code}[hide]
 module ElabModule where
   open FreeModule hiding (_𝓑_; _>>_)
@@ -732,24 +731,72 @@ module ElabModule where
     eNil : Elaboration (Lift Nil) Δ
     alg eNil ()
 \end{code}
+
+
+\begin{example}[Elaboration for Output Censoring]
+Let us return to the example from the introduction.
+Here is the elaboration of the \ad{Censor} effect from \cref{fig:censor}.
+%
+\vspace{\abovedisplayskip}\noindent
+{\AgdaNoSpaceAroundCode{}
 \begin{code}
-    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+    eCensor : ⦃ w : Output ≲ Δ ⦄ → Elaboration Censor Δ
+\end{code}%
+\begin{code}[hide]
+    alg (eCensor ⦃ w ⦄) (censor f , k , m) = do
+      (x , s) ← (♯ ((given hOut handle m tt) tt))
+      ‵out (f s)
+      k x
+      where _>>=_ = _𝓑_
+            _>>_ : Free Δ A → Free Δ B → Free Δ B
+            _>>_ = λ x m → x 𝓑 λ _ → m
+            instance _ = _ , ∙-comm (w .proj₂)
+
+    module _ ⦃ w : Output ≲ Δ ⦄ where
+      eCensor⅋ : Elaboration Censor Δ
+\end{code}%
+\begin{code}
+      alg eCensor⅋ (censor f , k , m) = do
+        (x , s) ← (♯ ((given hOut handle m tt) tt))
+        ‵out (f s)
+        k x
 \end{code}
 \begin{code}[hide]
-    alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
-      (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
-      where instance _ = _ , ∙-comm (w .proj₂)
+        where _>>=_ = _𝓑_
+              _>>_ : Free Δ A → Free Δ B → Free Δ B
+              _>>_ = λ x m → x 𝓑 λ _ → m
+              instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
+}%
+\par\addvspace{\belowdisplayskip}\noindent
+The elaboration matches $\Id{eCensor}$ elaboration discussed in \cref{sec:solving-the-modularity-problem}.
+\end{example}
+
+\begin{example}[Elaboration for Exception Catching]
+We can also elaborate exception catching analogously to the non-modular \af{catch} elaboration discussed in \cref{sec:higher-order-effects} and in the beginning of this subsection:
+\vspace{\abovedisplayskip}\noindent
+{\AgdaNoSpaceAroundCode{}
 \begin{code}
+    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+\end{code}%
+\begin{code}[hide]
+    alg (eCatch ⦃ w = w ⦄) (catch t , k , ψ) = 
+      (♯ ((given hThrow handle (ψ true)) tt)) 𝓑 maybe k (ψ false 𝓑 k)
+      where instance _ = _ , ∙-comm (w .proj₂)
+\end{code}%
+\begin{code}[hide]
     module _ ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ where
       eCatch⅋ : Elaboration Catch Δ
-\end{code}
+\end{code}%
 \begin{code}
       alg eCatch⅋ (catch t , k , s) = 
         (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
+\end{code}%
+\begin{code}[hide]
         where instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
-%
+}%
+\par\addvspace{\belowdisplayskip}\noindent
 The elaboration is essentially the same as its non-modular counterpart, except
 that it now uses the universe of types encoding discussed in
 \cref{sec:hefty-monadic-bind}, and that it now transforms syntactic
@@ -823,7 +870,10 @@ for \ad{Lift} and \ad{Nil}, we can elaborate and run the program:
       test-transact = refl
 \end{code}
 %
-\noindent The program above uses a so-called \emph{global} interpretation of
+\label{ex:elab-catch}
+\end{example}
+
+\noindent The program in \cref{ex:elab-catch} uses a so-called \emph{global} interpretation of
 state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
 the state to be updated globally.  In \cref{sec:optional-transactional} we
 return to this example and show how we can modularly change the elaboration of

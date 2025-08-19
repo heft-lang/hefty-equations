@@ -288,7 +288,7 @@ Examples that do not include:
     \ \not\equiv\
     \Op{local}~r~(\Do~m; \Op{ask})
   \]
-\item Logging with filtering (an extension of the \emph{writer monad}~\citep{DBLP:conf/afp/Jones95}): let $\Op{out}~s$ be an operation for logging a string, and $\Op{censor}~f~m$ be an operation for post-processing the output of computation $m$ by applying $f : \Type{String} \to \Type{String}$.\footnote{The $\Op{censor}$ operation is a variant of the function by the same name the widely used Haskell \texttt{mtl} library: \url{https://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Writer-Lazy.html}}
+\item Logging with censoring (an extension of the \emph{writer monad}~\citep{DBLP:conf/afp/Jones95}): let $\Op{out}~s$ be an operation for logging a string, and $\Op{censor}~f~m$ be an operation for post-processing the output of computation $m$ by applying $f : \Type{String} \to \Type{String}$.\footnote{The $\Op{censor}$ operation is a variant of the function by the same name the widely used Haskell \texttt{mtl} library: \url{https://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-Writer-Lazy.html}}
 Observe:
   \[
     \Do~(\Op{censor}~f~m); \Op{out}~s
