@@ -123,10 +123,16 @@ An \emph{effect} is essentially a label associated with a set of operations.
 The association of labels to operations is declared using effect signatures, akin to the signature for $\Effect{Output}$ above.
 
 \subsubsection{Effect Theories}
-A crucial feature of algebraic effects and handlers is that it permits purely syntactic reasoning about programs containing effects, such as $\Id{hello}$ above.
+A crucial feature of algebraic effects and handlers is that it permits abstract reasoning about programs containing effects, such as $\Id{hello}$ above.
 That is, each effect is associated with a set of laws that characterizes the behavior of its operations.
-These laws are purely \emph{syntactic}, in the sense that they constrain an effect's behavior without appealing to any specifics of the implementation of the effects.
+Their purpose is to constrain an effect's behavior without appealing to any specifics of the implementation of the effects.
 Consequently, program proofs derived from these equations remain valid for all handler implementations satisfying the laws of its equational theory.
+
+Importantly, these laws are purely \emph{syntactic}, in the sense that they are part of the effect's specification rather than representing universal truths about the behavior of effectful computation.
+Whether a law is "valid" depends entirely on how we handle the effects, and different handlers  may satisfy different laws. 
+Figuring out a suitable set of laws is part of the development process of (new) effects.
+Typically, the final specification of an effect is the result of a back-and-forth refinement between an effect's specification and its handler implementations.
+This process ultimately converges to a definition that matches our intuitive understanding of what an effect should do.
 
 % 
 % , such as $\Id{hello}$, abstract from the concrete semantics of the $\Op{out}$ effect yet still let us reason about programs.
