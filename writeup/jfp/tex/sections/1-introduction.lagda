@@ -217,7 +217,7 @@ We discuss the problem with defining higher-order operations using effect signat
 \label{sec:the-problem}
 
 Say we want to declare an operation $\Op{censor}\, f\, m$ which applies a censoring function $f : \Type{String} \to \Type{String}$ to the side-effectful output of the computation $m$.
-We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type, where $A$ and $Δ$ are implicitly universally quantified by the type signature:
+We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type:
 %
 \begin{equation*}
   \Op{censor} : (\Type{String} \to \Type{String}) \to \Typing{A}{\Effect{Censor},Δ} \to \Typing{A}{\Effect{Censor},Δ}
@@ -304,7 +304,7 @@ Observe:
 
 A tempting possible workaround to the issues summarized in \cref{sec:the-problem} is to declare an effect signature with a parameter type $A_i$ that carries effectful computations.
 However, this workaround can cause operations to escape their handlers.
-Following~\citet{Pretnar15}, the semantics of effect handling obeys the following law.\footnote{This law concerns so-called \emph{deep handlers}.  However, the semantics of so-called \emph{shallow handlers}~\cite{LindleyMM17,HillerstromL18} exhibit similar behavior.}
+Following~\citet{Pretnar15}, the semantics of effect handling obeys the following law.\footnote{This law concerns so-called \emph{deep handlers}.  However, the semantics of so-called \emph{shallow handlers}~\citep{LindleyMM17,HillerstromL18} exhibit similar behavior.}
 If $h$ handles operations other than $\Op{op}$, then:
 %
 \begin{equation}
@@ -321,7 +321,7 @@ The solution we describe in \cref{sec:solving-the-modularity-problem} does not s
 
 Nevertheless, for applications where it is known exactly which effects $v$ contains, we can work around the issue by encoding computations as argument values of operations.
 We consider how, and discuss the modularity problems that this workaround suffers from.
-The following $\Effect{Censor}$ effect declares the type of an operation $\Op{censorOp}~(f,m)$ where $f$ is a censoring function and $m$ is a computation encoded as a value argument:
+The following $\Effect{Censor}$ effect declares the type of an operation $\Op{censorOp}~(f,m)$ where $f$ is a censoring function and $m$ is a computation encoded as a value argument:\footnote{The self-reference to $\Effect{Censor}$ in the computation parameter requires type-level recursion that is challenging to express in, e.g., the Agda formalization of algebraic effects we present in \cref{sec:algebraic-effects}.  However, such type-level recursion is supported by, e.g., Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, and in a Haskell embeddings of algebraic effects~\citep{KammarLO13,WuSH14}.}
 %
 \begin{equation*}
 \EDec{Censor} = \Op{censorOp} : (\Type{String} \to \Type{String}) \times (\Typing{A}{\Effect{Censor},\Effect{Output}}) \to A
@@ -356,7 +356,7 @@ This handler lets us run programs such as the following:
   \begin{array}{ll}
     \Id{censorHello} &: \Typing{()}{\Effect{Censor},\Effect{Output}}
     \\
-    \Id{censorHello} &= \Op{censorOp}~(\lambda s.~ \If~(s \equiv \String{Hello})~\Then~\String{Goodbye}~\Else~s)~\Id{hello}
+    \Id{censorHello} &= \Op{censorOp}~((\lambda s.~ \If~(s \equiv \String{Hello})~\Then~\String{Goodbye}~\Else~s),\Id{hello})
   \end{array}
 \end{equation*}
 %
@@ -394,7 +394,7 @@ To support subcomputations with exception catching, we need to refine the comput
 (This refinement could have been done modularly if we had used a more polymorphic type.)
 %
 \begin{align*}
-\EDec{Censor} = \Op{censorOp} : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}} \to A
+\EDec{Censor} = \Op{censorOp} : (\Type{String} \to \Type{String}) \times (\Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}}) \to A
 \end{align*}
 %
 The modularity problem arises when we consider whether to handle $\Effect{Catch}$ or $\Effect{Censor}$ first.
