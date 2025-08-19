@@ -900,7 +900,7 @@ In Haskell, the solutions would be lazily computed, such that the \ac{once} oper
 \subsection{Concurrency}
 
 Finally, we consider how to define higher-order operations for concurrency, inspired by \citeauthor{YangPWBS22}'s~[\citeyear{YangPWBS22}] \emph{resumption monad}~\citep{Claessen99,Schmidt1986denotational,PirogG14} defined using scoped effects.
-We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concurrency-ho-sig}, and summarized by these smart constructors:
+We summarize our encoding and compare it with the resumption monad. The goal is to define the two operations, whose higher-order effect signature is given in \cref{fig:concur-ho-sig}, and summarized by these smart constructors:
 %
 %Our goal is to define two higher-order operations:
 %
