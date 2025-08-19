@@ -69,7 +69,7 @@ this as a question to explore in future work.
 Existing languages for algebraic effects and handlers, such as
 Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, or Flix~\citep{LutzeM24} offer indirect support for higher-order effects, via the encoding discussed in \cref{sec:wa1}.
 As also discussed in \cref{sec:wa1}, this encoding suffers from a modularity problem.
-Nevertheless, the encoding may suffice for applcations in practice.
+Nevertheless, the encoding may suffice for applications in practice.
 
 Whereas Koka and Flix use so-called \emph{deep handlers}, Frank~\citep{LindleyMM17} uses \emph{shallow handlers}~\citep{HillerstromL18}.
 The difference between shallow effect and deep effect handlers is in how continuations are typed.
