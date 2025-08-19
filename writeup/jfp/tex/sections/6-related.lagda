@@ -66,11 +66,32 @@ framework would also support elaborating higher-order effects into scoped
 effects and handlers, which might provide benefits for verification.  We leave
 this as a question to explore in future work.
 
-Although not explicitly advertised, some standalone languages, such as
-Frank~\citep{LindleyMM17} and Koka~\citep{Leijen17} do have some support for
-higher-order effects.  The denotational semantics of these features of these
-languages is unclear.  A question for future work is whether the modular
-elaborations we introduce could provide a denotational model.
+Existing languages for algebraic effects and handlers, such as
+Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, or Flix~\citep{LutzeM24} offer indirect support for higher-order effects, via the encoding discussed in \cref{sec:wa1}.
+As also discussed in \cref{sec:wa1}, this encoding suffers from a modularity problem.
+Nevertheless, the encoding may suffice for applcations in practice.
+
+Whereas Koka and Flix use so-called \emph{deep handlers}, Frank~\citep{LindleyMM17} uses \emph{shallow handlers}~\citep{HillerstromL18}.
+The difference between shallow effect and deep effect handlers is in how continuations are typed.
+A deep handler of type $\Typing{X}{Δ,Δ′} \Rightarrow \Typing{C}{Δ′}$ is typed as follows, where $\Op{op} : A \to B$ is an effect of type $Δ$:
+%
+\begin{equation*}
+\Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
+\tag{$\ast$}
+\label{eq:hdl-pretnar}
+\end{equation*}
+%
+In contrast, shallow handlers are typed as follows:
+%
+\begin{equation*}
+\Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\colorbox{lightgray}{$\scriptstyle \Typing{X}{Δ,Δ′}$}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
+\tag{$\ast$}
+\label{eq:hdl-pretnar}
+\end{equation*}
+%
+Following \citet{HillerstromL18}, shallow handlers can emulate deep handlers by always invoking their continuations in the scope of a recursive call to the handler being defined (assuming a language with recursive functions).
+\citet{HillerstromL18} also shows how deep handlers can emulate shallow handlers.
+As far as we are aware, shallow handlers support higher-order effects on a par with deep handlers, using the same encoding as we discussed in \cref{sec:wa1}.
 
 A recent paper by~\citet{BergSPW21} introduced a generalization of scoped
 effects that they call \emph{latent effects} which supports a broader class of
@@ -221,6 +242,9 @@ Our main reason for using an initial encoding for our hefty trees and algebras i
 %% While this incurs overhead on behalf of the programmer, it also enables programmers to explicitly specify how to resolve coherence conflicts.
 %% 
 %% Ultimately, the goal of \cref{sec:modular-reasoning} was to explore a semantics of higher-order effects given by an overloading semantics.
+
+
+
 
 Looking beyond purely functional models of semantics and effects, there are also
 lines of work on modular support for side effects in operational
