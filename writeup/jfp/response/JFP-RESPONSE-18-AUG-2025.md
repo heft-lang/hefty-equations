@@ -74,7 +74,7 @@ follows.  We have:
   support for algebraic effects and handlers (Eff, Koka, Frank, Flix,
   Effekt).
 
-## Validity/disproving of laws (R3) 
+## R3: Validity/disproving of laws
 
 Reviewer 3 inquires, in both their reviews, about disproving of
 equations, saying that it should be possible e.g. to disprove a law
@@ -122,6 +122,15 @@ syntactic level remain valid for *any* handler that satisfies the
 equations of a theory, even if that handler *also satisfies other
 equations that violate our intuitive understanding of how an effect
 should behave*.
+
+## R1: Desugaring scoped effects
+
+Good points about the encoding we gave being insufficient for some
+cases.  Future work, indeed!
+
+## R3: Missing eCensor elaboration in Agda formalization
+
+Thanks for the suggestion. We have added this as an example in 3.4 now.
 
 
 # Reviews [TODO: OMIT FROM FINAL RESPONSE]
