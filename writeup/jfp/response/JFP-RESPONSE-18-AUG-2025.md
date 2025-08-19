@@ -2,25 +2,58 @@
 
 Dear Sam,
 
-Thanks for the feedback.
+Thanks for the feedback!  Both to you and the reviewers.
 
 We've revised our paper in accordance with your suggestions.
 
 The most important changes are:
 
+* We have revised the introduction to clarify the modularity problem that we address.  We have also nuanced the discussion of how standard algebraic effects and handlers (Eff, Koka, Frank, etc.) support higher-order effects.  We have used a concrete examples where we can, to make the discussion as concrete as possible.  The revised introduction addresses the following reviewer concerns:
+ 
+  > R2: Relation to existing mechanisms for simultaneous unfolding
+
+  The new introduction (e.g., the last paragraph before Section 1.1) positions our contribution as providing a semantics of such simultaneous unfolding (which we call "overloading" in the introduction, for lack of a better term) which supports composing effect theories on a par with, and in a similar tradition (i.e., using an initial encoding) as, algebraic effects and handlers.
+  
+  As we elaborate in related work, we believe that most of the definitions we show in the paper could be supported using other models of simultaneous unfolding.  We opt for an initial encoding because it follows the tradition of implementing (e.g., in Haskell) and mechanizing (e.g., in Agda, Coq, and Idris) algebraic effects and handlers using initial encodings, and because initial encodings support inductive reasoning which we expect will be useful for future applications of our work.
+
+  > R3: Introduction is unclear about the support that algebraic effects and handlers has for higher-order operations already
+  
+  In the new subsection 1.2.2 we explain how algebraic effects and handlers support higher-order operations already, and elaborate on explain in what sense and under which circumstances this support provides unsatisfactory framework for implementing and reasoning about higher-order operations.
+
+  > R2,R3: Various problems with typing judgments
+
 * We have revised the related work paragraphs about Matache et al.'s work on scoped effects as parameterized algebraic theories, in accordance with your suggestion and the suggestion of Reviewer 1.
 
-* We have revised the introduction to nuance our description of the problem we address, using concrete examples where possible.  This revision should help clarify concerns by both R2 and R3:
- 
-  + R2: Clarified that the paper is proposing a formal semantics for overloading-based definitions of higher-order effects and theories.
-
-  + R3: confusion about what modularity problem the previous introduction was trying to pinpoint.  We have decided to completely rewritten the introduction to clarify, using (a variant of) the calculus from Pretnar's tutorial paper (Pretnar, 2015).
-
 * Furthermore, we have further refined the related work section.  Besides the already mentioned discussion of the work by Matche et al.:
+
+
+  > R3: Relationship with shallow handlers
 
   + We have refined the paragraphs about final tagless to be more precise about how/why the paper uses initial encodings instead of final tagless encodings.
   
   + We have added a paragraph about shallow handlers.
+
+* Furthermore, we have made the following adjustments to address other concerns raised by the reviewers.
+
+  > R3: Discuss how to disprove laws
+  
+  We have clarified in the paper that the support for equational reasoning is on a par with the equational reasoning you get for standard algebraic effect theories.
+  
+  A refutation of the law `put s >> put s' ≡ put s` could follow along these lines.
+  
+  First, rewrite the left-hand side to `put s'` using the laws of the equational theory for state:
+  
+  ```
+  put s >> put s'
+  = {put-put}
+  put s'
+  ```
+  
+  In order for the law to be true, `put s ≡ put s'` for any `s` and `s'`, which is not true in general.
+  
+  An alternative (more formal) refutation would be to show that there exists a lawful model of the theory (e.g., a standard effect handler for state) for which the law is untrue.
+  
+  We could add some discussion of this to the paper, but we are not sure it would add much.
 
 * We have fixed minor typos and issues pointed out by the reviewers.
 
@@ -264,9 +297,13 @@ The most important changes are:
 > # Other Comments
 > 
 > - L227-231: Here, the type of `censor_op` is given as `(String -> String) -> A !! H -> A !! H`, but its type given in Figure 2 is `(String -> String) -> Hefty (Censor + H) T -> Hefty (Censor + H) T`. So, the correct type in line 227 should be `(String -> String) -> A !! (Censor + H) -> A !! (Censor + H)`?
-> 
+
+That is a question of how the syntax of the informal calculus in the introduction maps onto the model.  The purpose of line 227 (in the old manuscript---line 386 in the new) is to show a higher-order effect signature; i.e., syntactic sugar for an instance of Effectᴴ on line 1026 (in the new manuscript).
+
 > - Section 3.2: No elaboration for eCensor is given, although it is a motivating example presented in Section 1. The absence of eCensor makes it unclear how hefty trees and elaboration resolve the problems mentioned in Section 1.
-> 
+
+[TODO]
+
 > - Section 3.5: While scoped effect handlers can be applied one by one, hefty algebras enforce elaborating all the higher-order operations at once. Please discuss whether this is problematic and, unless so, why.
 > 
 > - L1142-1143: "h1, ..., hk in (‡)" --> "h1, ..., hk in (§)",  "h1', ..., hn' in (§)" --> "h1', ..., hn' in (‡)"
