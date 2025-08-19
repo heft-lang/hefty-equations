@@ -47,28 +47,24 @@ environments in the reader monad. While it is possible to express
 higher-order operations by inlining handler applications within the
 definition of the operation itself, this effectively relinquishes key
 modularity benefits. The syntax, equational theories, and proofs of
-such inlined operations cannot be composed. Syntactic
-modularity for higher-order operations can be recovered by appealing to
-\emph{overloading} mechanisms, such as typeclasses. While
-this approach allows us to compose syntax (e.g., by accumulating
-typeclass constraints) as well as changing the implementation ofop
-higher-order operations, it remains unclear whether an
-overloading-based approach supports the same kind of modular reasoning
-as algebraic effects.
+such inlined operations do not compose.
 
-In this paper, we address this gap by providing a formal semantics for
-overloading-based definitions of higher-order effects. We formalize
-the semantics of overloading by defining \emph{elaborations} from a
-syntactic class of monads that supports higher-order operations (which
-we dub \emph{hefty trees}) into standard algebraic effects, and show
-that a wide variety of higher-order operations can be defined and
-assigned a semantics this way. Crucially, program definitions using
-Hefty trees enjoy the same modularity properties as programs defined
-with algebraic effects and handlers.  Specifically, they support the
-composition of syntax, semantics, equational theories and proofs. This
-demonstrates that overloading is not only syntactically viable, but
-also supports the same modular reasoning as algebraic effects for
-programs with side-effects that involve higher-order operations.
+In this paper, we propose to address this problem by appealing to an
+\emph{overloading} mechanism which postpones the choice of handlers to
+inline.  As we demonstrate, this approach provides a syntax and semantics of
+higher-order operations with similar modularity benefits as traditional
+algebraic effects; namely syntax, equational theories, and proofs that
+compose.  To realize this, we use a syntactic class of monads that supports
+higher-order operations (which we dub \emph{hefty trees}).  Algebras over this
+syntax (\emph{hefty algebras}) let us modularly \emph{elaborate} this syntax
+into standard algebraic effects and handlers.  We show that a wide variety of
+higher-order operations can be defined and assigned a semantics this
+way. Crucially, program definitions using hefty trees enjoy the same modularity
+properties as programs defined with algebraic effects and handlers.
+Specifically, they support the composition of syntax, semantics, equational
+theories, and proofs. This demonstrates that overloading is not only
+syntactically viable, but also supports the same modular reasoning as algebraic
+effects for programs with side-effects that involve higher-order operations.
 
 \subsection{Background: Algebraic Effects and Handlers}
 \label{sec:background}
