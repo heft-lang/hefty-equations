@@ -769,7 +769,7 @@ Here is the elaboration of the \ad{Censor} effect from \cref{fig:censor}.
 \end{code}
 }%
 \par\addvspace{\belowdisplayskip}\noindent
-The elaboration matches $\Id{eCensor}$ elaboration discussed in \cref{sec:solving-the-modularity-problem}.
+This elaboration matches the $\Id{eCensor}$ elaboration discussed in \cref{sec:solving-the-modularity-problem}.
 \end{example}
 
 \begin{example}[Elaboration for Exception Catching]
