@@ -217,7 +217,7 @@ We discuss the problem with defining higher-order operations using effect signat
 \label{sec:the-problem}
 
 Say we want to declare an operation $\Op{censor}\, f\, m$ which applies a censoring function $f : \Type{String} \to \Type{String}$ to the side-effectful output of the computation $m$.
-We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type, where $A$ and $Δ$ are implicitly universally quantified by the type signature:
+We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type:
 %
 \begin{equation*}
   \Op{censor} : (\Type{String} \to \Type{String}) \to \Typing{A}{\Effect{Censor},Δ} \to \Typing{A}{\Effect{Censor},Δ}
