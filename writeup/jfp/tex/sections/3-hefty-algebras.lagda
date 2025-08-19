@@ -757,7 +757,7 @@ Here is the elaboration of the \ad{Censor} effect from \cref{fig:censor}.
 \end{code}%
 \begin{code}
       alg eCensor⅋ (censor f , k , m) = do
-        (x , s) ← (♯ ((given hOut handle m tt) tt))
+        (x , s) ← ♯ ((given hOut handle m tt) tt)
         ‵out (f s)
         k x
 \end{code}
