@@ -4,7 +4,7 @@
 
 \begin{code}[hide]
 
-module sections.1-introduction where
+module tex.sections.1-introduction where
 
 open import Data.Unit
 open import Data.String
