@@ -95,9 +95,10 @@ effects for programs with side-effects that involve higher-order operations.
 
 To understand the modularity benefits of algebraic effects and handlers, and why this modularity breaks when defining operations that take computations as parameters, we give a brief introduction to algebraic effects.
 %Readers familiar with algebraic effects and handlers are encouraged to skim the code examples in this subsection and read its final paragraph.
-To this end, we will use informal examples using a simple calculus inspired by Pretnar's~\citep{Pretnar15} calculus for algebraic effects. 
-\Cref{sec:algebraic-effects} provides a semantics for algebraic effects and handlers in Agda which corresponds to this calculus.
+To this end, we will use informal examples using a simple calculus inspired by Pretnar's calculus for algebraic effects~\citep{Pretnar15}. 
+\Cref{sec:algebraic-effects} of this paper provides a semantics for algebraic effects and handlers in Agda which corresponds to this calculus.
 
+\subsubsection{Effect Signatures}
 Say we want an effectful operation $\Op{out}$ for printing output.
 Besides its side-effect of printing output, the operation should take a string as an argument and return the unit value.
 Using algebraic effects, we can declare this operation using the following \emph{effect signature}:
@@ -115,12 +116,13 @@ For example, the following $\Id{hello}$ program:
   \Id{hello} &= \Op{out}~\String{Hello};~\Op{out}~\String{ world!}
 \end{align*}
 %
-The type $\Typing{\Type{()}}{Output}$ indicates that $\Id{hello}$ is an effectful computation which returns a unit value, and which is allowed to call the operations in $\Effect{Output}$ (which contains only the $\Op{out}$ operation).
+The type $\Typing{\Type{()}}{Output}$ indicates that $\Id{hello}$ is an effectful computation which returns a unit value, and which is allowed to call the operations in $\Effect{Output}$ (i.e., only the $\Op{out}$ operation).
 
-More generally, computations of type $\Typing{A}{Δ}$ are allowed (but not obliged) to call any operation of any effect in $Δ$, where $Δ$ is a \emph{row} (i.e., unordered sequence) of effects.
+More generally, computations of type $\Typing{A}{Δ}$ are allowed (but not required) to call any operation of any effect in $Δ$, where $Δ$ is a \emph{row} (i.e., unordered sequence) of effects.
 An \emph{effect} is essentially a label associated with a set of operations.
 The association of labels to operations is declared using effect signatures, akin to the signature for $\Effect{Output}$ above.
 
+\subsubsection{Effect Theories}
 A crucial feature of algebraic effects and handlers is that it permits purely syntactic reasoning about programs containing effects, such as $\Id{hello}$ above.
 That is, each effect is associated with a set of laws that characterizes the behavior of its operations.
 These laws are purely \emph{syntactic}, in the sense that they constrain an effect's behavior without appealing to any specifics of the implementation of the effects.
@@ -131,25 +133,28 @@ Consequently, program proofs derived from these equations remain valid for all h
 % Specifically, each effect is associated with a set of laws that characterize the behavior of its effectful operations.
 % 
 
-To illustrate this point, we consider the $\Effect{Output}$ effect, which has just a single law that characterizes the behavior of $\Op{out}$:
+For example, the $\Effect{Output}$ effect has a single law that characterizes the behavior of $\Op{out}$:
 %
 \begin{equation*}
   \Op{out}~s_1; \Op{out}~s_2 \equiv \Op{out}~(s_1 \Conc s_2)
 \end{equation*}
 %
 Here $\Conc$ is string concatenation.
-Using this law, we can prove that our $\Id{hello}$ program will print the string $\String{Hello world!}$ for any implementation of the $\Effect{Output}$ that satisfies the law above. 
-While the program and effect discussed so far has been deliberately simple, the approach illustrates how algebraic effects let us reason about effectful programs while abstracting from the concrete implementation of the underlying effects.
+Using this law, we can prove that our $\Id{hello}$ program will print the string $\String{Hello world!}$.
+Crucially, this proof does not depend on operational implementation details of the $\Effect{Output}$ effect.
+Instead, it uses the laws of the equational theory of the effect.
+While the program and effect discussed so far has been deliberately simple, the approach illustrates how algebraic effects let us reason about effectful programs in a way that abstracts from the concrete implementation of the underlying effects.
 % While many existing languages and calculi on algebraic effects gloss over the existence of these laws, they are a crucial conceptual innovation and attraction of the approach.
 
+\subsubsection{Effect Handlers}
 An alternative perspective is to view effects as interfaces that specify the parameter, return type, and laws of each operation.
 Implementations of such interfaces are given by \emph{effect handlers}.
 An effect handler essentially defines how to interpret operations in the execution context they occur in.
-While this interpretation must be consistent with the laws of the effect, we will not dwell on how to prove that a handler is consistent with laws here. 
-We will return to this important point in \cref{sec:modular-reasoning} (e.g., \cref{sec:handler-correctness}).
+This interpretation must be consistent with the laws of the effect.
+(We will not dwell further on this consistency here; we return to this in \cref{sec:handler-correctness}.)
 
 The type of an effect handler is $\Typing{A}{Δ}~\Rightarrow~\Typing{B}{Δ′}$, where $Δ$ is the row of effects before applying the handler and $Δ′$ is the row after.
-For example, here is a specific type of an effect handler for $\Effect{Output}$:
+For example, here is a specific type of an effect handler for $\Effect{Output}$:\footnote{Here and throughout the rest of this paper, type variables that are not explicitly bound elsewhere are implicitly universally quantified in prenex position of the type in which they occur.}
 %
 \begin{equation*}
     \Id{hOut} : \Typing{A}{\Effect{Output},Δ}
@@ -158,7 +163,7 @@ For example, here is a specific type of an effect handler for $\Effect{Output}$:
 \end{equation*}
 %
 %The type on the left of the double arrow is the computation before handling, and the type on the right is the computation after.
-The $\Effect{Output}$ effect is being handled, so it is only present in the effect row on the left.\footnote{$\Effect{Output}$ could occur in $Δ$ too.
+The $\Effect{Output}$ effect is being handled, so it is only present in the effect row on the left.\footnote{$\Effect{Output}$ could occur in the universally quantified $Δ$ too.
 This raises the question: which $\Effect{Output}$ effect does a given handler actually handle?
 We refer to the literature for answers to this question; see, e.g., the row treatment of \citet{morris2019abstracting}, the \emph{effect lifting} of \citet{DBLP:journals/pacmpl/BiernackiPPS18}, and the \emph{effect tunneling} of \citet{DBLP:journals/pacmpl/ZhangM19}.}
 As the type suggests, this handler handles $\Op{out}$ operations by accumulating a string of output.
@@ -193,7 +198,7 @@ For example, we can run the $\Id{hello}$ program from earlier with the handler $
 
 The key benefit algebraic effects and handlers is that programs such as $\Id{hello}$ are defined \emph{independently} of how the effectful operations they use are implemented.
 This makes it is possible to reason about programs independently of how the underlying effects are implemented; and also makes it possible to refine, refactor, and optimize the semantics of operations, without having to modify the programs that use them.
-For example, we could refine the meaning of $\Id{out}$ \emph{without modifying the $\Id{hello}$ program or proofs derived from equations of the $\Id{Output}$ effect}, by using a different handler $\Id{hOut′}$ which prints output to the console.
+For example, we could refine the meaning of $\Id{out}$ \emph{without modifying the $\Id{hello}$ program or proofs derived from equations of the $\Id{Output}$ effect}, by using a different handler which prints output to the console.
 %The types of algebraic effects and handlers enforces the type safety of such behavioral modifications.
 However, some operations are challenging to express while retaining the same modularity benefits.
 %The next subsection explains the issue.
@@ -212,7 +217,7 @@ We discuss the problem with defining higher-order operations using effect signat
 \label{sec:the-problem}
 
 Say we want to declare an operation $\Op{censor}\, f\, m$ which applies a censoring function $f : \Type{String} \to \Type{String}$ to the side-effectful output of the computation $m$.
-We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type, where $A$ and $Δ$ are implicitly universally quantified by the type signature:\footnote{Here and throughout the rest of this paper, type variables that are not explicitly bound elsewhere are implicitly universally quantified in prenex position of the type in which they occur.}
+We might try to declare an effect $\Op{Censor}$ with a $\Op{censor}$ operation by the following type, where $A$ and $Δ$ are implicitly universally quantified by the type signature:
 %
 \begin{equation*}
   \Op{censor} : (\Type{String} \to \Type{String}) \to \Typing{A}{\Effect{Censor},Δ} \to \Typing{A}{\Effect{Censor},Δ}
@@ -254,7 +259,7 @@ For any operation $\Op{op} : \Typing{A}{Δ} \to \cdots \to \Typing{A}{Δ} \to \T
 \begin{equation*}
   \Do~x \leftarrow (\Op{op}~m_1\ldots m_n); k~x
   \ \equiv\ 
-  \Op{op}~(\Do~x_1 \leftarrow m_1; k~x_1)\ldots(\Do~x_n \leftarrow m_n; k~x_n)
+  \Op{op}~(\Do~x \leftarrow m_1; k~x)\ldots(\Do~x \leftarrow m_n; k~x)
   \tag{$\dagger$}
   \label{eqn:algebraicity}
 \end{equation*}
@@ -315,7 +320,7 @@ This is problematic if $h$ is the intended handler for one or more effects in $v
 The solution we describe in \cref{sec:solving-the-modularity-problem} does not suffer from this problem.
 
 Nevertheless, for applications where it is known exactly which effects $v$ contains, we can work around the issue by encoding computations as argument values of operations.
-We consider how, and discuss the modularity problems this workaround suffers from.
+We consider how, and discuss the modularity problems that this workaround suffers from.
 The following $\Effect{Censor}$ effect declares the type of an operation $\Op{censorOp}~(f,m)$ where $f$ is a censoring function and $m$ is a computation encoded as a value argument:
 %
 \begin{equation*}
@@ -344,7 +349,7 @@ This effect can be handled as follows:
 The handler case for $\Op{censorOp}$ runs $m$ with handlers for both the $\Effect{Output}$ and $\Effect{Censor}$ effects, which yields a pair $(x,s)$ where $x$ represents the value returned by $m$, and $s$ represents the (possibly sub-censored) output of $m$.
 We then output the result of applying the censoring function $f$ to $s$, before passing $x$ to the continuation $k$.
 
-This handler lets us run programs, such as the following:
+This handler lets us run programs such as the following:
 %
 \begin{equation*}
   \arraycolsep=1.4pt
@@ -362,18 +367,17 @@ Applying $\Id{hCensor}$ and $\Id{hOut}$ yields the printed output $\String{Hello
 \end{equation*}
 %
 
-This example illustrates that, for some applications, it is possible to encode higher-order effects as algebraic operations.
-
+As the example above illustrates, it is sometimes possible to encode higher-order effects as algebraic operations.
 However, encoding higher-order operations in this way suffers from a modularity problem.
 Say we want to extend our program with a new effect for throwing exceptions---i.e., an effect with a single operation $\Op{throw}$---and a new effect for catching exceptions---i.e., an effect with a single operation $\Op{catch}~m_1~m_2$ where exceptions thrown by $m_1$ are handled by running $m_2$.
-The $\Effect{Throw}$ effect is a plain algebraic effect, defined as follows.\footnote{Here we use $\bot$ to denote the empty type.}
+The $\Effect{Throw}$ effect is a plain algebraic effect, defined as follows.\footnote{Here $\bot$ is the empty type.}
 %
 \begin{align*}
 \EDec{Throw} &= \Op{throw} : () \to \bot
 \end{align*}
 %
 The $\Effect{Catch}$ effect is higher-order.
-We can again encode it as an operation with computations as values.
+We can again encode it as an operation with computations as value arguments.
 %
 \begin{align*}
 \arraycolsep=0.7pt
@@ -386,28 +390,27 @@ We can again encode it as an operation with computations as values.
   \end{array}}
 \end{align*}
 %
-To support subcomputations with exception catching, we need to refine the computation type we use for $\Effect{Censor}$, which in itself could have been done modularly if we had used a more polymorphic type.
+To support subcomputations with exception catching, we need to refine the computation type we use for $\Effect{Censor}$.
+(This refinement could have been done modularly if we had used a more polymorphic type.)
 %
 \begin{align*}
 \EDec{Censor} = \Op{censorOp} : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Censor},\Effect{Output}} \to A
 \end{align*}
 %
-The modularity problem arises when we consider whether to handle $\Effect{Catch}$ and $\Effect{Throw}$ first, or handle $\Effect{Censor}$ and $\Effect{Output}$ first.
-If we handle $\Effect{Censor}$ and $\Effect{Output}$ first, then we get exactly the problem described earlier in connection with the law~(\ref{eq:hdl-eq-pretnar}): the handler $\Id{hCensor}$ is not automatically applied to sub-computations of $\Op{catchOp}$ operations!
-Consequently, a handler for $\Op{catchOp}$ of the following type \emph{must} invoke a handler for the $\Op{Censor}$ effect:
+The modularity problem arises when we consider whether to handle $\Effect{Catch}$ or $\Effect{Censor}$ first.
+If we handle $\Effect{Censor}$ first, then we get exactly the problem described earlier in connection with the law~(\ref{eq:hdl-eq-pretnar}): the handler $\Id{hCensor}$ is not applied to sub-computations of $\Op{catchOp}$ operations.
+Let us consider the consequences of this.
+Say we want to define a handler for $\Op{catchOp}$ of the following type:
 %
 \begin{equation*}
 \Id{hCatch} : \Typing{A}{\Effect{Catch},\Effect{Throw},\Effect{Output}} \Rightarrow \Typing{A}{\Effect{Throw},\Effect{Output}}
 \end{equation*}
 %
-Conversely, if $\Op{catchOp}$ does not invoke a handler for the $\Op{censorOp}$ operation, then the $\Effect{Censor}$ effect would escape its handler, which would be ill-typed.
-
+Any such handler which calls the sub-computation $m_1$ of an operation $\Op{catchOp}~m_1~m_2$ must invoke a handler for the $\Effect{Censor}$ effect.
+Otherwise the handler would allow effects to escape in a way that breaks the typing discipline of algebraic effects and handlers~\citep{Pretnar15}.
 While for some applications it may be acceptable to write handlers that reinvoke already-applied handlers, such reinvocation is non-modular and should not be---and, indeed, is not---necessary.
+Before showing the solution we propose which avoids this, we first consider a different workaround (\cref{sec:wa2}), and previous solutions proposed in the literature (\cref{sec:previous-approaches}). 
 
-As a prelude to our solution, let us first consider an alternative workaround for encoding higher-order operations (\cref{sec:wa2}) and previous work on handling higher-order effects.
-
-
-%% TODO: For example, 
 
 % To see the implications of this law, let us consider the following candidate effect signature for a $\Effect{Censor}$ effect parameterized by an effect type $\Delta′$ representing sub-computation effects:\footnote{The self-reference to $\Effect{Censor}$ in the computation parameter requires type-level recursion that is challenging to express in, e.g., the Agda formalization of algebraic effects we present in \cref{sec:algebraic-effects} of this paper.  However, such type-level recursion would be allowed in, e.g., Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, or in a Haskell embedding of algebraic effects.}
 % %
@@ -424,7 +427,7 @@ As a prelude to our solution, let us first consider an alternative workaround fo
 \label{sec:wa2}
 
 It is possible to define many higher-order operations in terms of algebraic effects and handlers.
-For example, instead of the operation $\Op{censor}$, we can apply the following function which uses an inline handler application of $\Id{hOut}$:
+For example, instead of defining $\Op{censor}$ as an operation, we could define it as a function which uses an inline handler application of $\Id{hOut}$:
 %
 \begin{gather*}
   \arraycolsep=1.4pt
@@ -435,18 +438,13 @@ For example, instead of the operation $\Op{censor}$, we can apply the following 
   \end{array}
 \end{gather*}
 %
-Defining higher-order operations in terms of standard algebraic effects and handlers, as illustrated above, is a key use case of effect handlers~\citep{Plotkin2009handlers}.
+Defining higher-order operations in terms of standard algebraic effects and handlers in this way is a key use case of effect handlers~\citep{Plotkin2009handlers}.
 In fact, all other higher-order operations above (with the exception of function abstraction) can be defined in a similar manner.
 
-However, if such functions occur inline in programs, we need to modify the programs themselves to modify the semantics of their higher-order operations.
-This is in stark contrast with algebraic effects, whose semantics can be modified by applying a different handler, which does not require modification of the original program. 
+However, it is unclear what the semantics is of composing syntax, equational theories, and proofs of programs with such functions occuring inline in programs.
+We address this gap by proposing notions of syntax and equational theories for programs with higher-order operations.
+The semantics of such programs and theories is given by elaborating them into standard algebraic effects and handlers.
 
-A simple solution to this problem is to use \emph{overloading}, effectively parameterizing our program by definitions of the higher-order operations it uses.
-By using an overloading mechanism, we are able to refine refactor, and optimize the semantics of higher-order operations without having to modify the programs that use them, by simply instantiating overloaded parameters differently.
-
-In this paper, we present such an overloading mechanism for higher-order operations in the form of \emph{elaborations}.
-Two key questions that this mechanism must address are: (1) what is the semantics of overloading, and (2) how to reason about programs with overloaded operations independently of how the underlying effects (higher-order or not) are defined.
-In \cref{sec:solving-the-modularity-problem} we summarize how our work answers these questions.
 % First, a few remarks on previous work that addresses similar problems as us.
 
 % Specifically, if we apply the  are not a part of any effect interface.
@@ -458,15 +456,15 @@ In \cref{sec:solving-the-modularity-problem} we summarize how our work answers t
 
 The modularity problem of higher-order effects, summarized in \cref{sec:the-problem}, was first observed by \citet{WuSH14} who proposed \emph{scoped effects and handlers}~\citep{WuSH14,PirogSWJ18,YangPWBS22} as a solution.
 Scoped effects and handlers work for a wide class of effects, including many higher-order effects, providing similar modularity benefits as algebraic effects and handlers when writing programs.
-Using \emph{parameterized algebraic theories}~\cite{LindleyMMSWY24,MatacheLMSWY25} it is possible reason about programs with scoped effects independently of how their effects are implemented.
+Using \emph{parameterized algebraic theories}~\citep{LindleyMMSWY24,MatacheLMSWY25} it is possible reason about programs with scoped effects independently of how their effects are implemented.
 
 \Citet{BergSPW21} recently observed, however, that operations that defer computation, such as evaluation strategies for $\lambda$ application or \emph{(multi-)staging} \citep{TahaS00}, are beyond the expressiveness of scoped effects.
 Therefore, \citet{BergSPW21} introduced another flavor of effects and handlers that they call \emph{latent effects and handlers}.
 It remains an open question how to reason about latent effects and handlers independently of how effects are implemented.
 
-In \cref{sec:solving-the-modularity-problem}, we summarize our alternative solution, based on overloading.
-We demonstrate that this overloading-based approach supports optionally transactional exception catching akin to scoped effect handlers, and evaluation strategies for effectful $\lambda$ application, akin to latent effects and handlers.
-The question of formally relating the expressiveness of our overloading-based approach with alternative approaches is future work.
+In this paper, we demonstrate that an overloading-based approach provides a semantics of composition for effect theories that is comparable to standard algebraic effects and handlers, and, we expect, to parameterized algebraic theories.
+Furthermore, we demonstrate that the approach lets us model the syntax and semantics of key examples from the literature: optionally transactional exception catching, akin to scoped effect handlers~\citep{WuSH14}, and evaluation strategies for effectful $\lambda$ application~\citep{BergSPW21}.
+Formally relating the expressiveness of our approach with, e.g., scoped effects and parameterized algebraic theories, is future work.
 
 % \subsubsection{Possible Solution: Encoding Computations as Operation Arguments}
 % \label{sec:encoding-arguments}
@@ -600,10 +598,9 @@ To this end, we introduce a new type of \emph{computations with higher-order eff
 %
 Here $\HTyping{A}{H}$ is a computation type where $A$ is a return type and $H$ is a row comprising both algebraic and higher-order effects.
 The key idea is that the higher-order effects in the row $H$ are modularly elaborated into a computation with effects given by the row $Δ$.
-To achieve this, we define $\Id{elaborate}$ such that it can be modularly composed from separately defined elaboration cases, which we call elaboration \emph{algebras} (for reasons we explain in \cref{sec:hefty-trees-and-algebras}).
-Using $\HTyping{A}{H} \Elabarr \Typing{A}{Δ}$ as the type of elaboration algebras that elaborate the higher-order effects in $H$ to $Δ$, we can modularly compose any pair of elaboration algebras $e_1 : \HTyping{A}{\Effect{H_1}} \Elabarr{} \Typing{A}{Δ}$ and $e_2 : \HTyping{A}{\Effect{H_2}} \Elabarr{} \Typing{A}{Δ}$ into an algebra $e_{12} : \HTyping{A}{\Effect{H_1,H_2}} \Elabarr{} \Typing{A}{Δ}$.\footnote{Readers familiar with data types \`{a} la carte~\citep{swierstra2008data} may recognize this as the usual closure of algebras under functor coproducts.}
+To achieve this, we define $\Id{elaborate}$ such that it can be modularly composed from separately defined elaboration cases, called elaboration \emph{algebras} (for reasons explained in \cref{sec:hefty-trees-and-algebras}). $\HTyping{A}{H} \Elabarr \Typing{A}{Δ}$ as the type of elaboration algebras that elaborate the higher-order effects in $H$ to $Δ$, we can modularly compose any pair of elaboration algebras $e_1 : \HTyping{A}{\Effect{H_1}} \Elabarr{} \Typing{A}{Δ}$ and $e_2 : \HTyping{A}{\Effect{H_2}} \Elabarr{} \Typing{A}{Δ}$ into an algebra $e_{12} : \HTyping{A}{\Effect{H_1,H_2}} \Elabarr{} \Typing{A}{Δ}$.\footnote{Readers familiar with data types \`{a} la carte~\citep{swierstra2008data} may recognize this as the usual closure of algebras under functor coproducts.}
 
-Elaboration algebras are as simple to define as non-modular elaborations such as $\Id{censor}$ (\cref{sec:modularity-problem}).
+Elaboration algebras are as simple to define as non-modular elaborations such as $\Id{censor}$ (\cref{sec:wa2}).
 For example, here is the elaboration algebra for the higher-order $\Effect{Censor}$ effect whose only associated operation is the higher-order operation $\Op{censor_{op}} : (\Type{String} \to \Type{String}) \to \HTyping{A}{H} \to \HTyping{A}{H}$:
 %
 \begin{equation*}
@@ -621,7 +618,7 @@ Second, and most importantly, programs that use the $\Op{censor_{op}}$ operation
 As a consequence, we can modularly refine the elaboration of higher-order operations such as $\Op{censor_{op}}$, without modifying the programs that use the operations.
 Similarly, we can define equational theories that constrain the behavior elaborations of higher-order operations, and write proofs about programs using higher-order operations that are valid for any elaboration that satisfies these equations.
 
-For example, the following program censors and replaces $\String{Hello}$ with $\String{Goodbye}$:\footnote{This program relies on the fact that it is generally possible to lift computation $\Typing{A}{Δ}$ to $\HTyping{A}{H}$ when $Δ \subseteq H$.}
+For example, here is again a program which censors and replaces $\String{Hello}$ with $\String{Goodbye}$:\footnote{This program relies on the fact that it is generally possible to lift computation $\Typing{A}{Δ}$ to $\HTyping{A}{H}$ when $Δ \subseteq H$.}
 \begin{equation*}
   \arraycolsep=1.4pt
   \begin{array}{ll}

@@ -14,10 +14,10 @@ program against an interface of higher-order effects in a way that
 provides effect encapsulation. This means we can modularly change the
 implementation of effects without changing programs written against
 the interface, and without changing the definition of any interface
-implementations. Furthermore, the solution requires a minimal amount
-of glue code to compose language definitions.
+implementations. % Furthermore, the solution requires a minimal amount
+% of glue code to compose language definitions.
 
-Crucially, hefty trees and their elaborations fully support modular
+Crucially, hefty trees and their elaborations support modular
 reasoning. Equational proofs about programs with higher-order effects
 inherit this modularity: they can be reused in the context of larger
 programs, even if those rely on additional effects. Most
