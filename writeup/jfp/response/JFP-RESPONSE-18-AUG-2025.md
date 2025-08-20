@@ -68,7 +68,13 @@ follows.  We have:
 * Refined the explanation of final tagless to be more precise about
   how and why the paper uses initial encodings.
 
-* Added a paragraph on shallow handlers.
+* Added a paragraph on shallow handlers. The paragraph clarifies some
+  confusion in our previous response. Our previous response said that
+  shallow handlers could somehow forward effects to the surrounding
+  context, in a way that deep handlers could not. As far as we can
+  tell, this is incorrect. The example discussed in S1.2.2 works
+  similarly with shallow handlers as with deep handlers, and has the
+  same issues.
 
 * Improved the positioning of our work w.r.t. existing languages with
   support for algebraic effects and handlers (Eff, Koka, Frank, Flix,
@@ -108,7 +114,7 @@ algebraic effects, and we have expanded S1.1.2 to clarify this point.
 ## R1: Desugaring scoped effects
 
 Good points about the encoding we gave being insufficient for some
-cases.  Future work, indeed!
+cases.  Thanks.  Future work, indeed!
 
 ## R3: Missing eCensor elaboration in Agda formalization
 
