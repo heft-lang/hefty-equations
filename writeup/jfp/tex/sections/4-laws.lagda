@@ -63,64 +63,80 @@ swap-⊕-↔ = record
 \section{Modular Reasoning for Higher-Order Effects}
 \label{sec:modular-reasoning}
 
-A key aspect of algebraic effects and handlers is the ability to state and prove
-\emph{equational laws} that characterize correct implementations of effectful
-operations. Usually, an effect comes equipped with multiple laws that govern its
-intended behavior.  An effect and its laws constitute an \emph{effect
-theory}~\citep{DBLP:journals/tcs/HylandPP06,Plotkin2002notions,PlotkinP03,DBLP:journals/pacmpl/YangW21}. This
-concept of effect theory extends to \emph{higher-order effect theories}, which
-describe the intended behavior of higher-order effects. In this section, we
-first discuss how to define theories for algebraic effects in Agda by adapting
-the exposition of \citet{DBLP:journals/pacmpl/YangW21}, and show how correctness
-of implementations with respect to a given theory can be stated and proved.  We
-then extend this reasoning infrastructure to higher-order effects, allowing for
-modular reasoning about the correctness of elaborations of higher-order effects.
+A key aspect of algebraic effects and handlers is the ability to state
+and prove \emph{equational laws} as part of an effect's specification,
+that characterize correct implementations. Usually, an effect is
+associated with several laws that govern its behavior. An effect,
+together with its laws, constitutes an \emph{effect
+theory}~\citep{DBLP:journals/tcs/HylandPP06,Plotkin2002notions,PlotkinP03,DBLP:journals/pacmpl/YangW21}.
+Equational reasoning within an effect theory can be used to derive
+syntactic equalities between effectful programs without appealing to
+the effect's implementation. Such equalities remain true in the
+semantic domain for any handler that respects the laws of the theory.
 
-Let us consider the state effect as an example, which comprises the $\af{get}$
-and $\af{put}$ operations. With the state effect, we typically associate a set
-of equations (or laws) that specify how its implementations ought to behave. One
-such law is the \emph{get-get} law, which captures the intuition that the state
-returned by two subsequent $\af{get}$ operations does not change if we do not use
-the $\af{put}$ operation in between:
+The concept of effect theory extends to \emph{higher-order effect
+theories}, which describe the intended behavior of higher-order
+effects. In this section, we first discuss how to define theories for
+algebraic effects in Agda by adapting the exposition of
+\citet{DBLP:journals/pacmpl/YangW21}, and show how correctness of
+implementations with respect to a given theory can be stated and
+proved.  We then extend this reasoning infrastructure to higher-order
+effects, which allows for the derivation of syntactic equalities
+between programs with higher-order effects and modular reasoning about
+the correctness of elaborations. 
+
+\subsection{Effect Theories and Implementation Correctness} 
+
+Let us consider the state effect as an example, which comprises the
+$\af{get}$ and $\af{put}$ operations. With the state effect, we
+typically associate a set of equations (or laws) that specify how its
+implementations ought to behave. One such law is the \emph{get-get}
+law, which captures the intuition that the state returned by two
+subsequent $\af{get}$ operations does not change if we do not use the
+$\af{put}$ operation in between:
 %
 \begin{equation*}
   \af{‵get}\ 𝓑\ λ s →\ \af{‵get}\ 𝓑\ λ s′ →\ k\ s\ s′\ \equiv\ \af{‵get}\ 𝓑\ λ s →\ k\ s\ s
 \end{equation*}
 %
-We can define equational laws for higher-order effects in a similar fashion. For
-example, the following \emph{catch-return} law for the
-$\af{‵catch}$ operation of the $\af{Catch}$ effect, stating that catching
-exceptions in a computation that only returns a value does nothing.
+We can define equational laws for higher-order effects in a similar
+fashion. For example, the following \emph{catch-return} law for the
+$\af{‵catch}$ operation of the $\af{Catch}$ effect, stating that
+catching exceptions in a computation that only returns a value does
+nothing.
 %
 \begin{equation*}
   \af{‵catch}~(\ac{pure}~\ab{x})~\ab{m}\ \equiv\ \ac{pure}~\ab{x}
 \end{equation*}
 
-Correctness of an implementation of an algebraic effect with respect to a given
-theory is defined by comparing the implementations of programs that are equal
-under that theory. That is, if we can show that two programs are equal using the
-equations of a theory for its effects, handling the effects should produce equal
-results. For instance, a way to implement the state effect is by mapping
-programs to functions of the form $\ab{S}~\to~\ab{S}×\ab{A}$. Such an
-implementation would be correct if programs that are equal with respect to a
-theory of the state effect are mapped to functions that give the same value and
-output state for every input state.
+Correctness of an implementation of an algebraic effect with respect
+to a given theory is defined by comparing the implementations of
+programs that are equal under that theory. That is, if we can show
+that two programs are equal using the equations of a theory for its
+effects, handling the effects should produce equal results. For
+instance, a way to implement the state effect is by mapping programs
+to functions of the form $\ab{S}~\to~\ab{S}×\ab{A}$. Such an
+implementation would be correct if programs that are equal with
+respect to a theory of the state effect are mapped to functions that
+give the same value and output state for every input state.
 
-For higher-order effects, correctness is defined in a similar manner. However,
-since we define higher-order effects by elaborating them into algebraic effects,
-correctness of elaborations with respect to a higher-order effect theory is
-defined by comparing the elaborated programs. Crucially, the elaborated programs
-do not have to be syntactically equal, but rather we should be able to prove
-them equal using a theory of the algebraic effects used to implement a
+For higher-order effects, correctness is defined in a similar
+manner. However, since we define higher-order effects by elaborating
+them into algebraic effects, correctness of elaborations with respect
+to a higher-order effect theory is defined by comparing the elaborated
+programs. Crucially, the elaborated programs do not have to be
+syntactically equal, but rather we should be able to prove them equal
+using a theory of the algebraic effects used to implement a
 higher-order effect.
 
-Effect theories are known to be closed under the co-product of effects, by
-combining the equations into a new theory that contains all equations for both
+Effect theories are known to be closed under the co-product of
+effects, by combining the equations into a new theory that contains
+all equations for both
 effects~\citep{DBLP:journals/tcs/HylandPP06}. Similarly, theories of
-higher-order effects are closed under sums of higher-order effect signatures. In
-\cref{sec:elaboration-correctness}, we show that composing two elaborations
-preserves their correctness, with respect to the sum of their respective
-theories.
+higher-order effects are closed under sums of higher-order effect
+signatures. In \cref{sec:elaboration-correctness}, we show that
+composing two elaborations preserves their correctness, with respect
+to the sum of their respective theories.
 
 \subsection{Theories of Algebraic Effects}
 \label{sec:theories-of-alg-eff}
