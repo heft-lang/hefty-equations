@@ -41,7 +41,7 @@ believe that most of the definitions shown in the paper could be
 supported using other models of simultaneous unfolding. To some
 extent, choosing a mechanism for simulteneous unfolding is an
 implementation detail affecting mostly programming ergonomics, and
-orthogonal to the contribution of showing that such approach support
+orthogonal to the contribution of showing that such approaches support
 composition of syntax, semantics, and proofs. We opt for an initial
 encoding because it follows the tradition of implementing (e.g., in
 Haskell) and mechanizing (e.g., in Agda, Coq, or Idris) algebraic
