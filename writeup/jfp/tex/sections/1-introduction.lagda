@@ -255,7 +255,7 @@ The term $c$ represents the code of the handler case, which must have type $C~!~
 % The only way for $c$ to have this type is if (1) $c = \Return~{w}$, for some $w : C$; (2) if $c$ calls the continuation $k$; or (3) if the operation argument type $v$ has type  $A = () \to \Typing{C}{Δ′}$.
 % Here, option (3) seems most promising for encoding higher-order effects.
 %
-Observe how it is only the continuation $k$ that has an effect type.
+Observe how it is only the continuation $k$ that has a computation type.
 
 
  A consequence of this observation is that we can only define and modularly handle higher-order operations whose computation parameters are \emph{continuation-like}.

@@ -284,7 +284,7 @@ We can also define the following function, which uses a \ab{Δ₁}~\ad{≲}~\ab{
 %
 
 Furthermore, we can freely coerce the operations of a computation from one
-effect row type to a different effect row type:\footnote{The notation \af{∀[\_]} is from the Agda Standard library, and is defined as follows: \af{∀[}~\ab{P}~\af{]}~\as{=~∀}~\ab{x}~\as{→}~\ab{P~x}.}
+effect row to a different effect row:\footnote{The notation \af{∀[\_]} is from the Agda Standard library, and is defined as follows: \af{∀[}~\ab{P}~\af{]}~\as{=~∀}~\ab{x}~\as{→}~\ab{P~x}.}
 \footnote{We can think
 of the \af{hmap-free} function as a ``higher-order'' map for \ad{Free}: given a natural
 transformation between (the extension of) signatures, we can can transform the
@@ -785,7 +785,7 @@ does, \ab{m₂} is run.
 
 As observed by \citet{WuSH14}, programs that use elaborations such as \af{catch}
 are less modular than programs that only use plain algebraic operations.  In
-particular, the effect row type of computations no longer represents the
+particular, the effect row of computations no longer represents the
 interface of operations that we use to write programs, since the \ad{catch}
 elaboration is not represented in the effect type at all.  So we have to rely on
 different machinery if we want to refactor, optimize, or change the semantics of

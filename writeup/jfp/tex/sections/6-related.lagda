@@ -75,7 +75,7 @@ Nevertheless, the encoding may suffice for applications in practice.
 
 Whereas most languages (e.g., Eff, Koka, Flix, and Effekt) use so-called \emph{deep handlers}, Frank~\citep{LindleyMM17} uses \emph{shallow handlers}~\citep{HillerstromL18}.
 The difference between shallow effect and deep effect handlers is in how continuations are typed.
-A deep handler of type $\Typing{X}{Δ} \Rightarrow \Typing{C}{Δ′}$ is typed as follows, where $\Op{op} : A \to B$ is an effect of type $Δ$:
+A deep handler of type $\Typing{X}{Δ} \Rightarrow \Typing{C}{Δ′}$ is typed as follows, where $\Op{op} : A \to B$ is an operation of the effect row $Δ$:
 %
 \begin{equation*}
 \Handler~\{~\cdots~(\Op{op}~\underbrace{v}_{A};\underbrace{k}_{B~\to~\Typing{C}{Δ′}})~\mapsto~\underbrace{c}_{\Typing{C}{Δ′}},~\cdots\}
