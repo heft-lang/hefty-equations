@@ -811,10 +811,10 @@ equivalent for all inputs.
 \begin{code}
      ≅-cong   :     (op : Opᴴ H₂)
                  →  (k₁ k₂ : Retᴴ H₂ op → Hefty H₂ A)
-                 →  (s₁ s₂ : (ψ : Fork H₂ op) → Hefty H₂ (Ty H₂ ψ))
+                 →  (ψ₁ ψ₂ : (φ : Fork H₂ op) → Hefty H₂ (Ty H₂ φ))
                  →  (∀ {x} → k₁ x ≅⟨ Th ⟩ k₂ x)
-                 →  (∀ {ψ} → s₁ ψ ≅⟨ Th ⟩ s₂ ψ)  
-                 →  impure (op , k₁ , s₁) ≅⟨ Th ⟩ impure ( op , k₂ , s₂ )
+                 →  (∀ {φ} → ψ₁ φ ≅⟨ Th ⟩ ψ₂ φ)  
+                 →  impure (op , k₁ , ψ₁) ≅⟨ Th ⟩ impure ( op , k₂ , ψ₂ )
 \end{code}
 %
 Finally, we include a constructor that equates two programs using an equation of

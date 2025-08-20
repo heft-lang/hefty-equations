@@ -134,7 +134,7 @@ The following record provides this generalization:
     field  Opᴴ     : Set                             -- As before
            Retᴴ    : Opᴴ → Set                       -- As before
            Fork    : Opᴴ → Set                       -- New
-           Ty      : {op : Opᴴ} (ψ : Fork op) → Set  -- New
+           Ty      : {op : Opᴴ} (φ : Fork op) → Set  -- New
 \end{code}
 %
 The set of operations is still given by a type field (\aF{Opᴴ}), and each operation still has a return type (\aF{Retᴴ}).
@@ -166,18 +166,18 @@ The extension of higher-order effect signatures implements the intuition explain
 \begin{code}
   ⟦_⟧ᴴ : Effectᴴ → (Set → Set) → Set → Set
   ⟦ H ⟧ᴴ M X =
-    Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((ψ : Fork H op) → M (Ty H ψ))
+    Σ (Opᴴ H) λ op → (Retᴴ H op → M X) × ((φ : Fork H op) → M (Ty H φ))
 \end{code}
 \begin{code}[hide]
   map-sigᴴ : ∀ {H F G} → ∀[ F ⇒ G ] → ∀[ ⟦ H ⟧ᴴ F ⇒ ⟦ H ⟧ᴴ G ]
-  map-sigᴴ θ (op , k , s) = op , θ ∘ k , θ ∘ s 
+  map-sigᴴ θ (op , k , ψ) = op , θ ∘ k , θ ∘ ψ
 \end{code}
 %
 Let us unpack this definition.
 %
 \begin{equation*}
 % \af{⟦}~\ab{H}~\af{⟧}~\overbrace{\ab{M}}^{computation types}~\ab{X}~\as{=}~
-  \underbrace{\ad{Σ}~\as{(}~\aF{Opᴴ}~\ab{H}\as{)~λ}~\ab{op}~\as{→}}_{(1)}\as{~(}\underbrace{\aF{Retᴴ}~\ab{H}~\ab{op}~\as{→~}\ab{M}~\ab{X}}_{(2)}\as{)}~\ad{×}~\as{(}\underbrace{\as{(}\ab{ψ}~\as{:}~\aF{Fork}~\ab{H}~\ab{op}\as{)}}_{(3)}\as{~→}~\underbrace{\ab{M}~\as{(}\aF{Ty}~\ab{H}~\ab{ψ}\as{)}}_{(4)}\as{)}
+  \underbrace{\ad{Σ}~\as{(}~\aF{Opᴴ}~\ab{H}\as{)~λ}~\ab{op}~\as{→}}_{(1)}\as{~(}\underbrace{\aF{Retᴴ}~\ab{H}~\ab{op}~\as{→~}\ab{M}~\ab{X}}_{(2)}\as{)}~\ad{×}~\as{(}\underbrace{\as{(}\ab{φ}~\as{:}~\aF{Fork}~\ab{H}~\ab{op}\as{)}}_{(3)}\as{~→}~\underbrace{\ab{M}~\as{(}\aF{Ty}~\ab{H}~\ab{φ}\as{)}}_{(4)}\as{)}
 \end{equation*}
 %
 The extension of a higher-order signature functor is given by (1) the sum of operations of the signature, where each operation has (2) a continuation (of type \ab{M}~\ab{X}) that expects to be passed a value of the operation's return type, and (3) a set of forks where each fork is (4) a computation that returns the expected type for each fork.
@@ -205,8 +205,8 @@ Using the higher-order signature functor and its extension above, our generalize
   Opᴴ (H₁ ∔ H₂) = Opᴴ H₁ ⊎ Opᴴ H₂
   Retᴴ (H₁ ∔ H₂) = [ Retᴴ H₁ , Retᴴ H₂ ]
   Fork (H₁ ∔ H₂) = [ Fork H₁ , Fork H₂ ]
-  Ty (H₁ ∔ H₂) {inj₁ _} ψ = Ty H₁ ψ
-  Ty (H₁ ∔ H₂) {inj₂ _} ψ = Ty H₂ ψ
+  Ty (H₁ ∔ H₂) {inj₁ _} φ = Ty H₁ φ
+  Ty (H₁ ∔ H₂) {inj₂ _} φ = Ty H₂ φ
 \end{code}
 %
 This type of \ad{Hefty} trees can be used to define higher-order operations with
@@ -262,7 +262,7 @@ define monadic bind as a recursive function:
 \begin{code}
   _𝓑_ : Hefty H A → (A → Hefty H B) → Hefty H B
   pure x               𝓑 g = g x
-  impure (op , k , s)  𝓑 g = impure (op , (_𝓑 g) ∘ k , s)
+  impure (op , k , ψ)  𝓑 g = impure (op , (_𝓑 g) ∘ k , ψ)
 \end{code}
 \begin{code}[hide]
   _>>_ : Hefty H A → Hefty H B → Hefty H B
@@ -270,7 +270,7 @@ define monadic bind as a recursive function:
 
   hmap : (A → B) → Hefty H A → Hefty H B
   hmap f (pure x)               = pure (f x)
-  hmap f (impure (op , k , s))  = impure (op , hmap f ∘ k , s)
+  hmap f (impure (op , k , ψ))  = impure (op , hmap f ∘ k , ψ)
 \end{code}
 %
 The bind behaves similarly to the bind for \ad{Free}; i.e., \ab{m}~\af{𝓑}~\ab{g}
@@ -327,7 +327,7 @@ the following smart constructor lets us represent any algebraic operation as a
   open _∙_≋_
 
   injᴴˡ : ∀ {M X} → ⟦ H₁ ⟧ᴴ M X → ⟦ H₁ ∔ H₂ ⟧ᴴ M X
-  injᴴˡ (op , k , s) = inj₁ op , k , s
+  injᴴˡ (op , k , ψ) = inj₁ op , k , ψ
   
   injᴴ : ⦃ H₁ ≲ᴴ H₂ ⦄ → ∀ {M X} → ⟦ H₁ ⟧ᴴ M X → ⟦ H₂ ⟧ᴴ M X  
   injᴴ {H₂ = _} ⦃ w ⦄ {M} {X} x = w .proj₂ .reorder {M = M} {X = X} .Inverse.to (injᴴˡ {M = M} {X = X} x)
@@ -534,7 +534,7 @@ end, we will use the following notion of hefty algebra (\ad{Algᴴ}) and fold (o
 \begin{code}
   cataᴴ : (∀ {A} → A → F A) → Algᴴ H F → Hefty H A → F A
   cataᴴ g a (pure x)               = g x
-  cataᴴ g a (impure (op , k , s))  = alg a (op , ((cataᴴ g a ∘ k) , (cataᴴ g a ∘ s)))
+  cataᴴ g a (impure (op , k , ψ))  = alg a (op , ((cataᴴ g a ∘ k) , (cataᴴ g a ∘ ψ)))
 \end{code}
 %
 Here \ad{Algᴴ} defines how to transform an \ac{impure} node of type
@@ -548,8 +548,8 @@ signature sums:
 \end{code}
 \begin{code}
   _⋎_ : Algᴴ H₁ F → Algᴴ H₂ F → Algᴴ (H₁ ∔ H₂) F
-  alg (A₁ ⋎ A₂) (inj₁ op , k , s) = alg A₁ (op , k , s)
-  alg (A₁ ⋎ A₂) (inj₂ op , k , s) = alg A₂ (op , k , s)
+  alg (A₁ ⋎ A₂) (inj₁ op , k , ψ) = alg A₁ (op , k , ψ)
+  alg (A₁ ⋎ A₂) (inj₂ op , k , ψ) = alg A₂ (op , k , ψ)
 \end{code}
 %
 By defining elaborations as hefty algebras (below) we can compose them using \ad{\_⋎\_}.
@@ -569,8 +569,7 @@ algebraic effects and handlers:
   elaborate = cataᴴ pure
 \end{code}
 
-\paragraph*{Example.}
-The elaboration below is analogous to the non-modular \af{catch} elaboration discussed in \cref{sec:higher-order-effects} and in the beginning of this subsection:
+
 \begin{code}[hide]
 module ElabModule where
   open FreeModule hiding (_𝓑_; _>>_)
@@ -589,7 +588,7 @@ module ElabModule where
   H₁ ↦ᴴ H₂ = ∀ {F} → ∀[ ⟦ H₁ ⟧ᴴ F ⇒ ⟦ H₂ ⟧ᴴ F ]  
 
   injᴴʳ : H₂ ↦ᴴ (H₁ ∔ H₂)
-  injᴴʳ (c , k , s) = (inj₂ c , k , s)
+  injᴴʳ (c , k , ψ) = (inj₂ c , k , ψ)
 
   record _⇿ᴴ_ (H₁ H₂ : Effectᴴ) : Set₁ where
     field
@@ -620,12 +619,12 @@ module ElabModule where
     }
 
   swap-sig : (H₁ ∔ H₂) ↦ᴴ (H₂ ∔ H₁)
-  swap-sig (inj₁ c , k , s) = (inj₂ c , k , s)
-  swap-sig (inj₂ c , k , s) = (inj₁ c , k , s)
+  swap-sig (inj₁ c , k , ψ) = (inj₂ c , k , ψ)
+  swap-sig (inj₂ c , k , ψ) = (inj₁ c , k , ψ)
 
   swap-sig-involutive : {A : Set} → (x : ⟦ H₁ ∔ H₂ ⟧ᴴ F A) → swap-sig {x = A} (swap-sig {x = A} x) ≡ x
-  swap-sig-involutive (inj₁ c , k , s) = refl
-  swap-sig-involutive (inj₂ y , k , s) = refl
+  swap-sig-involutive (inj₁ c , k , ψ) = refl
+  swap-sig-involutive (inj₂ y , k , ψ) = refl
 
   swap-sig-⇿ᴴ : (H₁ ∔ H₂) ⇿ᴴ (H₂ ∔ H₁)
   equivalenceᴴ swap-sig-⇿ᴴ F X = record
@@ -637,14 +636,14 @@ module ElabModule where
     }
 
   assoc-sigʳ : ((H₁ ∔ H₂) ∔ H₃) ↦ᴴ (H₁ ∔ (H₂ ∔ H₃))  
-  assoc-sigʳ (inj₁ (inj₁ c) , k , s) = (inj₁ c , k , s)
-  assoc-sigʳ (inj₁ (inj₂ c) , k , s) = (inj₂ (inj₁ c) , k , s)
-  assoc-sigʳ (inj₂ c        , k , s) = (inj₂ (inj₂ c) , k , s)
+  assoc-sigʳ (inj₁ (inj₁ c) , k , ψ) = (inj₁ c , k , ψ)
+  assoc-sigʳ (inj₁ (inj₂ c) , k , ψ) = (inj₂ (inj₁ c) , k , ψ)
+  assoc-sigʳ (inj₂ c        , k , ψ) = (inj₂ (inj₂ c) , k , ψ)
 
   assoc-sigˡ : (H₁ ∔ (H₂ ∔ H₃)) ↦ᴴ ((H₁ ∔ H₂) ∔ H₃)
-  assoc-sigˡ (inj₁ c        , k , s) = (inj₁ (inj₁ c) , k , s)
-  assoc-sigˡ (inj₂ (inj₁ c) , k , s) = (inj₁ (inj₂ c) , k , s)
-  assoc-sigˡ (inj₂ (inj₂ c) , k , s) = (inj₂ c , k , s)
+  assoc-sigˡ (inj₁ c        , k , ψ) = (inj₁ (inj₁ c) , k , ψ)
+  assoc-sigˡ (inj₂ (inj₁ c) , k , ψ) = (inj₁ (inj₂ c) , k , ψ)
+  assoc-sigˡ (inj₂ (inj₂ c) , k , ψ) = (inj₂ c , k , ψ)
 
   assoc-sig-⇿ᴴ : ((H₁ ∔ H₂) ∔ H₃) ⇿ᴴ (H₁ ∔ (H₂ ∔ H₃)) 
   equivalenceᴴ assoc-sig-⇿ᴴ F X = record
@@ -675,20 +674,20 @@ module ElabModule where
     }
     where
       to′ : (H₁ ∔ H) ↦ᴴ (H₂ ∔ H)
-      to′ {F = F} {X} (inj₁ c , k , s) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .to (c , k , s))
-      to′ (inj₂ c , k , s) = (inj₂ c , k , s)
+      to′ {F = F} {X} (inj₁ c , k , ψ) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .to (c , k , ψ))
+      to′ (inj₂ c , k , ψ) = (inj₂ c , k , ψ)
 
       from′ : (H₂ ∔ H) ↦ᴴ (H₁ ∔ H)
-      from′ {F = F} {X} (inj₁ c , k , s) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .from (c , k , s))
-      from′ (inj₂ c , k , s) = (inj₂ c , k , s)
+      from′ {F = F} {X} (inj₁ c , k , ψ) = injᴴˡ {X = X} (eq .equivalenceᴴ F X .from (c , k , ψ))
+      from′ (inj₂ c , k , ψ) = (inj₂ c , k , ψ)
 
       cong-inverseˡ : ∀ {A} (x : ⟦ H₂ ∔ H ⟧ᴴ F A) → to′ {x = A} (from′ {x = A} x) ≡ x 
-      cong-inverseˡ {A = A} (inj₁ c , k , s) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
-      cong-inverseˡ (inj₂ c , k , s) = refl
+      cong-inverseˡ {A = A} (inj₁ c , k , ψ) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
+      cong-inverseˡ (inj₂ c , k , ψ) = refl
 
       cong-inverseʳ : ∀ {A} (x : ⟦ H₁ ∔ H ⟧ᴴ F A) → from′ {x = A} (to′ {x = A} x) ≡ x
-      cong-inverseʳ {A = A} (inj₁ c , k , s) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
-      cong-inverseʳ (inj₂ c , k , s) = refl
+      cong-inverseʳ {A = A} (inj₁ c , k , ψ) = cong (injᴴˡ {X = A}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
+      cong-inverseʳ (inj₂ c , k , ψ) = refl
 
 
   ⊕ᴴ-congʳ : H₁ ⇿ᴴ H₂ → (H ∔ H₁) ⇿ᴴ (H ∔ H₂)
@@ -701,20 +700,20 @@ module ElabModule where
     }
     where
       to′ : (H ∔ H₁) ↦ᴴ (H ∔ H₂)
-      to′ (inj₁ c , k , s) = (inj₁ c , k , s) 
-      to′ {F = F} (inj₂ c , k , s) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .to (c , k , s))
+      to′ (inj₁ c , k , ψ) = (inj₁ c , k , ψ) 
+      to′ {F = F} (inj₂ c , k , ψ) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .to (c , k , ψ))
 
       from′ : (H ∔ H₂) ↦ᴴ (H ∔ H₁)
-      from′ (inj₁ c , k , s) = (inj₁ c , k , s) 
-      from′ {F = F} (inj₂ c , k , s) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .from (c , k , s))
+      from′ (inj₁ c , k , ψ) = (inj₁ c , k , ψ) 
+      from′ {F = F} (inj₂ c , k , ψ) = injᴴʳ {F = F} (eq .equivalenceᴴ F _ .from (c , k , ψ))
 
       cong-inverseˡ : ∀ {A} (x : ⟦ H ∔ H₂ ⟧ᴴ F A) → to′ (from′ {F = F} x) ≡ x 
-      cong-inverseˡ (inj₁ c , k , s) = refl  
-      cong-inverseˡ {A = A} (inj₂ c , k , s) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
+      cong-inverseˡ (inj₁ c , k , ψ) = refl  
+      cong-inverseˡ {A = A} (inj₂ c , k , ψ) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ A .Inverse.inverse .proj₁ refl)
 
       cong-inverseʳ : ∀ {A} (x : ⟦ H ∔ H₁ ⟧ᴴ F A)  → from′ (to′ {F = F} x) ≡ x
-      cong-inverseʳ (inj₁ c , k , s) = refl
-      cong-inverseʳ (inj₂ c , k , s) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
+      cong-inverseʳ (inj₁ c , k , ψ) = refl
+      cong-inverseʳ (inj₂ c , k , ψ) = cong (injᴴʳ {F = F}) (eq .equivalenceᴴ _ _ .Inverse.inverse .proj₂ refl)
 
   ≲ᴴ-left : H ≲ᴴ (H ∔ H′)
   ≲ᴴ-left = _ , (record { reorder = ↔-id _ })
@@ -732,24 +731,72 @@ module ElabModule where
     eNil : Elaboration (Lift Nil) Δ
     alg eNil ()
 \end{code}
+
+
+\begin{example}[Elaboration for Output Censoring]
+Let us return to the example from the introduction.
+Here is the elaboration of the \ad{Censor} effect from \cref{fig:censor}.
+%
+\vspace{\abovedisplayskip}\noindent
+{\AgdaNoSpaceAroundCode{}
 \begin{code}
-    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+    eCensor : ⦃ w : Output ≲ Δ ⦄ → Elaboration Censor Δ
+\end{code}%
+\begin{code}[hide]
+    alg (eCensor ⦃ w ⦄) (censor f , k , m) = do
+      (x , s) ← (♯ ((given hOut handle m tt) tt))
+      ‵out (f s)
+      k x
+      where _>>=_ = _𝓑_
+            _>>_ : Free Δ A → Free Δ B → Free Δ B
+            _>>_ = λ x m → x 𝓑 λ _ → m
+            instance _ = _ , ∙-comm (w .proj₂)
+
+    module _ ⦃ w : Output ≲ Δ ⦄ where
+      eCensor⅋ : Elaboration Censor Δ
+\end{code}%
+\begin{code}
+      alg eCensor⅋ (censor f , k , ψ) = do
+        (x , s) ← ♯ ((given hOut handle ψ tt) tt)
+        ‵out (f s)
+        k x
 \end{code}
 \begin{code}[hide]
-    alg (eCatch ⦃ w = w ⦄) (catch t , k , s) = 
-      (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
-      where instance _ = _ , ∙-comm (w .proj₂)
+        where _>>=_ = _𝓑_
+              _>>_ : Free Δ A → Free Δ B → Free Δ B
+              _>>_ = λ x m → x 𝓑 λ _ → m
+              instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
+}%
+\par\addvspace{\belowdisplayskip}\noindent
+This elaboration matches the $\Id{eCensor}$ elaboration discussed in \cref{sec:solving-the-modularity-problem}.
+\end{example}
+
+\begin{example}[Elaboration for Exception Catching]
+We can also elaborate exception catching analogously to the non-modular \af{catch} elaboration discussed in \cref{sec:higher-order-effects} and in the beginning of this subsection:
+\vspace{\abovedisplayskip}\noindent
+{\AgdaNoSpaceAroundCode{}
 \begin{code}
+    eCatch : ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ →  Elaboration Catch Δ
+\end{code}%
+\begin{code}[hide]
+    alg (eCatch ⦃ w = w ⦄) (catch t , k , ψ) = 
+      (♯ ((given hThrow handle ψ true) tt)) 𝓑 maybe k (ψ false 𝓑 k)
+      where instance _ = _ , ∙-comm (w .proj₂)
+\end{code}%
+\begin{code}[hide]
     module _ ⦃ u : Univ ⦄ ⦃ w : Throw ≲ Δ ⦄ where
       eCatch⅋ : Elaboration Catch Δ
-\end{code}
+\end{code}%
 \begin{code}
-      alg eCatch⅋ (catch t , k , s) = 
-        (♯ ((given hThrow handle s true) tt)) 𝓑 maybe k (s false 𝓑 k)
+      alg eCatch⅋ (catch t , k , ψ) = 
+        (♯ ((given hThrow handle ψ true) tt)) 𝓑 maybe k (ψ false 𝓑 k)
+\end{code}%
+\begin{code}[hide]
         where instance _ = _ , ∙-comm (w .proj₂)
 \end{code}
-%
+}%
+\par\addvspace{\belowdisplayskip}\noindent
 The elaboration is essentially the same as its non-modular counterpart, except
 that it now uses the universe of types encoding discussed in
 \cref{sec:hefty-monadic-bind}, and that it now transforms syntactic
@@ -757,7 +804,7 @@ representations of higher-order operations instead.
 %
 \begin{code}[hide]
   eLift : ⦃ Δ₁ ≲ Δ₂ ⦄ → Elaboration (Lift Δ₁) Δ₂
-  alg (eLift ⦃ w ⦄) (op , k , s) = impure (inj (op , k))
+  alg (eLift ⦃ w ⦄) (op , k , ψ) = impure (inj (op , k))
 
   module Transact where
     open HeftyModule using (_𝓑_; _>>_)
@@ -823,7 +870,10 @@ for \ad{Lift} and \ad{Nil}, we can elaborate and run the program:
       test-transact = refl
 \end{code}
 %
-\noindent The program above uses a so-called \emph{global} interpretation of
+\label{ex:elab-catch}
+\end{example}
+
+\noindent The program in \cref{ex:elab-catch} uses a so-called \emph{global} interpretation of
 state, where the \ac{put} operation in the ``try block'' of \ad{‵catch} causes
 the state to be updated globally.  In \cref{sec:optional-transactional} we
 return to this example and show how we can modularly change the elaboration of
@@ -915,7 +965,6 @@ elaboration can then be handled using standard algebraic effect handlers; i.e.:
 \tag{\S}
 \end{equation*}
 %
-\todo{Reviewer 3 wants more explanation.} 
 
 The algebraic effect handlers $h_1,\ldots,h_k$ in (\S) serve the same purpose
 as the scoped effect handlers $h_1',\ldots,h_n'$ in ($\dagger$); namely, to

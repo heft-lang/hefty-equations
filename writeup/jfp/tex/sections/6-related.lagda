@@ -67,11 +67,13 @@ effects and handlers, which might provide benefits for verification.  We leave
 this as a question to explore in future work.
 
 Existing languages for algebraic effects and handlers, such as
-Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17}, or Flix~\citep{LutzeM24} offer indirect support for higher-order effects, via the encoding discussed in \cref{sec:wa1}.
-As also discussed in \cref{sec:wa1}, this encoding suffers from a modularity problem.
+Eff~\citep{BauerP15}, Frank~\citep{LindleyMM17}, Koka~\citep{Leijen17},
+Effekt~\citep{BrachthauserSO20}, or Flix~\citep{LutzeM24} offer indirect support
+for higher-order effects, via the encoding discussed in \cref{sec:wa1}.  As also
+discussed in \cref{sec:wa1}, this encoding suffers from a modularity problem.
 Nevertheless, the encoding may suffice for applications in practice.
 
-Whereas Koka and Flix use so-called \emph{deep handlers}, Frank~\citep{LindleyMM17} uses \emph{shallow handlers}~\citep{HillerstromL18}.
+Whereas most languages (e.g., Eff, Koka, Flix, and Effekt) use so-called \emph{deep handlers}, Frank~\citep{LindleyMM17} uses \emph{shallow handlers}~\citep{HillerstromL18}.
 The difference between shallow effect and deep effect handlers is in how continuations are typed.
 A deep handler of type $\Typing{X}{Δ,Δ′} \Rightarrow \Typing{C}{Δ′}$ is typed as follows, where $\Op{op} : A \to B$ is an effect of type $Δ$:
 %

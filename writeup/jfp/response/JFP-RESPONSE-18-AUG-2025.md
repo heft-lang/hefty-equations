@@ -1,142 +1,121 @@
 # Top-level response
 
-Dear Sam, 
+Dear Sam,
 
-Thank you, and the reviewers, for for your elaborate and constructive
-feedback on the paper. 
+Thank you, and the reviewers, for your elaborate and constructive
+feedback on the paper.
 
 We have revised the paper based on your suggestions, primarily
-focussing on developing a more clear explanation of the paper's scope
-and contributions, and accurately positioning it relative to
-alternative solutions and related work pointed out by you and the
-reviewers. We summarize these changes below.
+focusing on clarifying the paper's scope and contributions, and
+accurately positioning it relative to alternative solutions and
+related work pointed out by you and the reviewers.
 
-## Revision of the introduction
+Here is a high-level overview of the main changes:
 
-We have revised the introduction to clarify the modularity problem
-that we address.  We have also nuanced the discussion of how standard
-algebraic effects and handlers (Eff, Koka, Frank, etc.)  support
-higher-order effects. We have added examples where we can, in an
-effort to make the discussion as concrete as possible.
- 
-## Relation to existign mechanisms for simultaneous unfolding (R2)
- 
-The new introduction (e.g., the last paragraph before Section 1.1)
+* Major rewrite of the introduction.
+
+* Related work has been adjusted based on feedback from you and the
+  reviewers.
+
+* Improvements to the narrative throughout, based on suggestions by
+  the reviewers, and to clarify the scope and focus of our paper.
+
+* Fixed various typos and other issues pointed out by the reviewers.
+
+Below we summarize how these changes relate to the main concerns from
+the reviews.
+
+
+## R2: Relation to existing mechanisms for simultaneous unfolding
+
+The new introduction (e.g., the last paragraph before Section 1.1) now
 positions our contribution as providing a semantics of simultaneous
 unfolding (which we refer to as "overloading" in the introduction, for
 lack of a better term). Simultaneous unfolding, implemented as
 elaborations from higher-order to first-order effect trees, supports
 composing effect theories on a par with, and in a similar tradition
 as, algebraic effects and handlers (S5).
-  
-As we elaborate in related work, we believe that most of the
-definitions shown in the paper could be supported using other models
-of simultaneous unfolding. To some extent, choosing a mechanism for
-simulteneous unfolding is an implementation detail affecting mostly
-programming ergonomics, and orthogonal to the contribution of showing
-that such approaches support composition of syntax, semantics, and
-proofs. We opt for an initial encoding because it follows the
-tradition of implementing (e.g., in Haskell) and mechanizing (e.g., in
-Agda, Coq, and Idris) algebraic effects and handlers using initial
-encodings, and because initial encodings support inductive reasoning
-which we expect will be useful for future applications of our work.
 
-## Better explanation of existing support for higher-order operations in algebraic effects and handlers (R3)
-  
-In the new subsection 1.2.2 we explain how algebraic effects and
-handlers support higher-order operations already, and elaborate on
+As we now explain in the newly revised related work section, we
+believe that most of the definitions shown in the paper could be
+supported using other models of simultaneous unfolding. To some
+extent, choosing a mechanism for simulteneous unfolding is an
+implementation detail affecting mostly programming ergonomics, and
+orthogonal to the contribution of showing that such approach support
+composition of syntax, semantics, and proofs. We opt for an initial
+encoding because it follows the tradition of implementing (e.g., in
+Haskell) and mechanizing (e.g., in Agda, Coq, or Idris) algebraic
+effects and handlers using initial encodings, and because initial
+encodings support inductive reasoning which we expect will be useful
+for future applications of our work.
+
+## R3: Better explanation of existing support for higher-order operations in algebraic effects and handlers
+
+In the newly added subsection 1.2.2 we explain how algebraic effects
+and handlers support higher-order operations already, and elaborate on
 explain in what sense and under which circumstances this support
-provides unsatisfactory framework for implementing and reasoning about
-higher-order operations.
+provides an unsatisfactory framework for implementing and reasoning
+about higher-order operations.
 
-## Improvements to Related Work section (all) 
+## R1,R2,R3: Improvements to Related Work section
 
-We have made several improvements to the related work section, based
-on your and the reviewers' feedback, as follows: 
+We have improved the related work section based on your feedback, as
+follows.  We have:
 
-* we revised the paragraphs about Matache et al.'s work on scoped
-  effects as parameterized algebraic theories,
+* Revised the paragraphs about Matache et al.'s work on scoped effects
+  as parameterized algebraic theories.
 
-* we refined the explanation of final tagless to be more precise about
-  how and why the paper uses initial encodings, and 
+* Refined the explanation of final tagless to be more precise about
+  how and why the paper uses initial encodings.
 
-* we added a paragraph on shallow handlers. 
+* Added a paragraph on shallow handlers.
 
-## Validity/disproving of laws (R3) 
+* Improved the positioning of our work w.r.t. existing languages with
+  support for algebraic effects and handlers (Eff, Koka, Frank, Flix,
+  Effekt).
 
-Reviewer 3 inquires, in both their reviews, about disproving of
-equations, saying that it should be possible e.g. to disprove a law
-like `put s >> put s' ≡ put s`. 
+## R3: Validity/disproving of laws
 
-While this is an interesting point, it somewhat conflates the
-different levels of reasoning involved. In short, the reasoning
-infrastructure developed in S5 is there to help derive *syntactic*
-equalities between effectful programs under a given theory;
-"disproving" equations means something different in the syntactic and
-semantic worlds, neither of which are related to expressiveness or
-consistency of the reasoning infrastructure.
-  
-A key point---that admittedly deserves more explanation in the
-paper---is that laws are part of an effect's specification, rather
-than truths about how it computes. Similarly, the the purpose of the
-reasoning infrastructure developed in S5 is not to derive truths about
-effectful programs, but rather to provide infrastructure to equate
-programs modulo the laws of their effects. Whether such proofs are
-make sense semantically depends entirely on how we choose to
-handle/elaborate effects.
+Reviewer 3 asks if we can refute invalid laws using the reasoning
+infrastructure developed in S5. This is an interesting question that
+deserves some clarification. In short, our infrastructure is not
+designed to produce syntactic inequalities, but this is a deliberate
+choice following the strict separation of syntax and semantics that is
+core to algebraic effects.
 
-On the syntactic level, to disprove a law means to show that it is
-underivable from the equations of a given theory. Fundamentally, these
-are questions *about* the theory, while the reasoning infrastructure
-we provide is there to support reasoning *with* a given theory.
+The infrastructure in S5 is designed for *syntactic reasoning*. That
+is, deriving equalities *within a given theory*. Proving that certain
+undesirable equations are underivable is a meta-theoretic question
+*about the theory* itself, and thus not an intended use case of the
+reasoning infrastructure.
 
-On the semantic level, we can disprove equations by showing that a
-given handler maps them to inequalities in the semantic domain. In
-this case, we prove the inequality in the semantic domain, not using
-the reasoning infrastructure from S5 which operates in the syntactic
-domain.
+In contrast, *semantic reasoning* interprets equations into a specific
+domain (e.g., the state monad). Here, we can indeed prove
+inequalities, but reasoning is semantic and establishes properties of
+the chosen interpretation, not equalities within the effect's
+syntactic theory.
 
-Going back to the reviewer's example: the assumption that this
-equation should be refutable is grounded in our intuition of how the
-state effect should work, and as such is intrinsically connected to
-how we handle the state effect. While we could disprove the equation
-for a given handler of the state effect, we would do this in the
-semantic domain and not using our reasoning infrastructure.
+The key point here is that laws are part of an effect's specification,
+rather than truths about how it computes. Going back to the reviewer's
+example: the assumption that an equation like `put s >> put s' ≡ put
+s` should be refutable is a semantic intuition about how the state
+effect should be handled. Any handler, however, that satisfies the
+usual equations of the state effect is mathematically valid, even
+"degenerate" ones that also satisfy this or other counter-intuitive
+equations. This is a crucial part of the design philosophy of
+algebraic effects, and we have expanded S1.1.2 to clarify this point.
 
-On the syntactic level, however, we cannot show that the equality is
-underivable, and nor should we able to! Equalities proven on the
-syntactic level remain valid for *any* handler that satisfies the
-equations of a theory, even if that handler *also satisfies other
-equations that violate our intuitive understanding of how an effect
-should behave*.
+## R1: Desugaring scoped effects
+
+Good points about the encoding we gave being insufficient for some
+cases.  Future work, indeed!
+
+## R3: Missing eCensor elaboration in Agda formalization
+
+Thanks for the suggestion. We have added this as an example in 3.4 now.
 
 
-  
-  We have clarified in the paper that the support for equational
-  reasoning is on a par with the equational reasoning you get for
-  standard algebraic effect theories.
-  
-  A refutation of the law `put s >> put s' ≡ put s` could follow along these lines.
-  
-  First, rewrite the left-hand side to `put s'` using the laws of the equational theory for state:
-  
-  ```
-  put s >> put s'
-  = {put-put}
-  put s'
-  ```
-  
-  In order for the law to be true, `put s ≡ put s'` for any `s` and `s'`, which is not true in general.
-  
-  An alternative (more formal) refutation would be to show that there exists a lawful model of the theory (e.g., a standard effect handler for state) for which the law is untrue.
-  
-  We could add some discussion of this to the paper, but we are not sure it would add much.
-
-## Other
-
-We have fixed minor typos and issues pointed out by the reviewers. 
-
-# Reviews
+# Reviews [TODO: OMIT FROM FINAL RESPONSE]
 
 > Referee: 1
 > 
