@@ -25,17 +25,17 @@ The new introduction (e.g., the last paragraph before Section 1.1)
 positions our contribution as providing a semantics of simultaneous
 unfolding (which we refer to as "overloading" in the introduction, for
 lack of a better term). Simultaneous unfolding, implemented as
-elaborations from higher-order to first-order effect trees supports
+elaborations from higher-order to first-order effect trees, supports
 composing effect theories on a par with, and in a similar tradition
 as, algebraic effects and handlers (S5).
   
 As we elaborate in related work, we believe that most of the
 definitions shown in the paper could be supported using other models
 of simultaneous unfolding. To some extent, choosing a mechanism for
-simulteneous unfolding is an implementation detail, and orthogonal to
-the contribution of showing that such approach support composition of
-syntax, semantics, and proofs, as it affects mostly programming
-ergonomics. We opt for an initial encoding because it follows the
+simulteneous unfolding is an implementation detail affecting mostly
+programming ergonomics, and orthogonal to the contribution of showing
+that such approaches support composition of syntax, semantics, and
+proofs. We opt for an initial encoding because it follows the
 tradition of implementing (e.g., in Haskell) and mechanizing (e.g., in
 Agda, Coq, and Idris) algebraic effects and handlers using initial
 encodings, and because initial encodings support inductive reasoning
